@@ -6,6 +6,10 @@ on:
     tags:
       - "android-legacy-v*"
 
+concurrency:
+  group: android-legacy-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -24,17 +28,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
+      # Rust
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: armv7-linux-androideabi
 
+      # Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
@@ -42,6 +49,10 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
+
+          set +o pipefail
+          yes | sdkmanager --licenses > /dev/null
+          set -o pipefail
 
           sdkmanager \
             "platform-tools" \
@@ -57,17 +68,22 @@ jobs:
           echo "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin" \
             >> "$GITHUB_PATH"
 
+      # Node
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # pnpm
       - name: Setup pnpm
         shell: bash
         run: |
+          set -euxo pipefail
+
           corepack enable
           corepack prepare pnpm@9.12.3 --activate
 
+      # Install
       - name: Install dependencies
         working-directory: ${{ env.WORKING_DIR }}
         shell: bash
@@ -77,40 +93,22 @@ jobs:
           pnpm config set registry https://registry.npmmirror.com
           pnpm install --frozen-lockfile
 
-      # Legacy 构建只修改 GitHub Runner 中的 Cargo.toml
-      # 不会修改 GitHub 仓库源码
-      - name: Prepare Android 5.1 legacy dependencies
+          # 使用项目当前 Tauri 2 CLI
+          pnpm add -D @tauri-apps/cli@^2
+
+      # 显示当前版本
+      - name: Show Tauri version
         working-directory: ${{ env.WORKING_DIR }}
         shell: bash
         run: |
           set -euxo pipefail
 
-          echo "===== Original Tauri dependencies ====="
+          pnpm tauri --version
+
+          echo "===== Cargo Tauri dependencies ====="
           grep -n "tauri" src-tauri/Cargo.toml || true
 
-          # 先固定较早的 Tauri 2.x 系列
-          sed -i -E \
-            's/tauri = \{ version = "[^"]+"/tauri = { version = "=2.0.0"/' \
-            src-tauri/Cargo.toml || true
-
-          sed -i -E \
-            's/tauri-build = \{ version = "[^"]+"/tauri-build = { version = "=2.0.0"/' \
-            src-tauri/Cargo.toml || true
-
-          # dialog 也固定到早期 2.0.0
-          sed -i -E \
-            's/tauri-plugin-dialog = "[^"]+"/tauri-plugin-dialog = "=2.0.0"/' \
-            src-tauri/Cargo.toml || true
-
-          sed -i -E \
-            's/tauri-plugin-dialog = \{ version = "[^"]+"/tauri-plugin-dialog = { version = "=2.0.0"/' \
-            src-tauri/Cargo.toml || true
-
-          rm -f src-tauri/Cargo.lock
-
-          echo "===== Legacy Tauri dependencies ====="
-          grep -n "tauri" src-tauri/Cargo.toml || true
-
+      # 初始化 Android
       - name: Initialize Android project
         working-directory: ${{ env.WORKING_DIR }}
         shell: bash
@@ -119,14 +117,17 @@ jobs:
 
           rm -rf src-tauri/gen/android || true
 
-          pnpm dlx @tauri-apps/cli@2.0.0 \
-            android init --ci
+          pnpm tauri android init --ci
 
+      # Android 5.1 = API 22
       - name: Set Android API 22
         working-directory: ${{ env.WORKING_DIR }}
         shell: bash
         run: |
           set -euxo pipefail
+
+          echo "===== Before ====="
+          grep -R -n "minSdk" src-tauri/gen/android || true
 
           find src-tauri/gen/android \
             \( -name "*.gradle" -o -name "*.gradle.kts" \) \
@@ -134,22 +135,21 @@ jobs:
             -exec sed -i -E \
             's/minSdk[[:space:]]*=[[:space:]]*[0-9]+/minSdk = 22/g' {} +
 
-          echo "===== minSdk ====="
+          echo "===== After ====="
           grep -R -n "minSdk" src-tauri/gen/android || true
 
+      # Build Android 5.1
       - name: Build Android 5.1 APK
         working-directory: ${{ env.WORKING_DIR }}
         shell: bash
-        env:
-          CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi22-clang
         run: |
           set -euxo pipefail
 
-          pnpm dlx @tauri-apps/cli@2.0.0 \
-            android build \
+          pnpm tauri android build \
             --apk \
             --target armv7
 
+      # 找 APK
       - name: Find APK
         id: apk
         shell: bash
@@ -165,11 +165,21 @@ jobs:
 
           if [ -z "$APK_SRC" ]; then
             echo "APK NOT FOUND"
+
+            find \
+              "${{ env.WORKING_DIR }}/src-tauri/gen/android" \
+              -type f \
+              | sed -n '1,300p'
+
             exit 1
           fi
 
+          echo "APK found:"
+          echo "$APK_SRC"
+
           echo "apk_path=$APK_SRC" >> "$GITHUB_OUTPUT"
 
+      # 签名
       - name: Sign Android 5.1 APK
         id: sign
         shell: bash
@@ -184,12 +194,16 @@ jobs:
 
           BT="$ANDROID_SDK_ROOT/build-tools/${{ env.BUILD_TOOLS_VER }}"
 
-          "$BT/zipalign" \
-            -f -p 4 \
-            "${{ steps.apk.outputs.apk_path }}" \
-            /tmp/aligned.apk
+          UNSIGNED_APK="${{ steps.apk.outputs.apk_path }}"
 
-          SIGNED_APK="dist/books-android-5.1-armeabi-v7a.apk"
+          SIGNED_APK="dist/books-${{ github.ref_name }}-armeabi-v7a.apk"
+
+          "$BT/zipalign" \
+            -f \
+            -p \
+            4 \
+            "$UNSIGNED_APK" \
+            /tmp/aligned.apk
 
           "$BT/apksigner" sign \
             --ks /tmp/release.jks \
@@ -199,12 +213,25 @@ jobs:
             --out "$SIGNED_APK" \
             /tmp/aligned.apk
 
-          "$BT/apksigner" verify --verbose "$SIGNED_APK"
+          "$BT/apksigner" verify \
+            --verbose \
+            "$SIGNED_APK"
 
           echo "signed_apk=$SIGNED_APK" >> "$GITHUB_OUTPUT"
 
+      # GitHub Actions Artifact
       - name: Upload Legacy APK
         uses: actions/upload-artifact@v4
         with:
           name: books-android-5.1
           path: ${{ steps.sign.outputs.signed_apk }}
+
+      # Tag 时发布 GitHub Release
+      - name: Upload APK to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/android-legacy-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.sign.outputs.signed_apk }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
