@@ -1,0 +1,177 @@
+name: Tauri2 Android Build Split APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "android-v*"
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: aarch64
+            rust_target: aarch64-linux-android
+            name: arm64-v8a
+          - abi: armv7
+            rust_target: armv7-linux-androideabi
+            name: armeabi-v7a
+          - abi: i686
+            rust_target: i686-linux-android
+            name: x86
+          - abi: x86_64
+            rust_target: x86_64-linux-android
+            name: x86_64
+
+    env:
+      NODE_VERSION: "20"
+      JAVA_VERSION: "17"
+      NDK_VER: "26.1.10909125"
+      BUILD_TOOLS_VER: "34.0.0"
+      WORKING_DIR: "app"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Purge old NDK and install Android packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          rm -rf "$ANDROID_SDK_ROOT/ndk" || true
+          rm -rf "$ANDROID_SDK_ROOT/ndk-bundle" || true
+
+          set +o pipefail
+          yes | sdkmanager --licenses > /dev/null
+          set -o pipefail
+
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;${{ env.BUILD_TOOLS_VER }}" \
+            "ndk;${{ env.NDK_VER }}"
+
+          NDK_PATH="$ANDROID_SDK_ROOT/ndk/${{ env.NDK_VER }}"
+          echo "NDK_HOME=$NDK_PATH" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$NDK_PATH" >> "$GITHUB_ENV"
+          echo "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable Corepack and activate pnpm
+        shell: bash
+        run: |
+          set -euxo pipefail
+          corepack enable
+          corepack prepare pnpm@9.12.3 --activate
+
+      - name: Install frontend dependencies
+        shell: bash
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          set -euxo pipefail
+          pnpm config set registry https://registry.npmmirror.com
+          pnpm install --frozen-lockfile
+          pnpm add -D @tauri-apps/cli@^2
+
+      - name: Clean and initialize Android project
+        shell: bash
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          set -euxo pipefail
+
+          rm -rf src-tauri/gen/android || true
+          pnpm tauri android init --ci
+
+      - name: Build Android APK - ${{ matrix.name }}
+        shell: bash
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          set -euxo pipefail
+          pnpm tauri android build --apk --target ${{ matrix.abi }}
+
+      - name: Find release APK
+        id: apk
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          APK_SRC=$(find "${{ env.WORKING_DIR }}/src-tauri/gen/android" -type f -name "*.apk" | grep "release" | head -n 1)
+
+          if [ -z "$APK_SRC" ]; then
+            echo "APK NOT FOUND"
+            find "${{ env.WORKING_DIR }}/src-tauri/gen/android" -type f | sed -n '1,200p'
+            exit 1
+          fi
+
+          echo "apk_path=$APK_SRC" >> "$GITHUB_OUTPUT"
+
+      - name: Sign APK - ${{ matrix.name }}
+        id: sign
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          mkdir -p dist
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > /tmp/release.jks
+
+          BT="$ANDROID_SDK_ROOT/build-tools/${{ env.BUILD_TOOLS_VER }}"
+          UNSIGNED_APK="${{ steps.apk.outputs.apk_path }}"
+          SIGNED_APK="dist/app-${{ github.ref_name }}-${{ matrix.name }}.apk"
+
+          "$BT/zipalign" -f -p 4 "$UNSIGNED_APK" /tmp/aligned.apk
+
+          "$BT/apksigner" sign \
+            --ks /tmp/release.jks \
+            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            --ks-pass pass:"${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            --key-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --out "$SIGNED_APK" \
+            /tmp/aligned.apk
+
+          "$BT/apksigner" verify "$SIGNED_APK"
+
+          echo "signed_apk=$SIGNED_APK" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-android-${{ matrix.name }}
+          path: ${{ steps.sign.outputs.signed_apk }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.sign.outputs.signed_apk }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

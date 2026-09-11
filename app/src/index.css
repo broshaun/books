@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+
+
+.epub-view {
+  width: 100% !important;
+  max-width: 100% !important;
+}

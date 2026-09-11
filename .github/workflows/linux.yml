@@ -1,0 +1,99 @@
+name: Tauri2 Linux Build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "linux-v*"
+
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_VERSION: "24"
+      WORKING_DIR: "chatly"
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+          package_json_file: ${{ env.WORKING_DIR }}/package.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: ${{ env.WORKING_DIR }}/pnpm-lock.yaml
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            libssl-dev \
+            patchelf \
+            build-essential \
+            curl \
+            wget \
+            file
+
+      - name: Verify toolchain
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          set -euxo pipefail
+          node -v
+          npm -v
+          pnpm -v
+          rustc -V
+          cargo -V
+
+      - name: Install frontend dependencies
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          set -euxo pipefail
+          pnpm config set registry https://registry.npmmirror.com
+          pnpm install --frozen-lockfile
+
+      - name: Build Linux packages
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: ${{ env.WORKING_DIR }}
+          tagName: ${{ github.ref_name }}
+          releaseName: "Chatly ${{ github.ref_name }}"
+          releaseBody: |
+            Linux build for ${{ github.ref_name }}
+
+            Please download the package asset below.
+          releaseDraft: false
+          prerelease: false
+          args: --bundles appimage,deb
