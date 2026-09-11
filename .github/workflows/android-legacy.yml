@@ -1,0 +1,210 @@
+name: Tauri2 Android 5.1 Legacy
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "android-legacy-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  android-legacy:
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_VERSION: "20"
+      JAVA_VERSION: "17"
+      NDK_VER: "26.1.10909125"
+      BUILD_TOOLS_VER: "34.0.0"
+      WORKING_DIR: "app"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: armv7-linux-androideabi
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;${{ env.BUILD_TOOLS_VER }}" \
+            "ndk;${{ env.NDK_VER }}"
+
+          NDK_PATH="$ANDROID_SDK_ROOT/ndk/${{ env.NDK_VER }}"
+
+          echo "NDK_HOME=$NDK_PATH" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$NDK_PATH" >> "$GITHUB_ENV"
+
+          echo "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin" \
+            >> "$GITHUB_PATH"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        shell: bash
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.12.3 --activate
+
+      - name: Install dependencies
+        working-directory: ${{ env.WORKING_DIR }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          pnpm config set registry https://registry.npmmirror.com
+          pnpm install --frozen-lockfile
+
+      # Legacy 构建只修改 GitHub Runner 中的 Cargo.toml
+      # 不会修改 GitHub 仓库源码
+      - name: Prepare Android 5.1 legacy dependencies
+        working-directory: ${{ env.WORKING_DIR }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          echo "===== Original Tauri dependencies ====="
+          grep -n "tauri" src-tauri/Cargo.toml || true
+
+          # 先固定较早的 Tauri 2.x 系列
+          sed -i -E \
+            's/tauri = \{ version = "[^"]+"/tauri = { version = "=2.0.0"/' \
+            src-tauri/Cargo.toml || true
+
+          sed -i -E \
+            's/tauri-build = \{ version = "[^"]+"/tauri-build = { version = "=2.0.0"/' \
+            src-tauri/Cargo.toml || true
+
+          # dialog 也固定到早期 2.0.0
+          sed -i -E \
+            's/tauri-plugin-dialog = "[^"]+"/tauri-plugin-dialog = "=2.0.0"/' \
+            src-tauri/Cargo.toml || true
+
+          sed -i -E \
+            's/tauri-plugin-dialog = \{ version = "[^"]+"/tauri-plugin-dialog = { version = "=2.0.0"/' \
+            src-tauri/Cargo.toml || true
+
+          rm -f src-tauri/Cargo.lock
+
+          echo "===== Legacy Tauri dependencies ====="
+          grep -n "tauri" src-tauri/Cargo.toml || true
+
+      - name: Initialize Android project
+        working-directory: ${{ env.WORKING_DIR }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          rm -rf src-tauri/gen/android || true
+
+          pnpm dlx @tauri-apps/cli@2.0.0 \
+            android init --ci
+
+      - name: Set Android API 22
+        working-directory: ${{ env.WORKING_DIR }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          find src-tauri/gen/android \
+            \( -name "*.gradle" -o -name "*.gradle.kts" \) \
+            -type f \
+            -exec sed -i -E \
+            's/minSdk[[:space:]]*=[[:space:]]*[0-9]+/minSdk = 22/g' {} +
+
+          echo "===== minSdk ====="
+          grep -R -n "minSdk" src-tauri/gen/android || true
+
+      - name: Build Android 5.1 APK
+        working-directory: ${{ env.WORKING_DIR }}
+        shell: bash
+        env:
+          CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi22-clang
+        run: |
+          set -euxo pipefail
+
+          pnpm dlx @tauri-apps/cli@2.0.0 \
+            android build \
+            --apk \
+            --target armv7
+
+      - name: Find APK
+        id: apk
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          APK_SRC=$(find \
+            "${{ env.WORKING_DIR }}/src-tauri/gen/android" \
+            -type f \
+            -name "*.apk" \
+            | grep "release" \
+            | head -n 1)
+
+          if [ -z "$APK_SRC" ]; then
+            echo "APK NOT FOUND"
+            exit 1
+          fi
+
+          echo "apk_path=$APK_SRC" >> "$GITHUB_OUTPUT"
+
+      - name: Sign Android 5.1 APK
+        id: sign
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          mkdir -p dist
+
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
+            | base64 --decode \
+            > /tmp/release.jks
+
+          BT="$ANDROID_SDK_ROOT/build-tools/${{ env.BUILD_TOOLS_VER }}"
+
+          "$BT/zipalign" \
+            -f -p 4 \
+            "${{ steps.apk.outputs.apk_path }}" \
+            /tmp/aligned.apk
+
+          SIGNED_APK="dist/books-android-5.1-armeabi-v7a.apk"
+
+          "$BT/apksigner" sign \
+            --ks /tmp/release.jks \
+            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            --ks-pass pass:"${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            --key-pass pass:"${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --out "$SIGNED_APK" \
+            /tmp/aligned.apk
+
+          "$BT/apksigner" verify --verbose "$SIGNED_APK"
+
+          echo "signed_apk=$SIGNED_APK" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Legacy APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: books-android-5.1
+          path: ${{ steps.sign.outputs.signed_apk }}

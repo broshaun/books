@@ -112,25 +112,6 @@ jobs:
           rm -rf src-tauri/gen/android || true
           pnpm tauri android init --ci
 
-      # Android 5.1 = API 22
-      - name: Set Android minSdk to 22
-        shell: bash
-        working-directory: ${{ env.WORKING_DIR }}
-        run: |
-          set -euxo pipefail
-
-          echo "===== Before ====="
-          grep -R -n "minSdk" src-tauri/gen/android || true
-
-          find src-tauri/gen/android \
-            \( -name "*.gradle" -o -name "*.gradle.kts" \) \
-            -type f \
-            -exec sed -i -E \
-            's/minSdk[[:space:]]*=[[:space:]]*[0-9]+/minSdk = 22/g' {} +
-
-          echo "===== After ====="
-          grep -R -n "minSdk" src-tauri/gen/android || true
-
       - name: Build Android APK - ${{ matrix.name }}
         shell: bash
         working-directory: ${{ env.WORKING_DIR }}
@@ -144,17 +125,11 @@ jobs:
         run: |
           set -euxo pipefail
 
-          APK_SRC=$(find "${{ env.WORKING_DIR }}/src-tauri/gen/android" \
-            -type f \
-            -name "*.apk" \
-            | grep "release" \
-            | head -n 1)
+          APK_SRC=$(find "${{ env.WORKING_DIR }}/src-tauri/gen/android" -type f -name "*.apk" | grep "release" | head -n 1)
 
           if [ -z "$APK_SRC" ]; then
             echo "APK NOT FOUND"
-            find "${{ env.WORKING_DIR }}/src-tauri/gen/android" \
-              -type f \
-              | sed -n '1,200p'
+            find "${{ env.WORKING_DIR }}/src-tauri/gen/android" -type f | sed -n '1,200p'
             exit 1
           fi
 
@@ -167,21 +142,13 @@ jobs:
           set -euxo pipefail
 
           mkdir -p dist
-
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
-            | base64 --decode \
-            > /tmp/release.jks
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > /tmp/release.jks
 
           BT="$ANDROID_SDK_ROOT/build-tools/${{ env.BUILD_TOOLS_VER }}"
           UNSIGNED_APK="${{ steps.apk.outputs.apk_path }}"
           SIGNED_APK="dist/app-${{ github.ref_name }}-${{ matrix.name }}.apk"
 
-          "$BT/zipalign" \
-            -f \
-            -p \
-            4 \
-            "$UNSIGNED_APK" \
-            /tmp/aligned.apk
+          "$BT/zipalign" -f -p 4 "$UNSIGNED_APK" /tmp/aligned.apk
 
           "$BT/apksigner" sign \
             --ks /tmp/release.jks \
@@ -191,7 +158,7 @@ jobs:
             --out "$SIGNED_APK" \
             /tmp/aligned.apk
 
-          "$BT/apksigner" verify --verbose "$SIGNED_APK"
+          "$BT/apksigner" verify "$SIGNED_APK"
 
           echo "signed_apk=$SIGNED_APK" >> "$GITHUB_OUTPUT"
 
