@@ -1,36 +1,8 @@
 import { defineConfig } from '@rsbuild/core';
-import { pluginReact } from '@rsbuild/plugin-react';
+import { pluginSolid } from '@rsbuild/plugin-solid';
 import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss';
-import { TanStackRouterRspack } from '@tanstack/router-plugin/rspack';
 
+// Docs: https://rsbuild.rs/config/
 export default defineConfig({
-  plugins: [
-    pluginReact(),
-    pluginTailwindcss(),
-  ],
-
-  tools: {
-    rspack: {
-      plugins: [
-        TanStackRouterRspack({
-          target: 'react',
-          autoCodeSplitting: true,
-        }),
-      ],
-    },
-  },
-
-  output: {
-    assetPrefix: '/',
-  },
-
-  server: {
-    proxy: {
-      '/rpc': {
-        target: 'http://192.168.2.1:5015',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
+  plugins: [pluginSolid(), pluginTailwindcss()],
 });

@@ -7,8 +7,18 @@
   ],
   "permissions": [
     "core:default",
-    "device-info:default",
     "dialog:default",
-    "fs:default"
+    "dialog:allow-open",
+    "fs:allow-read-dir",
+    "fs:allow-read-file",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "**"
+      ]
+    }
   ]
 }
+
+
+

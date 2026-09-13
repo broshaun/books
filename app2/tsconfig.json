@@ -4,7 +4,7 @@
       "DOM",
       "ES2020"
     ],
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "target": "ES2020",
     "noEmit": true,
     "skipLibCheck": true,
@@ -12,7 +12,6 @@
       "@rsbuild/core/types",
       "node"
     ],
-    "jsxImportSource": "@solidjs/web",
     "useDefineForClassFields": true,
     /* modules */
     "moduleDetection": "force",
@@ -25,8 +24,8 @@
     "noUnusedParameters": true,
     "paths": {
       "@/*": [
-        "./src/mod/*",
         "./src/*",
+        "./src/mod/*"
       ],
     }
   },

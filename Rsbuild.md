@@ -34,8 +34,9 @@
  "compilerOptions": {
   "paths": {
     "@/*": [
+      "./src/mod/*",
       "./src/*",
-      "./src/mod/*"
+      
     ],
   }
 }

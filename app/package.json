@@ -4,39 +4,27 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "rsbuild dev --env-dir config",
-    "build": "rsbuild build --env-dir config",
+    "build": "rsbuild build",
     "check": "biome check --write",
+    "dev": "rsbuild",
     "format": "biome format --write",
     "preview": "rsbuild preview"
   },
   "dependencies": {
-    "@mantine/core": "^9.6.1",
-    "@mantine/hooks": "^9.6.1",
-    "@tabler/icons-react": "^3.46.0",
-    "@tanstack/react-router": "^1.170.35",
-    "@tanstack/router-devtools": "^1.167.1",
-    "@tanstack/router-plugin": "^1.168.37",
+    "@solidjs/web": "^2.0.0-rc.6",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "~2.7.3",
     "@tauri-apps/plugin-fs": "~2.5.2",
-    "ahooks": "^3.10.0",
-    "epubjs": "^0.3.93",
-    "localforage": "^1.10.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "tauri-plugin-device-info-api": "^1.1.0",
-    "zustand": "^5.0.15"
+    "solid-js": "^2.0.0-rc.6",
+    "tauri-plugin-device-info-api": "^1.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",
     "@rsbuild/core": "^2.2.5",
-    "@rsbuild/plugin-react": "^2.1.0",
+    "@rsbuild/plugin-solid": "^2.0.0-rc.0",
     "@rsbuild/plugin-tailwindcss": "^2.0.3",
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
   }
