@@ -6,6 +6,9 @@
     "main"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "device-info:default",
+    "dialog:default",
+    "fs:default"
   ]
 }

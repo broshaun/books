@@ -11,19 +11,20 @@
     "preview": "rsbuild preview"
   },
   "dependencies": {
-    "@tabler/icons-react": "^3.46.0",
+    "@solidjs/web": "2.0.0-rc.6",
     "@tauri-apps/api": "^2.11.1",
-    "solid-js": "^1.9.15"
+    "@tauri-apps/plugin-dialog": "~2.7.3",
+    "@tauri-apps/plugin-fs": "~2.5.2",
+    "solid-js": "^2.0.0-rc.6",
+    "tauri-plugin-device-info-api": "^1.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",
     "@rsbuild/core": "^2.2.5",
-    "@rsbuild/plugin-babel": "^2.1.0",
-    "@rsbuild/plugin-solid": "^1.2.2",
+    "@rsbuild/plugin-solid": "^2.0.0-rc.6",
     "@rsbuild/plugin-tailwindcss": "^2.0.3",
     "@tanstack/router-plugin": "^1.168.38",
-    "@tanstack/solid-router": "^1.170.34",
-    "@tanstack/solid-router-devtools": "^1.167.2",
+    "@tanstack/solid-router": "2.0.0-rc.6",
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^24.13.3",
     "tailwindcss": "^4.3.3",
