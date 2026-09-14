@@ -10,33 +10,61 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BookRouteImport } from './routes/book'
+import { Route as BookBookIdRouteImport } from './routes/book/$bookId'
+import { Route as BookShelfRouteImport } from './routes/book/shelf'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookRoute = BookRouteImport.update({
+  id: '/book',
+  path: '/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookBookIdRoute = BookBookIdRouteImport.update({
+  id: '/$bookId',
+  path: '/$bookId',
+  getParentRoute: () => BookRoute,
+} as any)
+const BookShelfRoute = BookShelfRouteImport.update({
+  id: '/shelf',
+  path: '/shelf',
+  getParentRoute: () => BookRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/book': typeof BookRouteWithChildren
+  '/book/$bookId': typeof BookBookIdRoute
+  '/book/shelf': typeof BookShelfRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/book': typeof BookRouteWithChildren
+  '/book/$bookId': typeof BookBookIdRoute
+  '/book/shelf': typeof BookShelfRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/book': typeof BookRouteWithChildren
+  '/book/$bookId': typeof BookBookIdRoute
+  '/book/shelf': typeof BookShelfRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/book' | '/book/$bookId' | '/book/shelf'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/book' | '/book/$bookId' | '/book/shelf'
+  id: '__root__' | '/' | '/book' | '/book/$bookId' | '/book/shelf'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BookRoute: typeof BookRouteWithChildren
 }
 
 declare module '@tanstack/solid-router' {
@@ -48,11 +76,45 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book': {
+      id: '/book'
+      path: '/book'
+      fullPath: '/book'
+      preLoaderRoute: typeof BookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$bookId': {
+      id: '/book/$bookId'
+      path: '/$bookId'
+      fullPath: '/book/$bookId'
+      preLoaderRoute: typeof BookBookIdRouteImport
+      parentRoute: typeof BookRoute
+    }
+    '/book/shelf': {
+      id: '/book/shelf'
+      path: '/shelf'
+      fullPath: '/book/shelf'
+      preLoaderRoute: typeof BookShelfRouteImport
+      parentRoute: typeof BookRoute
+    }
   }
 }
 
+interface BookRouteChildren {
+  BookBookIdRoute: typeof BookBookIdRoute
+  BookShelfRoute: typeof BookShelfRoute
+}
+
+const BookRouteChildren: BookRouteChildren = {
+  BookBookIdRoute: BookBookIdRoute,
+  BookShelfRoute: BookShelfRoute,
+}
+
+const BookRouteWithChildren = BookRoute._addFileChildren(BookRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BookRoute: BookRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

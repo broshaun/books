@@ -11,7 +11,7 @@
 
 ## TanStack Router
     pnpm add @tanstack/solid-router @tanstack/solid-router-devtools @tanstack/router-plugin -D
-    pnpm add @tabler/icons-react localforage 
+    pnpm add localforage @tabler/icons-solidjs
 
 ## 业务库
     pnpm add epubjs
@@ -30,3 +30,6 @@
     pnpm tauri add dialog
     pnpm tauri add fs
 ```
+
+
+- pnpm tauri dev
