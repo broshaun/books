@@ -1,48 +1,66 @@
-import type { ReactNode, CSSProperties } from 'react';
-import { Children, isValidElement, useState } from 'react';
+import { createSignal, onMount, onCleanup, type JSX, type ParentProps } from 'solid-js';
 
-export interface ReaderWorkspaceProps {
+// 🌟 修改点：继承 ParentProps<{ ... }> 以支持 children 属性
+export interface ReaderWorkspaceProps extends ParentProps {
   showNote?: boolean;
-  height?: CSSProperties['height'];
-  width?: CSSProperties['width'];
-  children: ReactNode;
+  height?: string | number;
+  width?: string | number;
+  epub?: JSX.Element;
+  notes?: JSX.Element;
 }
 
-export function ReaderWorkspaceMain({ 
-  showNote = true, 
-  height = '100%', 
-  width = '100%', 
-  children 
-}: ReaderWorkspaceProps) {
-  const [isLandscape] = useState(() => typeof window === 'undefined' || window.innerWidth >= window.innerHeight);
-  const showNotes = isLandscape && showNote;
+// 辅助函数：将 string | number 统一转为安全的 CSS 尺寸字符串
+const parseCSSSize = (size?: string | number) => {
+  if (size === undefined) return undefined;
+  return typeof size === 'number' ? `${size}px` : size;
+};
 
-  let epub: ReactNode = null;
-  let notes: ReactNode = null;
+export function ReaderWorkspaceMain(props: ReaderWorkspaceProps) {
+  const [isLandscape, setIsLandscape] = createSignal(
+    typeof window === 'undefined' || window.innerWidth >= window.innerHeight
+  );
 
-  Children.forEach(children, (child) => {
-    if (isValidElement(child)) {
-      if (child.type === Epub) epub = child;
-      if (child.type === Notes) notes = child;
-    }
+  onMount(() => {
+    const handleResize = () => {
+      setIsLandscape(window.innerWidth >= window.innerHeight);
+    };
+    window.addEventListener('resize', handleResize);
+    onCleanup(() => window.removeEventListener('resize', handleResize));
   });
 
+  const showNotes = () => isLandscape() && (props.showNote ?? true);
+
   return (
-    <div className="flex overflow-hidden" style={{ width, height }}>
-      <div className={`h-full overflow-auto ${showNotes ? 'w-[70%]' : 'w-full'}`}>
-        {epub}
+    <div
+      class="flex overflow-hidden"
+      style={{
+        width: parseCSSSize(props.width) ?? '100%',
+        height: parseCSSSize(props.height) ?? '100%',
+      }}
+    >
+      <div class={`h-full overflow-auto transition-all duration-300 ${showNotes() ? 'w-[70%]' : 'w-full'}`}>
+        {props.epub}
       </div>
-      {showNotes && (
-        <div className="w-[30%] h-full overflow-auto border-l border-gray-100 dark:border-zinc-800">
-          {notes}
+
+      {showNotes() && (
+        <div class="w-[30%] h-full overflow-auto border-l border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          {props.notes}
         </div>
       )}
+      
+      {/* 兼容直接写子组件的用法 */}
+      {props.children}
     </div>
   );
 }
 
-export function Epub({ children }: { children: ReactNode }) { return <>{children}</>; }
-export function Notes({ children }: { children: ReactNode }) { return <>{children}</>; }
+export function Epub(props: ParentProps) {
+  return <>{props.children}</>;
+}
+
+export function Notes(props: ParentProps) {
+  return <>{props.children}</>;
+}
 
 export const ReaderWorkspace = Object.assign(ReaderWorkspaceMain, { Epub, Notes });
 export default ReaderWorkspace;

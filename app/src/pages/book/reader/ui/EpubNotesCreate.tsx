@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Stack, TextInput, Group, ActionIcon, Tooltip, ColorSwatch, Text, Box, Divider, Button } from '@mantine/core';
-import { IconCopy, IconCheck, IconQuote, IconDeviceFloppy, IconX } from '@tabler/icons-react';
+import { createSignal, createEffect, For, Show } from 'solid-js';
+import {
+  IconCopy,
+  IconCheck,
+  IconQuote,
+  IconDeviceFloppy,
+  IconX,
+} from '@tabler/icons-solidjs';
 
 export interface NewNote {
   book: string;
@@ -28,30 +33,30 @@ const HIGHLIGHT_COLORS = [
 
 const PREF_COLOR_KEY = 'epub_pref_color';
 
-export function EpubNotesCreate({ newNote, onSave, onCancel }: EpubNotesCreateProps) {
-  const [draft, setDraft] = useState<NewNote>(() => ({
+export function EpubNotesCreate(props: EpubNotesCreateProps) {
+  const [draft, setDraft] = createSignal<NewNote>({
     book: '',
     index: 0,
     cfiRange: '',
     text: '',
-    ...newNote,
-    color: newNote?.color || localStorage.getItem(PREF_COLOR_KEY) || HIGHLIGHT_COLORS[0].bg,
-  }));
+    ...props.newNote,
+    color: props.newNote?.color || localStorage.getItem(PREF_COLOR_KEY) || HIGHLIGHT_COLORS[0].bg,
+  });
 
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = createSignal(false);
 
-  useEffect(() => {
+  createEffect(() => {
     setDraft({
       book: '',
       index: 0,
       cfiRange: '',
       text: '',
-      ...newNote,
-      color: newNote?.color || localStorage.getItem(PREF_COLOR_KEY) || HIGHLIGHT_COLORS[0].bg,
+      ...props.newNote,
+      color: props.newNote?.color || localStorage.getItem(PREF_COLOR_KEY) || HIGHLIGHT_COLORS[0].bg,
     });
-  }, [newNote]);
+  });
 
-  const currentColor = draft.color || HIGHLIGHT_COLORS[0].bg;
+  const currentColor = () => draft().color || HIGHLIGHT_COLORS[0].bg;
 
   const handleColorChange = (colorBg: string) => {
     localStorage.setItem(PREF_COLOR_KEY, colorBg);
@@ -59,9 +64,10 @@ export function EpubNotesCreate({ newNote, onSave, onCancel }: EpubNotesCreatePr
   };
 
   const handleCopy = async () => {
-    if (!draft.text) return;
+    const text = draft().text;
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(draft.text);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (err) {
@@ -70,96 +76,90 @@ export function EpubNotesCreate({ newNote, onSave, onCancel }: EpubNotesCreatePr
   };
 
   return (
-    <Stack h="100%" p="md" pt="xl" gap="md" style={{ boxSizing: 'border-box' }}>
-      <TextInput
-        variant="unstyled"
+    <div class="h-full p-4 pt-6 flex flex-col gap-4 box-border bg-white dark:bg-zinc-900">
+      {/* 标题输入框 */}
+      <input
+        type="text"
         placeholder="输入笔记标题..."
-        value={draft.title || ''}
-        onChange={(e) => setDraft({ ...draft, title: e.currentTarget.value })}
-        styles={{
-          input: {
-            fontWeight: 600,
-            fontSize: '20px',
-            textAlign: 'center',
-            padding: 0,
-            minHeight: 'auto',
-            color: 'var(--mantine-color-text)',
-            opacity: 0.85,
-          },
-        }}
+        value={draft().title || ''}
+        onInput={(e) => setDraft((prev) => ({ ...prev, title: e.currentTarget.value }))}
+        class="w-full font-semibold text-lg text-center bg-transparent border-none outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400 opacity-85 focus:opacity-100"
       />
 
-      <Divider mb="xs" />
+      <hr class="border-slate-200 dark:border-zinc-800 my-1" />
 
-      {draft.text && (
-        <Stack gap="md">
-          <Group gap={8} px={4}>
-            {HIGHLIGHT_COLORS.map((c) => {
-              const isSelected = currentColor === c.bg;
-              return (
-                <Tooltip key={c.id} label={c.name} withArrow>
-                  <ColorSwatch
-                    color={c.bg}
-                    size={18}
-                    style={{
-                      cursor: 'pointer',
-                      transform: isSelected ? 'scale(1.15)' : 'scale(1)',
-                      transition: 'transform 0.15s ease',
-                      boxShadow: isSelected ? '0 0 0 2px var(--mantine-color-body), 0 0 0 4px var(--mantine-color-blue-filled)' : 'none',
-                    }}
+      <Show when={draft().text}>
+        <div class="flex flex-col gap-3">
+          {/* 颜色选择器组 */}
+          <div class="flex items-center gap-2 px-1">
+            <For each={HIGHLIGHT_COLORS}>
+              {(c) => {
+                const isSelected = currentColor() === c.bg;
+                return (
+                  <button
+                    type="button"
+                    title={c.name}
                     onClick={() => handleColorChange(c.bg)}
+                    class="w-[18px] h-[18px] rounded-full cursor-pointer transition-transform duration-150 border border-black/10 dark:border-white/10"
+                    style={{
+                      background: c.bg,
+                      transform: isSelected ? 'scale(1.15)' : 'scale(1)',
+                      'box-shadow': isSelected ? '0 0 0 2px var(--color-white, #fff), 0 0 0 4px #3b82f6' : 'none',
+                    }}
                   />
-                </Tooltip>
-              );
-            })}
-          </Group>
+                );
+              }}
+            </For>
+          </div>
 
-          <Box
-            p="sm"
-            style={{
-              borderRadius: 'var(--mantine-radius-md)',
-              border: '1px solid var(--mantine-color-default-border)',
-              backgroundColor: 'var(--mantine-color-default-hover)',
-            }}
-          >
-            <Group gap={8} align="flex-start" wrap="nowrap">
-              <IconQuote size={16} style={{ marginTop: 3, flexShrink: 0, color: 'var(--mantine-color-dimmed)' }} />
-              <Text
-                size="sm"
-                style={{
-                  wordBreak: 'break-word',
-                  flex: 1,
-                  color: 'var(--mantine-color-text)',
-                  opacity: 0.9,
-                  backgroundColor: currentColor,
-                  padding: '2px 4px',
-                  borderRadius: '4px',
-                }}
+          {/* 引用内容卡片 */}
+          <div class="p-3 rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/40">
+            <div class="flex items-start gap-2.5">
+              <IconQuote size={16} class="mt-0.5 shrink-0 text-slate-400" />
+              <p
+                class="text-sm flex-1 text-slate-700 dark:text-slate-200 opacity-90 break-words rounded px-1 py-0.5"
+                style={{ background: currentColor() }}
               >
-                {draft.text}
-              </Text>
+                {draft().text}
+              </p>
 
-              <Tooltip label={copied ? '已复制' : '复制引用'} withArrow>
-                <ActionIcon variant="subtle" color="gray" size="sm" radius="md" style={{ flexShrink: 0 }} onClick={handleCopy}>
-                  {copied ? <IconCheck size={16} color="teal" /> : <IconCopy size={16} />}
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-          </Box>
+              <button
+                type="button"
+                onClick={handleCopy}
+                class="p-1.5 rounded-md hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 transition-colors text-slate-500 dark:text-slate-400 shrink-0 cursor-pointer"
+                title={copied() ? '已复制' : '复制引用'}
+              >
+                <Show when={copied()} fallback={<IconCopy size={16} />}>
+                  <IconCheck size={16} class="text-teal-600 dark:text-teal-400" />
+                </Show>
+              </button>
+            </div>
+          </div>
 
-          <Group justify="flex-end" gap="sm">
-            {onCancel && (
-              <Button variant="subtle" color="gray" size="sm" radius="md" leftSection={<IconX size={16} />} onClick={onCancel}>
-                取消
-              </Button>
-            )}
-            <Button variant="light" color="blue" size="sm" radius="md" leftSection={<IconDeviceFloppy size={16} />} onClick={() => onSave(draft)}>
-              保存
-            </Button>
-          </Group>
-        </Stack>
-      )}
-    </Stack>
+          {/* 底部按钮区 */}
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <Show when={props.onCancel}>
+              <button
+                type="button"
+                onClick={props.onCancel}
+                class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <IconX size={16} />
+                <span>取消</span>
+              </button>
+            </Show>
+            <button
+              type="button"
+              onClick={() => props.onSave(draft())}
+              class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white transition-colors cursor-pointer shadow-xs"
+            >
+              <IconDeviceFloppy size={16} />
+              <span>保存</span>
+            </button>
+          </div>
+        </div>
+      </Show>
+    </div>
   );
 }
 

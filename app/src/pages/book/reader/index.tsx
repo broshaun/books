@@ -1,9 +1,11 @@
-import { createSignal, onMount, onCleanup, createEffect } from "solid-js";
+import { IconList, IconSearch, IconArrowLeft, IconEyeOff, IconEye, IconTypography, IconNotebook, IconTabs } from "@tabler/icons-solidjs";
+import { createSignal, onMount, onCleanup, createEffect, createResource } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
 import { useEpubViews } from "./hook/useEpubViews";
 import { useEpubResize } from "./hook/useEpubResize";
 import { useEpubNotes } from "./hook/useEpubNotes";
+import { createEpubLoader } from "@/mod/lib/createEpubLoader";
 import { useCurrentOperation } from "./hook/useCurrentOperation";
 
 import { EpubSearchDrawer } from "./ui/EpubSearchDrawer";
@@ -14,8 +16,9 @@ import { ReaderWorkspace } from "./ui/ReaderWorkspace";
 import { EpubNotesEdit } from "./ui/EpubNotesEdit";
 import { EpubNotesCreate } from "./ui/EpubNotesCreate";
 import EpubNotesTimeline from "./ui/EpubNotesTimeline";
-import { createEpubLoader } from "@/mod/lib/createEpubLoader";
-import { IconList, IconSearch, IconArrowLeft, IconEyeOff, IconEye, IconTypography, IconNotebook, IconTabs } from "@tabler/icons-react";
+import Paper from "./ui/Paper";
+
+
 
 interface ReaderProps {
   bookId: string;
@@ -38,26 +41,26 @@ export function Reader(props: ReaderProps) {
   const { openBook } = createEpubLoader();
   let viewerRef!: HTMLDivElement;
 
-  const [book, setBook] = createSignal<any>(null);
+  // const [book, setBook] = createSignal<any>(null);
   const [instance, setInstance] = createSignal<any>(null);
 
-  onMount(async () => {
-    try {
-      const loadedBook = await openBook(props.bookId);
-      setBook(loadedBook);
-      const bookTitle = loadedBook?.packaging?.metadata?.title || "";
-      const bookIdentifier = loadedBook?.packaging?.metadata?.identifier || "";
+
+  const [currentBook] = createResource(
+    () => props.bookId,
+    async () => {
+      const book = await openBook(props.bookId);
+      const bookTitle = book?.packaging?.metadata?.title || "";
+      const bookIdentifier = book?.packaging?.metadata?.identifier || "";
       console.log("bookTitle", bookTitle);
       console.log("bookIdentifier", bookIdentifier);
-    } catch (e) {
-      console.error(e);
-    }
-  });
+      return book
+    });
+
 
   createEffect(() => {
-    const currentBook = book();
-    if (!viewerRef || !currentBook) return;
-    const renderInstance = currentBook.renderTo(viewerRef, {
+    const bookInstance = currentBook();
+    if (!viewerRef || !bookInstance) return;
+    const renderInstance = bookInstance.renderTo(viewerRef, {
       flow: "scrolled",
       width: "100%",
       height: "100%",
@@ -73,7 +76,7 @@ export function Reader(props: ReaderProps) {
   const [searchOpened, setSearchOpened] = createSignal(false);
   const [styleOpened, setStyleOpened] = createSignal(false);
 
-  const { hideNotes, toggleNotes } = useEpubViews(instance());
+  const { hideNotes, toggleNotes } = useEpubViews(instance);
   const { put: newNode, remove, current, currentIndexNodes } = useEpubNotes(instance, props.bookId);
 
   const [activeNote, setActiveNote] = createSignal<NewNote>();
@@ -151,7 +154,7 @@ export function Reader(props: ReaderProps) {
     inst.on("markClicked", handleMarkClicked);
     inst.on("selected", handleSelected);
     inst.on("relocated", handleRelocated);
-    
+
     const savedCfi = localStorage.getItem("READ_POSITION_KEY");
     inst.display(savedCfi || undefined);
 
@@ -160,14 +163,26 @@ export function Reader(props: ReaderProps) {
     });
   });
 
+
   return (
+    <Paper ref={viewerRef} bg={backgroundColor()} height={height()} />
+  )
+
+  return (
+
+
     <div class="relative">
-      <ReaderWorkspace showNote={showNote()} height={height()}>
+      <ReaderWorkspace showNote={showNote()} height={600}>
         <ReaderWorkspace.Epub>
+
+          {/* <Paper ref={viewerRef} bg={backgroundColor()}/> */}
           <div
             ref={viewerRef}
             class="h-full w-full"
-            style={{ "background-color": backgroundColor() }}
+            style={{
+              "background-color": backgroundColor(),
+              "min-height": "100px" // 防止高度坍塌
+            }}
           />
         </ReaderWorkspace.Epub>
         <ReaderWorkspace.Notes>
@@ -183,7 +198,7 @@ export function Reader(props: ReaderProps) {
         </ReaderWorkspace.Notes>
       </ReaderWorkspace>
 
-      {/* 顶部菜单 Drawer */}
+
       {menuOpened() && (
         <div class="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 p-2 shadow-md">
           <div class="flex items-center justify-between max-w-7xl mx-auto">
@@ -205,14 +220,14 @@ export function Reader(props: ReaderProps) {
       <EpubTocDrawer
         opened={tocOpened()}
         onClose={() => setTocOpened(false)}
-        book={book()}
+        book={currentBook()}
         onSelectChapter={(href) => { handleJump(href); }}
       />
 
       <EpubSearchDrawer
         opened={searchOpened()}
         onClose={() => setSearchOpened(false)}
-        book={book()}
+        book={currentBook()}
         onSelectResult={(cfi) => handleJump(cfi)}
       />
 

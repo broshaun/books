@@ -14,20 +14,24 @@ export interface BookShelfProps {
 }
 
 export default function BookShelf(props: BookShelfProps) {
-  const booksList = () => props.books || [];
+  const heightStyle = () => {
+    const h = props.height;
+    if (h === undefined) return undefined;
+    return typeof h === "number" ? `${h}px` : h;
+  };
 
   return (
     <div
-      class="flex flex-col gap-2 p-4"
+      class="flex flex-col w-full"
       style={{
-        height: typeof props.height === "number" ? `${props.height}px` : props.height,
+        height: heightStyle(),
         "overflow-y": props.height ? "auto" : undefined,
       }}
     >
       <For
-        each={booksList()}
+        each={props.books || []}
         fallback={
-          <div class="text-sm text-slate-400 text-center py-12">
+          <div class="text-xs text-slate-400 text-center py-12 px-4">
             书架空空如也，请先选择或添加文件夹
           </div>
         }
@@ -36,20 +40,20 @@ export default function BookShelf(props: BookShelfProps) {
           <button
             type="button"
             onClick={() => props.onSelectBook?.(book)}
-            class="flex items-center gap-4 w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors shadow-2xs text-left cursor-pointer"
+            class="flex items-center gap-3 w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border-b border-slate-100 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors text-left cursor-pointer"
           >
             <Show
               when={book.cover}
               fallback={
-                <div class="w-10 h-14 bg-slate-100 dark:bg-zinc-800 rounded flex items-center justify-center text-slate-400 shrink-0">
-                  <IconBook size={20} stroke="1.5" />
+                <div class="w-9 h-12 bg-slate-100 dark:bg-zinc-800 rounded flex items-center justify-center text-slate-400 shrink-0">
+                  <IconBook size={18} stroke="1.5" />
                 </div>
               }
             >
               <img
                 src={book.cover}
                 alt={book.name}
-                class="w-10 h-14 object-cover rounded shrink-0"
+                class="w-9 h-12 object-cover rounded shrink-0"
               />
             </Show>
 

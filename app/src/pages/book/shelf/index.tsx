@@ -2,15 +2,14 @@ import { createSignal, onMount, onCleanup } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
 import { useLocalBooks } from "@/hooks/useLocalBooks";
-import { useAppBar } from "@/hooks/useAppBar";
+import { appBarStore } from "@/components/appBarStore";
 import BookShelf from "./ui/BookShelf";
 import BookDirectoryDrawer from "./ui/BookDirectoryDrawer";
-import { IconMenu2 } from "@tabler/icons-react";
+import { IconMenu2 } from "@tabler/icons-solidjs";
 
 export function Index() {
     const navigate = useNavigate();
     const height = () => useStore2.height;
-    // const { setTitle, setLeft, setRight } = useAppBar();
     const { folders, books, selectFolder, addFolder, delFolder } = useLocalBooks();
     const [bookDir, setBookDir] = createSignal(false);
 
@@ -23,17 +22,15 @@ export function Index() {
     };
 
     onMount(() => {
-        // setLeft(
-        //   <button
-        //     type="button"
-        //     onClick={() => setBookDir(true)}
-        //     class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer"
-        //   >
-        //     <IconMenu2 size={20} />
-        //   </button>
-        // );
-        // setTitle("书架");
-        // setRight(null);
+        appBarStore.set({
+            title: "书架",
+            left: (
+                <button type="button" onClick={() => { setBookDir(true) }}>
+                    <IconMenu2 size={20} />
+                </button>
+            ),
+            right: null
+        });
     });
 
     // onCleanup(() => {
@@ -43,7 +40,7 @@ export function Index() {
     // });
 
 
-    //   return <div>123</div>
+    console.log('height',height())
 
     return (
         <div>

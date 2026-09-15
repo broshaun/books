@@ -1,6 +1,11 @@
-import { useState } from 'react';
-import { Stack, Group, ActionIcon, Tooltip, Text, Box } from '@mantine/core';
-import { IconCopy, IconCheck, IconEdit, IconQuote, IconTrash } from '@tabler/icons-react';
+import { createSignal, Show } from 'solid-js';
+import {
+  IconCopy,
+  IconCheck,
+  IconEdit,
+  IconQuote,
+  IconTrash,
+} from '@tabler/icons-solidjs';
 
 interface EpubNotesViewProps {
   title?: string;
@@ -10,19 +15,14 @@ interface EpubNotesViewProps {
   onDelete?: () => void;
 }
 
-export function EpubNotesView({
-  title,
-  subtitleValue,
-  note,
-  onEditClick,
-  onDelete,
-}: EpubNotesViewProps) {
-  const [copied, setCopied] = useState(false);
+export function EpubNotesView(props: EpubNotesViewProps) {
+  const [copied, setCopied] = createSignal(false);
 
   const handleCopy = async () => {
-    if (!subtitleValue) return;
+    const text = props.subtitleValue;
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(subtitleValue);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (err) {
@@ -31,68 +31,70 @@ export function EpubNotesView({
   };
 
   return (
-    <Stack h="100%" p="sm" gap="xs" style={{ boxSizing: 'border-box' }}>
-      <Group justify="space-between" align="center" wrap="nowrap" h={24}>
-        <Text fw={700} size="sm" truncate style={{ flex: 1 }}>
-          {title || '读书笔记'}
-        </Text>
-        <Group gap={4} style={{ flexShrink: 0 }}>
-          <Tooltip label="切换为编辑模式" withArrow>
-            <ActionIcon variant="subtle" size="xs" onClick={onEditClick}>
-              <IconEdit size={14} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="删除笔记" withArrow>
-            <ActionIcon variant="subtle" color="red" size="xs" onClick={onDelete}>
+    <div class="h-full p-3 flex flex-col gap-2 box-border bg-white dark:bg-zinc-900">
+      {/* 顶部标题与操作按钮区 */}
+      <div class="flex items-center justify-between h-6 gap-2">
+        <span class="font-bold text-sm truncate flex-1 text-slate-800 dark:text-slate-100">
+          {props.title || '读书笔记'}
+        </span>
+        <div class="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={props.onEditClick}
+            class="p-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-slate-500 dark:text-slate-400 cursor-pointer"
+            title="切换为编辑模式"
+          >
+            <IconEdit size={14} />
+          </button>
+          <Show when={props.onDelete}>
+            <button
+              type="button"
+              onClick={props.onDelete}
+              class="p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors text-red-500 cursor-pointer"
+              title="删除笔记"
+            >
               <IconTrash size={14} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
-      </Group>
+            </button>
+          </Show>
+        </div>
+      </div>
 
-      {subtitleValue && (
-        <Box
-          px="xs"
-          py={4}
-          style={{
-            borderRadius: 'var(--mantine-radius-sm)',
-            border: '1px solid var(--mantine-color-default-border)',
-            backgroundColor: 'var(--mantine-color-default-hover)',
-          }}
+      {/* 引用内容悬浮栏 */}
+      <Show when={props.subtitleValue}>
+        <div class="px-2.5 py-1 rounded-md border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/40 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5 flex-1 min-w-0">
+            <IconQuote size={12} class="shrink-0 text-slate-400" />
+            <span class="text-xs truncate text-slate-500 dark:text-slate-400 flex-1">
+              {props.subtitleValue}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopy}
+            class="p-1 rounded hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 transition-colors text-slate-500 dark:text-slate-400 shrink-0 cursor-pointer"
+            title={copied() ? '已复制' : '复制引用'}
+          >
+            <Show when={copied()} fallback={<IconCopy size={12} />}>
+              <IconCheck size={12} class="text-teal-600 dark:text-teal-400" />
+            </Show>
+          </button>
+        </div>
+      </Show>
+
+      {/* 笔记正文可滚动展示框 */}
+      <div class="flex-1 p-2.5 rounded-md border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/40 overflow-y-auto text-[13px] leading-[1.5] whitespace-pre-wrap break-words text-slate-700 dark:text-slate-200">
+        <Show
+          when={props.note}
+          fallback={
+            <span class="text-xs text-slate-400">
+              暂无内容，点击右上角编辑图标开始编写...
+            </span>
+          }
         >
-          <Group justify="space-between" align="center" wrap="nowrap" gap="xs">
-            <Group gap={4} align="center" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-              <IconQuote size={12} style={{ flexShrink: 0, color: 'var(--mantine-color-dimmed)' }} />
-              <Text size="xs" c="dimmed" truncate style={{ flex: 1 }}>
-                {subtitleValue}
-              </Text>
-            </Group>
-            <Tooltip label={copied ? '已复制' : '复制引用'} withArrow>
-              <ActionIcon variant="subtle" size="xs" onClick={handleCopy} style={{ flexShrink: 0 }}>
-                {copied ? <IconCheck size={12} color="teal" /> : <IconCopy size={12} />}
-              </ActionIcon>
-            </Tooltip>
-          </Group>
-        </Box>
-      )}
-
-      <Box
-        p="xs"
-        style={{
-          flex: 1,
-          borderRadius: 'var(--mantine-radius-sm)',
-          border: '1px solid var(--mantine-color-default-border)',
-          backgroundColor: 'var(--mantine-color-default-hover)',
-          overflowY: 'auto',
-          fontSize: '13px',
-          lineHeight: '1.5',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-        }}
-      >
-        {note || <Text c="dimmed" size="xs">暂无内容，点击右上角编辑图标开始编写...</Text>}
-      </Box>
-    </Stack>
+          {props.note}
+        </Show>
+      </div>
+    </div>
   );
 }
 

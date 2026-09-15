@@ -1,7 +1,7 @@
-import { createEffect, Show, For } from "solid-js";
+import { createEffect, Show, For, type JSX } from "solid-js";
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/solid-router";
-import { IconBooks, IconUserCircle, IconHome } from "@tabler/icons-react";
-import { useAppBar } from "@/hooks/useAppBar";
+import { IconBooks, IconUserCircle, IconHome } from "@tabler/icons-solidjs";
+import { appBarStore } from "@/components/appBarStore";
 import { AppBar } from "@/components/AppBar";
 import { useStore2 } from "@/hooks/useStore2";
 import { winSize } from "@/lib/winSize";
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/book")({
 
 interface ItemProps {
   label: string;
-  Icon: any;
+  icon: JSX.Element; // 规范类型，告别 any
   onClick?: () => void;
   badge?: boolean | number;
 }
@@ -27,7 +27,7 @@ function Item(props: ItemProps) {
       class="flex flex-col items-center justify-center h-full w-full bg-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
     >
       <div class="relative flex items-center justify-center">
-        <props.Icon size={20} />
+        {props.icon}
         <Show when={props.badge}>
           <span class="absolute -top-1 -right-1 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-zinc-900" />
         </Show>
@@ -39,45 +39,45 @@ function Item(props: ItemProps) {
 
 function Layout() {
   const navigate = useNavigate();
-  const appBar = useAppBar();
   const safety = useSafety();
-  const size = winSize();
+  const { height } = winSize();
 
   createEffect(() => {
-    useStore2.setHeight(size.height - 100 - safety.bottom - safety.top);
+    useStore2.setHeight(height - 100 - safety.bottom - safety.top);
   });
 
   const visibleItems = [
     {
       key: "home",
       label: "主页",
-      Icon: IconHome,
+      icon: <IconHome size={20} />,
       onClick: () => {
-        appBar.setTitle("主页");
+        appBarStore.set({ title: "主页" });
         navigate({ to: "/book/shelf" });
       },
     },
     {
       key: "books",
       label: "书架",
-      Icon: IconBooks,
+      icon: <IconBooks size={20} />,
       onClick: () => {
-        appBar.setTitle("书架");
+        appBarStore.set({ title: "书架" });
         navigate({ to: "/book/shelf" });
       },
     },
     {
       key: "self",
       label: "我的",
-      Icon: IconUserCircle,
+      icon: <IconUserCircle size={20} />,
       onClick: () => {
-        appBar.setTitle("我的");
+        appBarStore.set({ title: "我的" });
       },
     },
   ];
 
+  // return  <Outlet />
 
-  return   <Outlet/>
+  console.log('height',height)
 
   return (
     <AppShell
@@ -85,15 +85,15 @@ function Layout() {
       footer={{ height: 50 + safety.bottom }}
     >
       <AppShell.Header pt={50 + safety.top}>
-        <AppBar title={appBar.title}>
-          <AppBar.Left enable={!!appBar.Left} icon={appBar.Left} />
-          <AppBar.Right enable={!!appBar.Right} icon={appBar.Right} />
-        </AppBar>
+        <AppBar
+          title={appBarStore.title}
+          left={appBarStore.left}
+          right={appBarStore.right}
+        />
       </AppShell.Header>
 
       <AppShell.Main>
-        {/* <Outlet /> */}
-        <div>123</div>
+        <Outlet />
       </AppShell.Main>
 
       <AppShell.Footer pb={50 + safety.bottom}>
@@ -101,7 +101,7 @@ function Layout() {
           <For each={visibleItems}>
             {(item) => (
               <div class="flex-1 h-full">
-                <Item label={item.label} Icon={item.Icon} onClick={item.onClick} />
+                <Item label={item.label} icon={item.icon} onClick={item.onClick} />
               </div>
             )}
           </For>

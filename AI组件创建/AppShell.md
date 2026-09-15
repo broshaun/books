@@ -1,12 +1,12 @@
 ## 依赖环境与严格导入规范
 1. solid-js: "^1.9.15"
-2. @tabler/icons-react: ^3.20.0
+2. @tabler/icons-solidjs: ^3.20.0
 3. tailwindcss: "^4.3.3"
 4. typescript: ^6.0.3
 
 ## UI组件开发强制规范
 1. 使用 **Tailwind CSS + HTML** 编写 Solid 组件，不使用其他样式方案。
-2. 图标统一使用 `@tabler/icons-react`，尺寸与颜色一律通过 `props` 控制。
+2. 图标统一使用 `@tabler/icons-solidjs`，尺寸与颜色一律通过 `props` 控制。
 3. 组件必须**独立、自包含**，仅通过 Props 驱动渲染，不依赖外部状态或副作用。
 4. 布局遵循**移动端优先、紧凑留白**的设计原则。
 

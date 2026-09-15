@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Stack, Textarea, TextInput, Group, ActionIcon, Tooltip, ColorSwatch, Text, Popover, Box } from '@mantine/core';
-import { IconCopy, IconUnderline, IconCheck, IconQuote, IconTrash } from '@tabler/icons-react';
+import { createSignal, createEffect, For, Show } from 'solid-js';
+import {
+  IconCopy,
+  IconUnderline,
+  IconCheck,
+  IconQuote,
+  IconTrash,
+} from '@tabler/icons-solidjs';
 
 export interface NoteItem {
   book: string;
@@ -44,27 +49,32 @@ const getInitialNote = (data?: NoteItem | null, notes?: NoteItem | null): NoteIt
   };
 };
 
-export function EpubNotesEdit({ data, notes, onNoteChange, onDelete }: EpubNotesEditProps) {
-  const [currentNote, setCurrentNote] = useState<NoteItem>(() => getInitialNote(data, notes));
-  const [copied, setCopied] = useState(false);
-  const [popoverOpened, setPopoverOpened] = useState(false);
+export function EpubNotesEdit(props: EpubNotesEditProps) {
+  const [currentNote, setCurrentNote] = createSignal<NoteItem>(
+    getInitialNote(props.data, props.notes)
+  );
+  const [copied, setCopied] = createSignal(false);
+  const [popoverOpened, setPopoverOpened] = createSignal(false);
 
-  useEffect(() => {
-    setCurrentNote(getInitialNote(data, notes));
-  }, [data, notes]);
+  createEffect(() => {
+    setCurrentNote(getInitialNote(props.data, props.notes));
+  });
 
   const handleFieldChange = (fields: Partial<NoteItem>) => {
-    const updated = { ...currentNote, ...fields, updatedAt: Date.now() };
+    const updated: NoteItem = { ...currentNote(), ...fields, updatedAt: Date.now() };
     setCurrentNote(updated);
-    onNoteChange(updated);
+    props.onNoteChange(updated);
   };
 
-  const selectedColorObj = HIGHLIGHT_COLORS.find((c) => c.bg === (currentNote.color || HIGHLIGHT_COLORS[0].bg)) || HIGHLIGHT_COLORS[0];
+  const selectedColorObj = () =>
+    HIGHLIGHT_COLORS.find((c) => c.bg === (currentNote().color || HIGHLIGHT_COLORS[0].bg)) ||
+    HIGHLIGHT_COLORS[0];
 
   const handleCopy = async () => {
-    if (!currentNote.text) return;
+    const text = currentNote().text;
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(currentNote.text);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (err) {
@@ -73,113 +83,125 @@ export function EpubNotesEdit({ data, notes, onNoteChange, onDelete }: EpubNotes
   };
 
   return (
-    <Stack h="100%" p="md" gap="sm" style={{ boxSizing: 'border-box' }}>
-      <Group justify="space-between" align="center" wrap="nowrap" gap="xs">
-        <TextInput
-          style={{ flex: 1, minWidth: 0 }}
-          variant="unstyled"
+    <div class="h-full p-4 flex flex-col gap-3 box-border bg-white dark:bg-zinc-900">
+      {/* 顶部标题栏 & 删除按钮 */}
+      <div class="flex items-center justify-between gap-2">
+        <input
+          type="text"
           placeholder="输入标题..."
-          value={currentNote.title || ''}
-          onChange={(e) => handleFieldChange({ title: e.currentTarget.value })}
-          styles={{ input: { fontWeight: 700, fontSize: '18px', textAlign: 'center', color: 'var(--mantine-color-text)', padding: 0, minHeight: 'auto' } }}
+          value={currentNote().title || ''}
+          onInput={(e) => handleFieldChange({ title: e.currentTarget.value })}
+          class="w-full font-bold text-lg text-center bg-transparent border-none outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
         />
-
-        <Tooltip label="删除笔记" withArrow>
-          <ActionIcon
-            variant="subtle"
-            color="red"
-            size="sm"
-            style={{ flexShrink: 0 }}
-            onClick={() => currentNote.cfiRange && onDelete?.(currentNote.cfiRange)}
+        <Show when={props.onDelete}>
+          <button
+            type="button"
+            title="删除笔记"
+            onClick={() => {
+              const range = currentNote().cfiRange;
+              if (range) props.onDelete?.(range);
+            }}
+            class="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 cursor-pointer shrink-0 transition-colors"
           >
             <IconTrash size={16} />
-          </ActionIcon>
-        </Tooltip>
-      </Group>
+          </button>
+        </Show>
+      </div>
 
-      {currentNote.text && (
-        <Box
-          px="xs"
-          py={6}
-          style={{
-            borderRadius: 'var(--mantine-radius-sm)',
-            border: '1px solid var(--mantine-color-default-border)',
-            backgroundColor: 'var(--mantine-color-default-hover)',
-          }}
-        >
-          <Group justify="space-between" align="center" wrap="nowrap" gap="xs">
-            <Group gap={6} align="flex-start" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-              <IconQuote size={14} style={{ marginTop: 2, flexShrink: 0, color: 'var(--mantine-color-dimmed)' }} />
-              <Text size="xs" c="dimmed" lineClamp={2} style={{ wordBreak: 'break-word', flex: 1 }}>
-                {currentNote.text}
-              </Text>
-            </Group>
+      {/* 引用内容卡片区域 */}
+      <Show when={currentNote().text}>
+        <div class="px-3 py-2 rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/40 flex items-center justify-between gap-2">
+          <div class="flex items-start gap-2 flex-1 min-w-0">
+            <IconQuote size={14} class="mt-0.5 shrink-0 text-slate-400" />
+            <p
+              class="text-xs line-clamp-2 leading-relaxed text-slate-700 dark:text-slate-300 flex-1 break-words rounded px-1 py-0.5"
+              style={{
+                background: currentNote().color || 'transparent',
+                'text-decoration': currentNote().isUnderline ? 'underline' : 'none',
+              }}
+            >
+              {currentNote().text}
+            </p>
+          </div>
 
-            <Group gap={4} style={{ flexShrink: 0 }}>
-              <Popover opened={popoverOpened} onChange={setPopoverOpened} position="bottom-end" withArrow>
-                <Popover.Target>
-                  <Tooltip label="选择高亮颜色" withArrow>
-                    <ActionIcon variant="subtle" size="xs" onClick={() => setPopoverOpened((o) => !o)}>
-                      <ColorSwatch color={selectedColorObj.bg} size={14} />
-                    </ActionIcon>
-                  </Tooltip>
-                </Popover.Target>
-                <Popover.Dropdown p="xs">
-                  <Stack gap="xs">
-                    <Text size="xs" fw={700} c="dimmed">高亮色彩</Text>
-                    <Group gap={6}>
-                      {HIGHLIGHT_COLORS.map((c) => (
-                        <ColorSwatch
-                          key={c.id}
-                          color={c.bg}
-                          size={20}
-                          style={{
-                            cursor: 'pointer',
-                            outline: selectedColorObj.id === c.id ? '2px solid #228be6' : 'none',
-                          }}
+          {/* 操作工具栏：颜色盘、下划线、复制 */}
+          <div class="flex items-center gap-1 shrink-0 relative">
+            {/* 颜色选择 Popover */}
+            <div class="relative">
+              <button
+                type="button"
+                title="选择高亮颜色"
+                onClick={() => setPopoverOpened(!popoverOpened())}
+                class="w-4 h-4 rounded-full border border-black/20 cursor-pointer transition-transform hover:scale-110"
+                style={{ 'background-color': selectedColorObj().bg }}
+              />
+
+              <Show when={popoverOpened()}>
+                <div class="absolute right-0 top-full mt-2 p-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl shadow-xl z-20 flex flex-col gap-1.5 min-w-[120px]">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    高亮色彩
+                  </span>
+                  <div class="flex items-center gap-1.5">
+                    <For each={HIGHLIGHT_COLORS}>
+                      {(c) => (
+                        <button
+                          type="button"
+                          title={c.name}
                           onClick={() => {
                             handleFieldChange({ color: c.bg });
                             setPopoverOpened(false);
                           }}
+                          class="w-5 h-5 rounded-full border border-black/10 cursor-pointer transition-transform hover:scale-115"
+                          style={{
+                            'background-color': c.bg,
+                            outline: selectedColorObj().id === c.id ? '2px solid #3b82f6' : 'none',
+                            'outline-offset': '1px',
+                          }}
                         />
-                      ))}
-                    </Group>
-                  </Stack>
-                </Popover.Dropdown>
-              </Popover>
+                      )}
+                    </For>
+                  </div>
+                </div>
+              </Show>
+            </div>
 
-              <Tooltip label={currentNote.isUnderline ? '取消下划线' : '添加下划线'} withArrow>
-                <ActionIcon
-                  variant={currentNote.isUnderline ? 'filled' : 'subtle'}
-                  color={currentNote.isUnderline ? 'blue' : 'gray'}
-                  size="xs"
-                  onClick={() => handleFieldChange({ isUnderline: !currentNote.isUnderline })}
-                >
-                  <IconUnderline size={14} />
-                </ActionIcon>
-              </Tooltip>
+            {/* 下划线控制 */}
+            <button
+              type="button"
+              title={currentNote().isUnderline ? '取消下划线' : '添加下划线'}
+              onClick={() => handleFieldChange({ isUnderline: !currentNote().isUnderline })}
+              class={`p-1 rounded cursor-pointer transition-colors ${
+                currentNote().isUnderline
+                  ? 'bg-blue-500 text-white'
+                  : 'hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              <IconUnderline size={14} />
+            </button>
 
-              <Tooltip label={copied ? '已复制' : '复制引用'} withArrow>
-                <ActionIcon variant="subtle" size="xs" onClick={handleCopy}>
-                  {copied ? <IconCheck size={14} color="teal" /> : <IconCopy size={14} />}
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-          </Group>
-        </Box>
-      )}
+            {/* 复制按钮 */}
+            <button
+              type="button"
+              title={copied() ? '已复制' : '复制引用'}
+              onClick={handleCopy}
+              class="p-1 rounded hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 transition-colors text-slate-500 dark:text-slate-400 cursor-pointer"
+            >
+              <Show when={copied()} fallback={<IconCopy size={14} />}>
+                <IconCheck size={14} class="text-teal-600 dark:text-teal-400" />
+              </Show>
+            </button>
+          </div>
+        </div>
+      </Show>
 
-      <Textarea
+      {/* 笔记心得输入文本域 */}
+      <textarea
         placeholder="在此记录读书心得..."
-        value={currentNote.content || ''}
-        onChange={(e) => handleFieldChange({ content: e.currentTarget.value })}
-        style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-        styles={{
-          wrapper: { flex: 1, display: 'flex' },
-          input: { flex: 1, height: '100%', resize: 'none', fontSize: '14px', lineHeight: '1.6' },
-        }}
+        value={currentNote().content || ''}
+        onInput={(e) => handleFieldChange({ content: e.currentTarget.value })}
+        class="flex-1 w-full p-3 rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/40 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/40"
       />
-    </Stack>
+    </div>
   );
 }
 

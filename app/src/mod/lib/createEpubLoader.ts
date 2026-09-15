@@ -17,6 +17,5 @@ export function createEpubLoader() {
 
   return {
     openBook,
-
   };
 }

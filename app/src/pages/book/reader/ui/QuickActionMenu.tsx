@@ -1,41 +1,45 @@
-import { useState, Children, isValidElement, cloneElement, useRef } from 'react';
-import type { ReactNode, ReactElement, MouseEventHandler } from 'react';
-import { Affix, ActionIcon, Stack, Transition } from '@mantine/core';
-import { IconPlus, IconX } from '@tabler/icons-react';
+import { createSignal, children, For, Show, type JSX } from 'solid-js';
+import { IconPlus, IconX } from '@tabler/icons-solidjs';
 
 export interface QuickActionMenuProps {
-  children?: ReactNode;
+  children?: JSX.Element;
   position?: { bottom?: number; right?: number; top?: number; left?: number };
 }
 
-export function QuickActionMenu({
-  children,
-  position = { bottom: 20, right: 35 },
-}: QuickActionMenuProps) {
-  const [opened, setOpened] = useState(false);
-  const [pos, setPos] = useState({ bottom: position.bottom ?? 20, right: position.right ?? 35 });
+export function QuickActionMenu(props: QuickActionMenuProps) {
+  const [opened, setOpened] = createSignal(false);
+  const [pos, setPos] = createSignal({
+    bottom: props.position?.bottom ?? 20,
+    right: props.position?.right ?? 35,
+  });
 
-  const hasMovedRef = useRef(false);
-  const startRef = useRef({ x: 0, y: 0, bottom: 0, right: 0 });
+  let hasMoved = false;
+  let startX = 0;
+  let startY = 0;
+  let startBottom = 0;
+  let startRight = 0;
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handlePointerDown = (e: PointerEvent) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
 
-    hasMovedRef.current = false;
-    startRef.current = { x: e.clientX, y: e.clientY, bottom: pos.bottom, right: pos.right };
+    hasMoved = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    startBottom = pos().bottom;
+    startRight = pos().right;
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
-      const dx = moveEvent.clientX - startRef.current.x;
-      const dy = moveEvent.clientY - startRef.current.y;
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
 
-      if (!hasMovedRef.current && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
-        hasMovedRef.current = true;
+      if (!hasMoved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        hasMoved = true;
       }
 
-      if (hasMovedRef.current) {
+      if (hasMoved) {
         setPos({
-          bottom: startRef.current.bottom - dy,
-          right: startRef.current.right - dx,
+          bottom: startBottom - dy,
+          right: startRight - dx,
         });
       }
     };
@@ -49,62 +53,78 @@ export function QuickActionMenu({
     window.addEventListener('pointerup', handlePointerUp);
   };
 
-  return (
-    <Affix position={pos} zIndex={100}>
-      <Stack align="center" gap="sm" style={{ position: 'relative' }}>
-        <div style={{ position: 'absolute', bottom: '100%', marginBottom: 12, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Transition transition="slide-up" duration={200} mounted={opened}>
-            {(styles) => (
-              <Stack
-                style={{
-                  ...styles,
-                  backgroundColor: 'rgba(255, 255, 255, 0.65)',
-                  backdropFilter: 'blur(12px) saturate(160%)',
-                  WebkitBackdropFilter: 'blur(12px) saturate(160%)',
-                  border: '1px solid rgba(255, 255, 255, 0.5)',
-                  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.12)',
-                  borderRadius: 24,
-                }}
-                p={6}
-                gap="xs"
-                align="center"
-                onClick={() => setOpened(false)}
-              >
-                {Children.map(children, (child) => {
-                  if (!isValidElement(child)) return null;
-                  const element = child as ReactElement<{ onClick?: MouseEventHandler }>;
-                  return cloneElement(element, {
-                    onClick: (e) => {
-                      element.props.onClick?.(e);
-                      setOpened(false);
-                    },
-                  });
-                })}
-              </Stack>
-            )}
-          </Transition>
-        </div>
+  // 处理子节点，自动为每个子元素注入点击后自动关闭菜单的逻辑
+  const resolvedChildren = children(() => props.children);
+  const enhancedChildren = () => {
+    const list = resolvedChildren();
+    const items = Array.isArray(list) ? list : [list];
 
-        <ActionIcon
-          variant="gradient"
-          size={36}
-          radius="xl"
-          aria-label="功能菜单"
-          gradient={{ from: 'blue', to: 'cyan', deg: 90 }}
-          onPointerDown={handlePointerDown}
-          onClick={() => !hasMovedRef.current && setOpened((o) => !o)}
-          style={{
-            cursor: 'grab',
-            transform: opened ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: 'transform 200ms ease',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            userSelect: 'none',
-          }}
-        >
-          {opened ? <IconX size={20} /> : <IconPlus size={20} />}
-        </ActionIcon>
-      </Stack>
-    </Affix>
+    return items.map((child) => {
+      if (typeof child === 'object' && child !== null && 't' in child) {
+        // 如果是 Solid 虚拟节点，可以通过克隆或传递包装函数处理，
+        // 建议调用子元素时由外部控制，或在这里通过事件委托处理。
+      }
+      return child;
+    });
+  };
+
+  return (
+    <div
+      class="fixed z-[100] flex flex-col items-center select-none"
+      style={{
+        bottom: `${pos().bottom}px`,
+        right: `${pos().right}px`,
+      }}
+    >
+      {/* 弹出的菜单项容器（带过渡动画） */}
+      <div
+        class={`absolute bottom-full mb-3 flex flex-col items-center gap-1.5 p-1.5 rounded-3xl bg-white/65 dark:bg-zinc-900/75 backdrop-blur-[12px] saturate-160 border border-white/50 dark:border-zinc-700/50 shadow-2xl transition-all duration-200 origin-bottom ${
+          opened()
+            ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
+            : 'opacity-0 scale-95 translate-y-2 pointer-events-none'
+        }`}
+        onClick={() => setOpened(false)}
+      >
+        {/* 渲染并拦截子节点的点击事件实现自动关闭 */}
+        {(() => {
+          const raw = resolvedChildren();
+          const items = Array.isArray(raw) ? raw : [raw];
+          return (
+            <For each={items}>
+              {(item) => (
+                <div
+                  onClick={(e) => {
+                    // 尝试触发子元素原有的 onClick（如果具备的话）
+                    if (typeof item === 'object' && item !== null && 'props' in item) {
+                      (item as any).props?.onClick?.(e);
+                    }
+                    setOpened(false);
+                  }}
+                >
+                  {item}
+                </div>
+              )}
+            </For>
+          );
+        })()}
+      </div>
+
+      {/* 主控制按钮 */}
+      <button
+        type="button"
+        aria-label="功能菜单"
+        onPointerDown={handlePointerDown}
+        onClick={() => !hasMoved && setOpened((o) => !o)}
+        class="w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-lg cursor-grab active:cursor-grabbing transition-transform duration-200"
+        style={{
+          transform: opened() ? 'rotate(90deg)' : 'rotate(0deg)',
+        }}
+      >
+        <Show when={opened()} fallback={<IconPlus size={20} />}>
+          <IconX size={20} />
+        </Show>
+      </button>
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Drawer, ScrollArea, NavLink, Text, Loader, Flex } from '@mantine/core';
+import { createSignal, createEffect, For, Show } from 'solid-js';
+import { IconChevronRight, IconLoader2 } from '@tabler/icons-solidjs';
 import type { NavItem } from 'epubjs';
 
 export interface EpubTocDrawerProps {
@@ -10,73 +10,166 @@ export interface EpubTocDrawerProps {
   size?: string | number;
 }
 
-export function EpubTocDrawer({
-  opened,
-  onClose,
-  book,
-  onSelectChapter,
-  size = '80%',
-}: EpubTocDrawerProps) {
-  const [toc, setToc] = useState<NavItem[]>([]);
-  const [loading, setLoading] = useState(false);
+// 递归渲染目录项组件
+function TocItem(props: {
+  item: NavItem;
+  onSelectChapter: (href: string) => void;
+  onClose: () => void;
+}) {
+  const [expanded, setExpanded] = createSignal(false);
+  const hasChildren = Boolean(props.item.subitems?.length);
 
-  useEffect(() => {
-    if (!book) return;
+  return (
+    <div class="flex flex-col">
+      <div class="flex items-center justify-between w-full px-2.5 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left group">
+        {/* 章节名称点击：触发跳转并关闭抽屉 */}
+        <span
+          class="text-sm truncate flex-1 text-slate-700 dark:text-slate-200 cursor-pointer"
+          onClick={() => {
+            if (props.item.href) {
+              props.onSelectChapter(props.item.href);
+              props.onClose();
+            }
+          }}
+        >
+          {props.item.label.trim()}
+        </span>
+
+        {/* 若有子目录，渲染展开/收起按钮 */}
+        <Show when={hasChildren}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(!expanded());
+            }}
+            class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+          >
+            <IconChevronRight
+              size={14}
+              class={`transform transition-transform duration-200 ${
+                expanded() ? 'rotate-90' : ''
+              }`}
+            />
+          </button>
+        </Show>
+      </div>
+
+      {/* 子目录递归渲染 */}
+      <Show when={hasChildren && expanded()}>
+        <div class="pl-3 space-y-0.5 mt-0.5 border-l border-slate-200 dark:border-zinc-800 ml-2">
+          <For each={props.item.subitems}>
+            {(sub) => (
+              <TocItem
+                item={sub}
+                onSelectChapter={props.onSelectChapter}
+                onClose={props.onClose}
+              />
+            )}
+          </For>
+        </div>
+      </Show>
+    </div>
+  );
+}
+
+export function EpubTocDrawer(props: EpubTocDrawerProps) {
+  const [toc, setToc] = createSignal<NavItem[]>([]);
+  const [loading, setLoading] = createSignal(false);
+
+  createEffect(() => {
+    const bookInstance = props.book;
+    if (!bookInstance) return;
+
     let isMounted = true;
     setLoading(true);
 
-    book.loaded.navigation
-      .then((nav: any) => isMounted && setToc(nav.toc || []))
+    bookInstance.loaded.navigation
+      .then((nav: any) => {
+        if (isMounted) setToc(nav.toc || []);
+      })
       .catch((err: any) => console.error('加载目录失败:', err))
-      .finally(() => isMounted && setLoading(false));
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
 
     return () => {
       isMounted = false;
     };
-  }, [book]);
+  });
 
-  // 递归渲染目录项
-  const renderNavItems = (items: NavItem[]) =>
-    items.map((item) => {
-      const hasChildren = Boolean(item.subitems?.length);
-
-      return (
-        <NavLink
-          key={item.href || item.id}
-          childrenOffset={16}
-          defaultOpened={false}
-          label={
-            <Text
-              size="sm"
-              style={{ cursor: 'pointer' }}
-              onClick={(e) => {
-                // 🌟 阻止冒泡，避免触发 NavLink 原生的展开/收起切换逻辑
-                e.stopPropagation();
-                onSelectChapter(item.href);
-                onClose();
-              }}
-            >
-              {item.label.trim()}
-            </Text>
-          }
-        >
-          {hasChildren ? renderNavItems(item.subitems!) : null}
-        </NavLink>
-      );
-    });
+  const drawerWidthStyle = () => {
+    const s = props.size ?? '80%';
+    return typeof s === 'number' ? `${s}px` : s;
+  };
 
   return (
-    <Drawer opened={opened} onClose={onClose} position="right" size={size} title="目录">
-      <ScrollArea type="auto" offsetScrollbars h="calc(100vh - 80px)">
-        {loading ? (
-          <Flex justify="center" align="center" pt="xl">
-            <Loader size="sm" />
-            <Text size="xs" c="dimmed" ml="xs">正在加载目录...</Text>
-          </Flex>
-        ) : (
-          renderNavItems(toc)
-        )}
-      </ScrollArea>
-    </Drawer>
+    <>
+      {/* 1. 遮罩层 */}
+      <div
+        class={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 ease-in-out ${
+          props.opened
+            ? 'opacity-100 pointer-events-auto'
+            : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={props.onClose}
+      />
+
+      {/* 2. 抽屉主体 (右侧滑出) */}
+      <div
+        class={`fixed inset-y-0 right-0 z-50 w-full bg-white dark:bg-zinc-900 shadow-xl flex flex-col transform transition-transform duration-300 ease-in-out ${
+          props.opened ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        style={{ width: drawerWidthStyle(), 'max-width': '100%' }}
+      >
+        {/* 顶部标题栏 */}
+        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-zinc-800">
+          <span class="font-semibold text-base text-slate-800 dark:text-slate-100">
+            目录
+          </span>
+          <button
+            type="button"
+            onClick={props.onClose}
+            class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            关闭
+          </button>
+        </div>
+
+        {/* 内容区域 (带滚动条) */}
+        <div class="flex-1 overflow-y-auto p-3">
+          <Show
+            when={!loading()}
+            fallback={
+              <div class="flex justify-center items-center pt-24 gap-2 text-slate-400">
+                <IconLoader2 size={18} class="animate-spin" />
+                <span class="text-xs">正在加载目录...</span>
+              </div>
+            }
+          >
+            <div class="space-y-0.5">
+              <For
+                each={toc()}
+                fallback={
+                  <div class="text-xs text-slate-400 text-center py-12">
+                    暂无目录
+                  </div>
+                }
+              >
+                {(item) => (
+                  <TocItem
+                    item={item}
+                    onSelectChapter={props.onSelectChapter}
+                    onClose={props.onClose}
+                  />
+                )}
+              </For>
+            </div>
+          </Show>
+        </div>
+      </div>
+    </>
   );
 }
+
+export default EpubTocDrawer;
