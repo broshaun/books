@@ -16,8 +16,11 @@ import { ReaderWorkspace } from "./ui/ReaderWorkspace";
 import { EpubNotesEdit } from "./ui/EpubNotesEdit";
 import { EpubNotesCreate } from "./ui/EpubNotesCreate";
 import EpubNotesTimeline from "./ui/EpubNotesTimeline";
-import Paper from "./ui/Paper";
-
+import EpubPaper from "./ui/EpubPaper";
+import Grid from "@/components/Grid";
+import Box from "@/components/Box";
+import Drawer2 from "./ui/Drawer2";
+import LeftDrawer from "./ui/LeftDrawer";
 
 
 interface ReaderProps {
@@ -164,26 +167,49 @@ export function Reader(props: ReaderProps) {
   });
 
 
+
+
+
   return (
-    <Paper ref={viewerRef} bg={backgroundColor()} height={height()} />
+
+
+    
+
+
+    <Box height={height()}>
+
+      <LeftDrawer/>
+
+      <Grid>
+        <Grid.Col span={8}>
+          <EpubPaper ref={viewerRef} bg={backgroundColor()} height={height()} />
+        </Grid.Col>
+
+        <Grid.Col span={4}>
+          {/* {currentSet().has("select") ? (
+          <EpubNotesCreate newNote={activeNote()} onSave={(v) => { newNode(v); opt("mark"); }} />
+        ) : currentSet().has("mark") ? (
+          <EpubNotesEdit notes={current()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
+        ) : currentSet().has("click") ? (
+          <EpubNotesTimeline notes={currentIndexNodes()} onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }} />
+        ) : (
+          <div>无内容</div>
+        )} */}
+        </Grid.Col>
+      </Grid>
+    </Box>
+
   )
 
   return (
 
 
     <div class="relative">
-      <ReaderWorkspace showNote={showNote()} height={600}>
+      <ReaderWorkspace showNote={showNote()}>
         <ReaderWorkspace.Epub>
 
-          {/* <Paper ref={viewerRef} bg={backgroundColor()}/> */}
-          <div
-            ref={viewerRef}
-            class="h-full w-full"
-            style={{
-              "background-color": backgroundColor(),
-              "min-height": "100px" // 防止高度坍塌
-            }}
-          />
+          <EpubPaper ref={viewerRef} bg={backgroundColor()} height={height()} />
+
         </ReaderWorkspace.Epub>
         <ReaderWorkspace.Notes>
           {currentSet().has("select") ? (

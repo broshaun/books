@@ -11,7 +11,9 @@
 
 ## TanStack Router
     pnpm add @tanstack/solid-router @tanstack/solid-router-devtools @tanstack/router-plugin -D
-    pnpm add localforage @tabler/icons-solidjs
+    pnpm add @kobalte/core 
+    pnpm add @corvu/drawer
+    pnpm add localforage @tabler/icons-solidjs clsx tailwind-merge
 
 ## 业务库
     pnpm add epubjs
