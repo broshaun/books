@@ -13,6 +13,7 @@
     pnpm add @tanstack/solid-router @tanstack/solid-router-devtools @tanstack/router-plugin -D
     pnpm add @kobalte/core 
     pnpm add @corvu/drawer
+    pnpm add @corvu/accordion
     pnpm add localforage @tabler/icons-solidjs clsx tailwind-merge
 
 ## 业务库

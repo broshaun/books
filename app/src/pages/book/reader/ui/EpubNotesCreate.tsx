@@ -24,11 +24,11 @@ interface EpubNotesCreateProps {
 }
 
 const HIGHLIGHT_COLORS = [
-  { id: 'yellow', name: '明黄', bg: '#fffa65' },
-  { id: 'purple', name: '淡紫', bg: '#cd84f1' },
-  { id: 'red', name: '浅红', bg: '#ff4d4d' },
-  { id: 'cyan', name: '青蓝', bg: '#7efff5' },
-  { id: 'green', name: '草绿', bg: '#2ed573' },
+  { id: 'yellow', name: '明黄', bg: '#facc15' },
+  { id: 'purple', name: '淡紫', bg: '#c084fc' },
+  { id: 'red', name: '浅红', bg: '#fb7185' },
+  { id: 'cyan', name: '青蓝', bg: '#2dd4bf' },
+  { id: 'green', name: '草绿', bg: '#a3e635' },
 ];
 
 const PREF_COLOR_KEY = 'epub_pref_color';
@@ -44,6 +44,7 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
   });
 
   const [copied, setCopied] = createSignal(false);
+  const [popoverOpened, setPopoverOpened] = createSignal(false);
 
   createEffect(() => {
     setDraft({
@@ -58,9 +59,13 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
 
   const currentColor = () => draft().color || HIGHLIGHT_COLORS[0].bg;
 
+  const selectedColorObj = () =>
+    HIGHLIGHT_COLORS.find((c) => c.bg === currentColor()) || HIGHLIGHT_COLORS[0];
+
   const handleColorChange = (colorBg: string) => {
     localStorage.setItem(PREF_COLOR_KEY, colorBg);
     setDraft((prev) => ({ ...prev, color: colorBg }));
+    setPopoverOpened(false);
   };
 
   const handleCopy = async () => {
@@ -76,89 +81,112 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
   };
 
   return (
-    <div class="h-full p-4 pt-6 flex flex-col gap-4 box-border bg-white dark:bg-zinc-900">
-      {/* 标题输入框 */}
-      <input
-        type="text"
-        placeholder="输入笔记标题..."
-        value={draft().title || ''}
-        onInput={(e) => setDraft((prev) => ({ ...prev, title: e.currentTarget.value }))}
-        class="w-full font-semibold text-lg text-center bg-transparent border-none outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400 opacity-85 focus:opacity-100"
-      />
-
-      <hr class="border-slate-200 dark:border-zinc-800 my-1" />
+    <div class="h-full p-3 flex flex-col gap-2.5 box-border bg-transparent text-stone-900">
+      {/* 顶部标题栏 */}
+      <div class="flex items-center justify-between gap-2 border-b border-stone-300/60 pb-2">
+        <input
+          type="text"
+          placeholder="输入笔记标题..."
+          value={draft().title || ''}
+          onInput={(e) => setDraft((prev) => ({ ...prev, title: e.currentTarget.value }))}
+          class="w-full font-semibold text-sm bg-transparent border-none outline-none text-stone-900 placeholder:text-stone-400"
+        />
+      </div>
 
       <Show when={draft().text}>
-        <div class="flex flex-col gap-3">
-          {/* 颜色选择器组 */}
-          <div class="flex items-center gap-2 px-1">
-            <For each={HIGHLIGHT_COLORS}>
-              {(c) => {
-                const isSelected = currentColor() === c.bg;
-                return (
-                  <button
-                    type="button"
-                    title={c.name}
-                    onClick={() => handleColorChange(c.bg)}
-                    class="w-[18px] h-[18px] rounded-full cursor-pointer transition-transform duration-150 border border-black/10 dark:border-white/10"
-                    style={{
-                      background: c.bg,
-                      transform: isSelected ? 'scale(1.15)' : 'scale(1)',
-                      'box-shadow': isSelected ? '0 0 0 2px var(--color-white, #fff), 0 0 0 4px #3b82f6' : 'none',
-                    }}
-                  />
-                );
-              }}
-            </For>
+        {/* 引用内容卡片（颜色选择器已内嵌到右上角） */}
+        <div class="relative px-3 py-1.5 rounded-lg border border-stone-300/70 bg-stone-50/50 flex items-center justify-between gap-2 transition-all">
+          {/* 左侧高亮颜色指示条 */}
+          <div 
+            class="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full transition-colors duration-200"
+            style={{ background: currentColor() }}
+          />
+
+          <div class="flex items-center gap-2 flex-1 min-w-0 pl-1">
+            <IconQuote size={13} class="shrink-0 text-stone-400" />
+            <p class="text-xs text-stone-700 truncate whitespace-nowrap flex-1 font-medium">
+              {draft().text}
+            </p>
           </div>
 
-          {/* 引用内容卡片 */}
-          <div class="p-3 rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/40">
-            <div class="flex items-start gap-2.5">
-              <IconQuote size={16} class="mt-0.5 shrink-0 text-slate-400" />
-              <p
-                class="text-sm flex-1 text-slate-700 dark:text-slate-200 opacity-90 break-words rounded px-1 py-0.5"
-                style={{ background: currentColor() }}
-              >
-                {draft().text}
-              </p>
-
+          {/* 右侧工具栏：颜色选择器 + 复制按钮 */}
+          <div class="flex items-center gap-1.5 shrink-0 relative">
+            {/* 颜色选择 Popover */}
+            <div class="relative">
               <button
                 type="button"
-                onClick={handleCopy}
-                class="p-1.5 rounded-md hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 transition-colors text-slate-500 dark:text-slate-400 shrink-0 cursor-pointer"
-                title={copied() ? '已复制' : '复制引用'}
+                title="选择高亮颜色"
+                onClick={() => setPopoverOpened(!popoverOpened())}
+                class="p-1 rounded hover:bg-stone-200/60 transition-colors cursor-pointer flex items-center"
               >
-                <Show when={copied()} fallback={<IconCopy size={16} />}>
-                  <IconCheck size={16} class="text-teal-600 dark:text-teal-400" />
-                </Show>
+                <div 
+                  class="w-3.5 h-3.5 rounded-full border border-stone-400 shadow-2xs"
+                  style={{ 'background-color': selectedColorObj().bg }}
+                />
               </button>
+
+              <Show when={popoverOpened()}>
+                <div class="absolute right-0 top-full mt-1.5 p-2 bg-white border border-stone-300 rounded-xl shadow-xl z-20 flex flex-col gap-1.5 min-w-[130px]">
+                  <span class="text-[10px] font-bold text-stone-500 uppercase tracking-wider px-1">
+                    标记高亮色彩
+                  </span>
+                  <div class="flex items-center gap-1.5 px-1">
+                    <For each={HIGHLIGHT_COLORS}>
+                      {(c) => (
+                        <button
+                          type="button"
+                          title={c.name}
+                          onClick={() => handleColorChange(c.bg)}
+                          class="w-4.5 h-4.5 rounded-full border border-stone-400/80 cursor-pointer transition-transform hover:scale-115"
+                          style={{
+                            'background-color': c.bg,
+                            outline: selectedColorObj().id === c.id ? '2px solid #57534e' : 'none',
+                            'outline-offset': '1px',
+                          }}
+                        />
+                      )}
+                    </For>
+                  </div>
+                </div>
+              </Show>
             </div>
-          </div>
 
-          {/* 底部按钮区 */}
-          <div class="flex items-center justify-end gap-2 pt-2">
-            <Show when={props.onCancel}>
-              <button
-                type="button"
-                onClick={props.onCancel}
-                class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              >
-                <IconX size={16} />
-                <span>取消</span>
-              </button>
-            </Show>
+            {/* 复制按钮 */}
             <button
               type="button"
-              onClick={() => props.onSave(draft())}
-              class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white transition-colors cursor-pointer shadow-xs"
+              title={copied() ? '已复制' : '复制引用'}
+              onClick={handleCopy}
+              class="p-1 rounded hover:bg-stone-200/60 transition-colors text-stone-400 hover:text-stone-700 cursor-pointer"
             >
-              <IconDeviceFloppy size={16} />
-              <span>保存</span>
+              <Show when={copied()} fallback={<IconCopy size={13} />}>
+                <IconCheck size={13} class="text-emerald-700" />
+              </Show>
             </button>
           </div>
         </div>
       </Show>
+
+      {/* 底部操作按钮区 */}
+      <div class="flex items-center gap-2 pt-1 shrink-0 mt-auto">
+        <Show when={props.onCancel}>
+          <button
+            type="button"
+            onClick={props.onCancel}
+            class="flex-1 py-1.5 px-3 rounded-lg border border-stone-300/80 hover:bg-stone-100 text-stone-700 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <IconX size={13} />
+            <span>取消</span>
+          </button>
+        </Show>
+        <button
+          type="button"
+          onClick={() => props.onSave(draft())}
+          class="flex-1 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+        >
+          <IconDeviceFloppy size={13} />
+          <span>保存笔记</span>
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { createSignal, createEffect, For, Show } from 'solid-js';
 import { IconChevronRight, IconLoader2 } from '@tabler/icons-solidjs';
+import Drawer from '@corvu/drawer';
 import type { NavItem } from 'epubjs';
 
 export interface EpubTocDrawerProps {
@@ -98,77 +99,77 @@ export function EpubTocDrawer(props: EpubTocDrawerProps) {
     };
   });
 
+  // 计算抽屉宽度
   const drawerWidthStyle = () => {
-    const s = props.size ?? '80%';
+    const s = props.size ?? '380px';
     return typeof s === 'number' ? `${s}px` : s;
   };
 
   return (
-    <>
-      {/* 1. 遮罩层 */}
-      <div
-        class={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 ease-in-out ${
-          props.opened
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={props.onClose}
-      />
+    <Drawer
+      open={props.opened}
+      onOpenChange={(open) => {
+        if (!open) props.onClose();
+      }}
+      side="right"
+    >
+      <Drawer.Portal>
+        {/* 1. 遮罩层：使用 Drawer.Overlay */}
+        <Drawer.Overlay class="fixed inset-0 bg-black/40 z-40 transition-opacity duration-300" />
 
-      {/* 2. 抽屉主体 (右侧滑出) */}
-      <div
-        class={`fixed inset-y-0 right-0 z-50 w-full bg-white dark:bg-zinc-900 shadow-xl flex flex-col transform transition-transform duration-300 ease-in-out ${
-          props.opened ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        style={{ width: drawerWidthStyle(), 'max-width': '100%' }}
-      >
-        {/* 顶部标题栏 */}
-        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-zinc-800">
-          <span class="font-semibold text-base text-slate-800 dark:text-slate-100">
-            目录
-          </span>
-          <button
-            type="button"
-            onClick={props.onClose}
-            class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            关闭
-          </button>
-        </div>
+        {/* 2. 抽屉主体 (右侧滑出) */}
+        <Drawer.Content
+          class="fixed inset-y-0 right-0 z-50 h-full bg-white dark:bg-zinc-900 shadow-xl flex flex-col focus:outline-none"
+          style={{ width: drawerWidthStyle(), 'max-width': '100vw' }}
+        >
+          {/* 顶部标题栏 */}
+          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-zinc-800 shrink-0">
+            <span class="font-semibold text-base text-slate-800 dark:text-slate-100">
+              目录
+            </span>
+            <button
+              type="button"
+              onClick={props.onClose}
+              class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              关闭
+            </button>
+          </div>
 
-        {/* 内容区域 (带滚动条) */}
-        <div class="flex-1 overflow-y-auto p-3">
-          <Show
-            when={!loading()}
-            fallback={
-              <div class="flex justify-center items-center pt-24 gap-2 text-slate-400">
-                <IconLoader2 size={18} class="animate-spin" />
-                <span class="text-xs">正在加载目录...</span>
+          {/* 内容区域 (带滚动条) */}
+          <div class="flex-1 overflow-y-auto p-3">
+            <Show
+              when={!loading()}
+              fallback={
+                <div class="flex justify-center items-center pt-24 gap-2 text-slate-400">
+                  <IconLoader2 size={18} class="animate-spin" />
+                  <span class="text-xs">正在加载目录...</span>
+                </div>
+              }
+            >
+              <div class="space-y-0.5">
+                <For
+                  each={toc()}
+                  fallback={
+                    <div class="text-xs text-slate-400 text-center py-12">
+                      暂无目录
+                    </div>
+                  }
+                >
+                  {(item) => (
+                    <TocItem
+                      item={item}
+                      onSelectChapter={props.onSelectChapter}
+                      onClose={props.onClose}
+                    />
+                  )}
+                </For>
               </div>
-            }
-          >
-            <div class="space-y-0.5">
-              <For
-                each={toc()}
-                fallback={
-                  <div class="text-xs text-slate-400 text-center py-12">
-                    暂无目录
-                  </div>
-                }
-              >
-                {(item) => (
-                  <TocItem
-                    item={item}
-                    onSelectChapter={props.onSelectChapter}
-                    onClose={props.onClose}
-                  />
-                )}
-              </For>
-            </div>
-          </Show>
-        </div>
-      </div>
-    </>
+            </Show>
+          </div>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer>
   );
 }
 

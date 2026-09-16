@@ -3,7 +3,6 @@ import { createSignal, onMount, onCleanup, createEffect, createResource } from "
 import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
 import { useEpubViews } from "./hook/useEpubViews";
-import { useEpubResize } from "./hook/useEpubResize";
 import { useEpubNotes } from "./hook/useEpubNotes";
 import { createEpubLoader } from "@/mod/lib/createEpubLoader";
 import { useCurrentOperation } from "./hook/useCurrentOperation";
@@ -12,15 +11,13 @@ import { EpubSearchDrawer } from "./ui/EpubSearchDrawer";
 import { EpubTocDrawer } from "./ui/EpubTocDrawer";
 import { EpubStyleDrawer } from "./ui/EpubStyleDrawer";
 import { QuickActionMenu } from "./ui/QuickActionMenu";
-import { ReaderWorkspace } from "./ui/ReaderWorkspace";
 import { EpubNotesEdit } from "./ui/EpubNotesEdit";
 import { EpubNotesCreate } from "./ui/EpubNotesCreate";
 import EpubNotesTimeline from "./ui/EpubNotesTimeline";
 import EpubPaper from "./ui/EpubPaper";
-import Grid from "@/components/Grid";
 import Box from "@/components/Box";
-import Drawer2 from "./ui/Drawer2";
-import LeftDrawer from "./ui/LeftDrawer";
+import SplitLayout from "./ui/SplitLayout";
+
 
 
 interface ReaderProps {
@@ -84,7 +81,7 @@ export function Reader(props: ReaderProps) {
 
   const [activeNote, setActiveNote] = createSignal<NewNote>();
   const [showNote, setShowNotes] = createSignal(false);
-  const triggerResize = useEpubResize(() => viewerRef, instance);
+  // const triggerResize = useEpubResize(() => viewerRef, instance);
 
   const handleJump = (cfiOrHref: string) => {
     instance()?.display(cfiOrHref);
@@ -158,6 +155,8 @@ export function Reader(props: ReaderProps) {
     inst.on("selected", handleSelected);
     inst.on("relocated", handleRelocated);
 
+
+
     const savedCfi = localStorage.getItem("READ_POSITION_KEY");
     inst.display(savedCfi || undefined);
 
@@ -166,37 +165,74 @@ export function Reader(props: ReaderProps) {
     });
   });
 
-
+  const triggerResize = () => {
+    const inst = instance();
+    if (inst && viewerRef) {
+      inst.resize(viewerRef.clientWidth, viewerRef.clientHeight);
+    }
+  };
 
 
 
   return (
 
-
-    
-
-
     <Box height={height()}>
+      <SplitLayout bg={backgroundColor()} height={height()}
+        epub={
+          <EpubPaper ref={viewerRef} />
+        }
+        notes={
+          currentSet().has("select") ? (
+            <EpubNotesCreate newNote={activeNote()} onSave={(v) => { newNode(v); opt("mark"); }} />
+          ) : currentSet().has("mark") ? (
+            <EpubNotesEdit notes={current()} onNoteChange={(v) => { newNode(v); }} />
+          ) : currentSet().has("click") ? (
+            <EpubNotesTimeline notes={currentIndexNodes()} onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }} onDelete={(cfiRange) => { remove(cfiRange); }}/>
+          ) : (
+            <div>无内容</div>
+          )
+        }
+      />
 
-      <LeftDrawer/>
+      <EpubTocDrawer
+        opened={tocOpened()}
+        onClose={() => setTocOpened(false)}
+        book={currentBook()}
+        onSelectChapter={(href) => { handleJump(href); }}
+      />
 
-      <Grid>
-        <Grid.Col span={8}>
-          <EpubPaper ref={viewerRef} bg={backgroundColor()} height={height()} />
-        </Grid.Col>
+      <EpubSearchDrawer
+        opened={searchOpened()}
+        onClose={() => setSearchOpened(false)}
+        book={currentBook()}
+        onSelectResult={(cfi) => handleJump(cfi)}
+      />
 
-        <Grid.Col span={4}>
-          {/* {currentSet().has("select") ? (
-          <EpubNotesCreate newNote={activeNote()} onSave={(v) => { newNode(v); opt("mark"); }} />
-        ) : currentSet().has("mark") ? (
-          <EpubNotesEdit notes={current()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
-        ) : currentSet().has("click") ? (
-          <EpubNotesTimeline notes={currentIndexNodes()} onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }} />
-        ) : (
-          <div>无内容</div>
-        )} */}
-        </Grid.Col>
-      </Grid>
+      <EpubStyleDrawer
+        opened={styleOpened()}
+        onClose={() => setStyleOpened(false)}
+        onFontSizeChange={handleFontSizeChange}
+        onBackgroundColorChange={setBackgroundColor}
+      />
+
+      <QuickActionMenu>
+        <button type="button" onClick={() => setMenuOpened((prev) => !prev)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
+          <IconTabs size={20} />
+        </button>
+
+        <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
+          <IconList size={20} />
+        </button>
+
+        <button type="button" onClick={() => { setShowNotes((prev) => !prev); triggerResize(); }} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
+          <IconNotebook size={20} />
+        </button>
+
+        <button type="button" onClick={toggleNotes} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
+          {hideNotes() ? <IconEye size={20} /> : <IconEyeOff size={20} />}
+        </button>
+      </QuickActionMenu>
+
     </Box>
 
   )
@@ -205,24 +241,6 @@ export function Reader(props: ReaderProps) {
 
 
     <div class="relative">
-      <ReaderWorkspace showNote={showNote()}>
-        <ReaderWorkspace.Epub>
-
-          <EpubPaper ref={viewerRef} bg={backgroundColor()} height={height()} />
-
-        </ReaderWorkspace.Epub>
-        <ReaderWorkspace.Notes>
-          {currentSet().has("select") ? (
-            <EpubNotesCreate newNote={activeNote()} onSave={(v) => { newNode(v); opt("mark"); }} />
-          ) : currentSet().has("mark") ? (
-            <EpubNotesEdit notes={current()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
-          ) : currentSet().has("click") ? (
-            <EpubNotesTimeline notes={currentIndexNodes()} onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }} />
-          ) : (
-            <div>无内容</div>
-          )}
-        </ReaderWorkspace.Notes>
-      </ReaderWorkspace>
 
 
       {menuOpened() && (
