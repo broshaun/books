@@ -1,4 +1,4 @@
-import { IconList, IconSearch, IconArrowLeft, IconEyeOff, IconEye, IconTypography, IconNotebook, IconTabs } from "@tabler/icons-solidjs";
+import { IconList, IconSearch, IconArrowLeft, IconEyeOff, IconEye, IconTypography, IconNotebook, IconLetterCase } from "@tabler/icons-solidjs";
 import { createSignal, onMount, onCleanup, createEffect, createResource } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
@@ -38,13 +38,8 @@ export function Reader(props: ReaderProps) {
   const backgroundColor = () => useStore2.backgroundColor;
   const setBackgroundColor = useStore2.setBackgroundColor;
 
+
   const { openBook } = createEpubLoader();
-  let viewerRef!: HTMLDivElement;
-
-  // const [book, setBook] = createSignal<any>(null);
-  const [instance, setInstance] = createSignal<any>(null);
-
-
   const [currentBook] = createResource(
     () => props.bookId,
     async () => {
@@ -56,7 +51,8 @@ export function Reader(props: ReaderProps) {
       return book
     });
 
-
+  let viewerRef!: HTMLDivElement;
+  const [instance, setInstance] = createSignal<any>(null);
   createEffect(() => {
     const bookInstance = currentBook();
     if (!viewerRef || !bookInstance) return;
@@ -69,40 +65,31 @@ export function Reader(props: ReaderProps) {
     setInstance(renderInstance);
   });
 
-  const { currentSet, opt } = useCurrentOperation<string>([], { interval: 100 });
-
-  const [menuOpened, setMenuOpened] = createSignal(false);
+  const { currentSet, opt, clear } = useCurrentOperation<string>([], { interval: 100 });
   const [tocOpened, setTocOpened] = createSignal(false);
   const [searchOpened, setSearchOpened] = createSignal(false);
   const [styleOpened, setStyleOpened] = createSignal(false);
-
   const { hideNotes, toggleNotes } = useEpubViews(instance);
   const { put: newNode, remove, current, currentIndexNodes } = useEpubNotes(instance, props.bookId);
-
   const [activeNote, setActiveNote] = createSignal<NewNote>();
-  const [showNote, setShowNotes] = createSignal(false);
-  // const triggerResize = useEpubResize(() => viewerRef, instance);
+
+
 
   const handleJump = (cfiOrHref: string) => {
     instance()?.display(cfiOrHref);
-    setMenuOpened(false);
   };
 
-  const handleClick = (click: string) => {
-    if (click === "mouseup" && currentSet().has("select")) {
-      opt("select");
-    } else if (click === "mousedown" && currentSet().has("mark")) {
-      opt("mark");
-    } else {
+
+  const handleMouseUp = () => {
+    const hasSelection = currentSet().has("select");
+    if (!hasSelection) {
       opt("click");
     }
-    setStyleOpened(false);
-    setMenuOpened(false);
   };
 
   const handleMarkClicked = (cfiRange: string) => {
     opt("mark");
-    setShowNotes(true);
+    console.log('选中文字', cfiRange)
   };
 
   const handleSelected = (cfiRange: string, contents: any) => {
@@ -110,7 +97,6 @@ export function Reader(props: ReaderProps) {
     const text = instance()?.getRange(cfiRange)?.toString() || "";
     if (!text.trim()) return;
     opt("select");
-    setShowNotes(true);
     const newNoteItem: NewNote = {
       book: props.bookId,
       index: index,
@@ -119,7 +105,6 @@ export function Reader(props: ReaderProps) {
       updatedAt: Date.now(),
     };
     setActiveNote(newNoteItem);
-    setShowNotes(true);
   };
 
   const handleFontSizeChange = (size: number) => {
@@ -146,8 +131,8 @@ export function Reader(props: ReaderProps) {
 
     const contentHandler = (contents: any) => {
       const doc = contents.document;
-      doc.addEventListener("mousedown", () => handleClick("mousedown"));
-      doc.addEventListener("mouseup", () => handleClick("mouseup"));
+      // doc.addEventListener("mousedown", () => handleClick("mousedown"));
+      doc.addEventListener("mouseup", handleMouseUp);
     };
 
     inst.hooks.content.register(contentHandler);
@@ -155,43 +140,40 @@ export function Reader(props: ReaderProps) {
     inst.on("selected", handleSelected);
     inst.on("relocated", handleRelocated);
 
-
-
     const savedCfi = localStorage.getItem("READ_POSITION_KEY");
     inst.display(savedCfi || undefined);
-
     onCleanup(() => {
       inst.destroy();
     });
   });
 
-  const triggerResize = () => {
-    const inst = instance();
-    if (inst && viewerRef) {
-      inst.resize(viewerRef.clientWidth, viewerRef.clientHeight);
-    }
-  };
 
+  // 在 Reader 组件内部加入这段代码
+  createEffect(() => {
+    console.log("currentSet 当前按键实时变化:", currentSet());
+  });
 
 
   return (
 
     <Box height={height()}>
       <SplitLayout bg={backgroundColor()} height={height()}
+        onExit={() => { console.log('退出++'); navigate({ to: "/book/shelf" }) }}
         epub={
           <EpubPaper ref={viewerRef} />
         }
         notes={
           currentSet().has("select") ? (
-            <EpubNotesCreate newNote={activeNote()} onSave={(v) => { newNode(v); opt("mark"); }} />
+            <EpubNotesCreate newNote={activeNote()} onSave={(v) => { newNode(v); opt("mark"); }} onCancel={() => clear()} />
           ) : currentSet().has("mark") ? (
-            <EpubNotesEdit notes={current()} onNoteChange={(v) => { newNode(v); }} />
+            <EpubNotesEdit notes={current()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
           ) : currentSet().has("click") ? (
-            <EpubNotesTimeline notes={currentIndexNodes()} onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }} onDelete={(cfiRange) => { remove(cfiRange); }}/>
+            <EpubNotesTimeline notes={currentIndexNodes()} onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
           ) : (
-            <div>无内容</div>
+            <EpubNotesTimeline notes={currentIndexNodes()} onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
           )
         }
+
       />
 
       <EpubTocDrawer
@@ -216,16 +198,17 @@ export function Reader(props: ReaderProps) {
       />
 
       <QuickActionMenu>
-        <button type="button" onClick={() => setMenuOpened((prev) => !prev)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
-          <IconTabs size={20} />
-        </button>
 
         <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
           <IconList size={20} />
         </button>
 
-        <button type="button" onClick={() => { setShowNotes((prev) => !prev); triggerResize(); }} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
-          <IconNotebook size={20} />
+        <button type="button" onClick={() => setSearchOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
+          <IconSearch size={20} />
+        </button>
+
+        <button type="button" onClick={() => setStyleOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
+          <IconLetterCase size={20} />
         </button>
 
         <button type="button" onClick={toggleNotes} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
@@ -237,70 +220,7 @@ export function Reader(props: ReaderProps) {
 
   )
 
-  return (
 
-
-    <div class="relative">
-
-
-      {menuOpened() && (
-        <div class="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 p-2 shadow-md">
-          <div class="flex items-center justify-between max-w-7xl mx-auto">
-            <button type="button" onClick={() => navigate({ to: "/book/shelf" })} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
-              <IconArrowLeft size={20} />
-            </button>
-            <div class="flex items-center gap-2">
-              <button type="button" onClick={() => setSearchOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
-                <IconSearch size={20} />
-              </button>
-              <button type="button" onClick={() => setStyleOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
-                <IconTypography size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <EpubTocDrawer
-        opened={tocOpened()}
-        onClose={() => setTocOpened(false)}
-        book={currentBook()}
-        onSelectChapter={(href) => { handleJump(href); }}
-      />
-
-      <EpubSearchDrawer
-        opened={searchOpened()}
-        onClose={() => setSearchOpened(false)}
-        book={currentBook()}
-        onSelectResult={(cfi) => handleJump(cfi)}
-      />
-
-      <EpubStyleDrawer
-        opened={styleOpened()}
-        onClose={() => setStyleOpened(false)}
-        onFontSizeChange={handleFontSizeChange}
-        onBackgroundColorChange={setBackgroundColor}
-      />
-
-      <QuickActionMenu>
-        <button type="button" onClick={() => setMenuOpened((prev) => !prev)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
-          <IconTabs size={20} />
-        </button>
-
-        <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
-          <IconList size={20} />
-        </button>
-
-        <button type="button" onClick={() => { setShowNotes((prev) => !prev); triggerResize(); }} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
-          <IconNotebook size={20} />
-        </button>
-
-        <button type="button" onClick={toggleNotes} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
-          {hideNotes() ? <IconEye size={20} /> : <IconEyeOff size={20} />}
-        </button>
-      </QuickActionMenu>
-    </div>
-  );
 }
 
 export default Reader;

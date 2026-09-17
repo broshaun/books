@@ -77,8 +77,8 @@ function AppShellFooter(props: AppShellFooterProps) {
 export function AppShell(props: AppShellProps) {
   const [local, others] = splitProps(props as Record<string, any>, ["header", "footer", "children", "style"]);
   
-  const headerHeight = local.header?.height ?? 50;
-  const footerHeight = local.footer?.height ?? 50;
+  const headerHeight = local.header?.height ?? 0;
+  const footerHeight = local.footer?.height ?? 0;
 
   return (
     <div

@@ -20,6 +20,7 @@ interface EpubNotesEditProps {
   data?: NoteItem | null;
   notes?: NoteItem | null;
   onNoteChange: (data: NoteItem) => void;
+  onDelete?: (cfiRange: string) => void;
 }
 
 const HIGHLIGHT_COLORS = [
@@ -79,18 +80,18 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
 
   return (
     <div class="h-full p-3 flex flex-col gap-2.5 box-border bg-transparent text-stone-900">
-      {/* 顶部标题栏（纯输入框） */}
-      <div class="flex items-center justify-between gap-2 border-b border-stone-300/60 pb-2">
+      {/* 顶部标题栏：居中对齐 */}
+      <div class="flex items-center justify-center gap-2 border-b border-stone-300/60 pb-2">
         <input
           type="text"
           placeholder="输入标题..."
           value={currentNote().title || ''}
           onInput={(e) => handleFieldChange({ title: e.currentTarget.value })}
-          class="w-full font-semibold text-sm bg-transparent border-none outline-none text-stone-900 placeholder:text-stone-400"
+          class="w-full font-semibold text-sm bg-transparent border-none outline-none text-stone-900 placeholder:text-stone-400 text-center"
         />
       </div>
 
-      {/* 引用内容卡片区域（颜色选择器已移入此处） */}
+      {/* 引用内容卡片区域 */}
       <Show when={currentNote().text}>
         <div class="relative px-3 py-1.5 rounded-lg border border-stone-300/70 bg-stone-50/50 flex items-center justify-between gap-2 transition-all">
           <div 
@@ -105,9 +106,7 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
             </p>
           </div>
 
-          {/* 右侧工具栏：颜色选择器 + 复制按钮 */}
           <div class="flex items-center gap-1.5 shrink-0 relative">
-            {/* 颜色选择 Popover */}
             <div class="relative">
               <button
                 type="button"
@@ -150,7 +149,6 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
               </Show>
             </div>
 
-            {/* 复制按钮 */}
             <button
               type="button"
               title={copied() ? '已复制' : '复制引用'}
@@ -170,8 +168,21 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
         placeholder="在此记录读书心得..."
         value={currentNote().content || ''}
         onInput={(e) => handleFieldChange({ content: e.currentTarget.value })}
-        class="flex-1 w-full p-3 rounded-xl border border-stone-300/70 bg-white shadow-2xs text-stone-900 placeholder:text-stone-400 text-xs leading-relaxed resize-none focus:outline-none focus:border-stone-500 transition-colors"
+        class="flex-1 w-full p-3 rounded-xl border border-stone-300/70 bg-stone-50/60 shadow-2xs text-stone-900 placeholder:text-stone-400 text-xs leading-relaxed resize-none outline-none"
       />
+
+      {/* 底部删除按钮：灰色虚线边框，无悬浮变色 */}
+      <Show when={props.onDelete}>
+        <div class="pt-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => props.onDelete?.(currentNote().cfiRange)}
+            class="w-full py-1.5 px-3 rounded-lg border border-dashed border-stone-300 bg-transparent text-stone-600 text-xs font-medium flex items-center justify-center cursor-pointer"
+          >
+            删除笔记
+          </button>
+        </div>
+      </Show>
     </div>
   );
 }

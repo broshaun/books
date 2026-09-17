@@ -43,7 +43,7 @@ function Layout() {
   const { height } = winSize();
 
   createEffect(() => {
-    useStore2.setHeight(height - 100 - safety.bottom - safety.top);
+    useStore2.setHeight(height - safety.bottom - safety.top);
   });
 
   const visibleItems = [
@@ -81,22 +81,22 @@ function Layout() {
 
   return (
     <AppShell
-      header={{ height: 50 + safety.top }}
-      footer={{ height: 50 + safety.bottom }}
+      // header={{ height: 50 + safety.top }}
+      // footer={{ height: 50 + safety.bottom }}
     >
-      <AppShell.Header pt={50 + safety.top}>
+      {/* <AppShell.Header pt={50 + safety.top}>
         <AppBar
           title={appBarStore.title}
           left={appBarStore.left}
           right={appBarStore.right}
         />
-      </AppShell.Header>
+      </AppShell.Header> */}
 
       <AppShell.Main>
         <Outlet />
       </AppShell.Main>
 
-      <AppShell.Footer pb={50 + safety.bottom}>
+      {/* <AppShell.Footer pb={50 + safety.bottom}>
         <div class="flex h-full w-full items-center justify-around">
           <For each={visibleItems}>
             {(item) => (
@@ -106,7 +106,7 @@ function Layout() {
             )}
           </For>
         </div>
-      </AppShell.Footer>
+      </AppShell.Footer> */}
     </AppShell>
   );
 }

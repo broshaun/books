@@ -15,11 +15,19 @@ export function useCurrentOperation<T>(
   );
 
   let timerRef: ReturnType<typeof setTimeout> | null = null;
-  let active = false;
+  let isWindowActive = false;
+
+  // 抽离统一的定时器清理逻辑
+  const clearTimer = () => {
+    if (timerRef) {
+      clearTimeout(timerRef);
+      timerRef = null;
+    }
+  };
 
   const opt = (value: T) => {
-    if (!active) {
-      active = true;
+    if (!isWindowActive) {
+      isWindowActive = true;
       setCurrentSet(new Set<T>([value]));
     } else {
       setCurrentSet((prev) => {
@@ -29,40 +37,28 @@ export function useCurrentOperation<T>(
       });
     }
 
-    if (timerRef) {
-      clearTimeout(timerRef);
-    }
+    clearTimer();
 
     timerRef = setTimeout(() => {
-      active = false;
+      isWindowActive = false;
       timerRef = null;
     }, interval);
   };
 
   const clear = () => {
-    if (timerRef) {
-      clearTimeout(timerRef);
-      timerRef = null;
-    }
-
-    active = false;
+    clearTimer();
+    isWindowActive = false;
     setCurrentSet(new Set<T>());
   };
 
   const reset = (values: T[] = []) => {
-    if (timerRef) {
-      clearTimeout(timerRef);
-      timerRef = null;
-    }
-
-    active = false;
+    clearTimer();
+    isWindowActive = false;
     setCurrentSet(new Set<T>(values));
   };
 
   onCleanup(() => {
-    if (timerRef) {
-      clearTimeout(timerRef);
-    }
+    clearTimer();
   });
 
   return {

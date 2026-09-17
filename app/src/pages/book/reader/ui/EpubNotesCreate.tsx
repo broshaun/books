@@ -3,8 +3,6 @@ import {
   IconCopy,
   IconCheck,
   IconQuote,
-  IconDeviceFloppy,
-  IconX,
 } from '@tabler/icons-solidjs';
 
 export interface NewNote {
@@ -82,21 +80,20 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
 
   return (
     <div class="h-full p-3 flex flex-col gap-2.5 box-border bg-transparent text-stone-900">
-      {/* 顶部标题栏 */}
-      <div class="flex items-center justify-between gap-2 border-b border-stone-300/60 pb-2">
+      {/* 顶部标题栏：改为居中对齐 */}
+      <div class="flex items-center justify-center gap-2 border-b border-stone-300/60 pb-2">
         <input
           type="text"
           placeholder="输入笔记标题..."
           value={draft().title || ''}
           onInput={(e) => setDraft((prev) => ({ ...prev, title: e.currentTarget.value }))}
-          class="w-full font-semibold text-sm bg-transparent border-none outline-none text-stone-900 placeholder:text-stone-400"
+          class="w-full font-semibold text-sm bg-transparent border-none outline-none text-stone-900 placeholder:text-stone-400 text-center"
         />
       </div>
 
       <Show when={draft().text}>
-        {/* 引用内容卡片（颜色选择器已内嵌到右上角） */}
+        {/* 引用内容卡片 */}
         <div class="relative px-3 py-1.5 rounded-lg border border-stone-300/70 bg-stone-50/50 flex items-center justify-between gap-2 transition-all">
-          {/* 左侧高亮颜色指示条 */}
           <div 
             class="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full transition-colors duration-200"
             style={{ background: currentColor() }}
@@ -109,9 +106,7 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
             </p>
           </div>
 
-          {/* 右侧工具栏：颜色选择器 + 复制按钮 */}
           <div class="flex items-center gap-1.5 shrink-0 relative">
-            {/* 颜色选择 Popover */}
             <div class="relative">
               <button
                 type="button"
@@ -151,7 +146,6 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
               </Show>
             </div>
 
-            {/* 复制按钮 */}
             <button
               type="button"
               title={copied() ? '已复制' : '复制引用'}
@@ -174,17 +168,16 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
             onClick={props.onCancel}
             class="flex-1 py-1.5 px-3 rounded-lg border border-stone-300/80 hover:bg-stone-100 text-stone-700 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
-            <IconX size={13} />
             <span>取消</span>
           </button>
         </Show>
+        {/* 保存按钮背景色调整为更轻量协调的石色/浅色系风格 */}
         <button
           type="button"
           onClick={() => props.onSave(draft())}
-          class="flex-1 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+          class="flex-1 py-1.5 px-3 rounded-lg border border-stone-300 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
         >
-          <IconDeviceFloppy size={13} />
-          <span>保存笔记</span>
+          <span>保存</span>
         </button>
       </div>
     </div>
