@@ -15,7 +15,7 @@ export interface BookDirectoryDrawerProps {
   opened: boolean;
   onClose?: () => void;
   folders?: Folder[];
-  onSelectFolder?: (path: string) => void;
+  onSelectFolder?: (folder: Folder) => void; // 修改此处，返回整个 Folder 对象
   onAddFolder?: () => void;
   onDeleteFolders?: (ids: number[]) => void;
 }
@@ -62,7 +62,7 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
           props.opened ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* 标题：上方放空一点空间 (pt-3)，且移除了左侧图标 */}
+        {/* 标题 */}
         <div class="flex items-center px-1 pt-3 pb-1">
           <span class="font-semibold text-base text-slate-800 dark:text-slate-100">
             我的书籍
@@ -89,7 +89,8 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
                     toggleFolder(folder.id);
                     return;
                   }
-                  props.onSelectFolder?.(folder.path);
+                  // 传递整个 folder 对象给父组件
+                  props.onSelectFolder?.(folder);
                   props.onClose?.();
                 }}
                 class="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"

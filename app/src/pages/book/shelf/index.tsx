@@ -15,7 +15,7 @@ export function Index() {
 
     const handleOpen = async (name: string) => {
         try {
-            navigate({ to: "/book/$bookId", params: { bookId: name } });
+            navigate({ to: "/reader/$bookId", params: { bookId: name } });
         } catch (error) {
             console.error("打开 EPUB 失败:", error);
         }
@@ -33,14 +33,9 @@ export function Index() {
         });
     });
 
-    // onCleanup(() => {
-    //     setLeft(null);
-    //     setTitle("");
-    //     setRight(null);
-    // });
 
 
-    console.log('height',height())
+    console.log('height', height())
 
     return (
         <div>
@@ -52,9 +47,13 @@ export function Index() {
                     console.log("添加文件夹");
                     addFolder();
                 }}
-                onSelectFolder={(f) => {
-                    console.log("选择文件夹：", f);
-                    selectFolder(f);
+                onSelectFolder={({ id, name, path }) => {
+                    console.log("id", id);
+                    console.log("name", name);
+                    console.log("path", path);
+                    appBarStore.set({ title: name })
+
+                    selectFolder(path);
                 }}
                 onDeleteFolders={(ids) => {
                     delFolder(ids);

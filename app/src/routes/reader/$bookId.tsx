@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/solid-router'
 import Reader from '@/pages/book/reader';
 
 
-export const Route = createFileRoute('/book/$bookId')({
+export const Route = createFileRoute('/reader/$bookId')({
   component: RouteComponent,
 })
 
