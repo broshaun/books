@@ -23,7 +23,6 @@ export function Index() {
 
     onMount(() => {
         appBarStore.set({
-            title: "书架",
             left: (
                 <button type="button" onClick={() => { setBookDir(true) }}>
                     <IconMenu2 size={20} />

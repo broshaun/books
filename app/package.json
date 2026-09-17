@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@corvu/accordion": "^0.2.5",
+    "@corvu/disclosure": "^0.2.2",
     "@corvu/drawer": "^0.2.4",
     "@corvu/resizable": "^0.2.5",
     "@tabler/icons-solidjs": "^3.46.0",

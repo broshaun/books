@@ -2,11 +2,11 @@ import { type JSX, Show, createSignal, onMount, onCleanup } from "solid-js";
 import { IconNotebook, IconDoorExit } from "@tabler/icons-solidjs";
 
 export interface SplitLayoutProps {
+  
   epub: JSX.Element;
   notes: JSX.Element;
   bg?: string;
   height?: number;
-  notesTitle?: string; // 新增：对外标题参数
   onExit?: () => void;
 }
 
@@ -68,7 +68,7 @@ export default function SplitLayout(props: SplitLayoutProps) {
             <header class="flex items-center px-4 py-3.5 border-b border-stone-200/80 bg-white/60 shrink-0">
               <span class="text-sm font-semibold text-stone-700 flex items-center gap-2 truncate">
                 <IconNotebook size={16} class="text-stone-400 shrink-0" />
-                {props.notesTitle || "读书笔记"}
+                读书笔记
               </span>
             </header>
 

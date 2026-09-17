@@ -11,6 +11,9 @@ importers:
       '@corvu/accordion':
         specifier: ^0.2.5
         version: 0.2.5(solid-js@1.9.15)
+      '@corvu/disclosure':
+        specifier: ^0.2.2
+        version: 0.2.2(solid-js@1.9.15)
       '@corvu/drawer':
         specifier: ^0.2.4
         version: 0.2.4(solid-js@1.9.15)

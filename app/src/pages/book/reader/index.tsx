@@ -17,6 +17,7 @@ import EpubNotesTimeline from "./ui/EpubNotesTimeline";
 import EpubPaper from "./ui/EpubPaper";
 import Box from "@/components/Box";
 import SplitLayout from "./ui/SplitLayout";
+import BookInfoPanel from "./ui/BookInfoPanel";
 
 
 
@@ -65,7 +66,7 @@ export function Reader(props: ReaderProps) {
     setInstance(renderInstance);
   });
 
-  const { currentSet, opt, clear } = useCurrentOperation<string>([], { interval: 100 });
+  const { currentSet, opt, clear } = useCurrentOperation<string>([]);
   const [tocOpened, setTocOpened] = createSignal(false);
   const [searchOpened, setSearchOpened] = createSignal(false);
   const [styleOpened, setStyleOpened] = createSignal(false);
@@ -154,11 +155,20 @@ export function Reader(props: ReaderProps) {
   });
 
 
+  const visibleItems = [
+    { key: 'book1', name: '笔记1', onSelect: () => { } },
+    { key: 'book2', name: '笔记2', onSelect: () => { } },
+    { key: 'book3', name: '笔记3', onSelect: () => { } },
+  ];
+
+
   return (
 
     <Box height={height()}>
       <SplitLayout bg={backgroundColor()} height={height()}
-        onExit={() => { console.log('退出++'); navigate({ to: "/book/shelf" }) }}
+        notesTitle={'笔记'}
+        // notesSelect={visibleItems}
+        onExit={() => { navigate({ to: "/book/shelf" }) }}
         epub={
           <EpubPaper ref={viewerRef} />
         }
@@ -168,9 +178,13 @@ export function Reader(props: ReaderProps) {
           ) : currentSet().has("mark") ? (
             <EpubNotesEdit notes={current()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
           ) : currentSet().has("click") ? (
-            <EpubNotesTimeline notes={currentIndexNodes()} onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
+            <EpubNotesTimeline
+              notes={currentIndexNodes()}
+              onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }}
+              onDelete={(cfiRange) => { remove(cfiRange); }}
+            />
           ) : (
-            <EpubNotesTimeline notes={currentIndexNodes()} onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
+            <BookInfoPanel book={currentBook()} />
           )
         }
 

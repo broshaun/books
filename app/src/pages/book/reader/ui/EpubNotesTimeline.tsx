@@ -88,7 +88,7 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
                           >
                             <div class="flex items-center justify-between gap-2 w-full">
                               <span class="text-xs font-semibold truncate text-stone-900 tracking-tight">
-                                {note.title || '读书笔记'}
+                                {note.title || '笔记'}
                               </span>
                               
                               <Show when={note.updatedAt}>
