@@ -22,7 +22,7 @@ jobs:
 
     env:
       NODE_VERSION: "24"
-      WORKING_DIR: "chatly"
+      WORKING_DIR: "app" # 已修改为 app 目录
 
     defaults:
       run:
@@ -75,7 +75,7 @@ jobs:
         with:
           projectPath: ${{ env.WORKING_DIR }}
           tagName: ${{ github.ref_name }}
-          releaseName: "Chatly ${{ github.ref_name }}"
+          releaseName: "Books ${{ github.ref_name }}" # 已将项目名改为 Books
           releaseBody: |
             Windows build for ${{ github.ref_name }}
 

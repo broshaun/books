@@ -22,8 +22,8 @@ jobs:
 
     env:
       NODE_VERSION: "24"
-      WORKING_DIR: "chatly"
-      APP_NAME: "Chatly"   # 改成你实际的 app 名称（生成 IPA 文件名会用到）
+      WORKING_DIR: "app"   # 已修改为 app 目录
+      APP_NAME: "Books"    # 已改为 Books
 
     defaults:
       run:
@@ -103,7 +103,7 @@ jobs:
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: chatly-ios-ipa
+          name: books-ios-ipa   # 已将 artifact 名字更新
           path: ${{ env.WORKING_DIR }}/${{ steps.ipa.outputs.ipa_path }}
 
       - name: Create GitHub Release
