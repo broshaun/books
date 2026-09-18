@@ -1,5 +1,12 @@
 import { type JSX, Show, createSignal, onMount, onCleanup } from "solid-js";
-import { IconNotebook, IconDoorExit, IconChevronLeft, IconChevronRight } from "@tabler/icons-solidjs";
+import {
+  IconNotebook,
+  IconDoorExit,
+  IconChevronLeft,
+  IconChevronRight,
+  IconX,
+  IconLoader2,
+} from "@tabler/icons-solidjs";
 
 export interface SplitLayoutProps {
   epub: JSX.Element;
@@ -15,96 +22,128 @@ export interface SplitLayoutProps {
 export default function SplitLayout(props: SplitLayoutProps) {
   const [isPortrait, setIsPortrait] = createSignal(false);
   const [showControls, setShowControls] = createSignal(false);
+  const [notesVisible, setNotesVisible] = createSignal(true);
+  const [isTransitioning, setIsTransitioning] = createSignal(false);
 
   onMount(() => {
-    const mq = window.matchMedia("(orientation: portrait)");
-    setIsPortrait(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsPortrait(e.matches);
-    mq.addEventListener("change", handler);
-    onCleanup(() => mq.removeEventListener("change", handler));
+    const mq = matchMedia("(orientation: portrait)");
+    const update = () => setIsPortrait(mq.matches);
+
+    update();
+    mq.addEventListener("change", update);
+    onCleanup(() => mq.removeEventListener("change", update));
   });
 
-  // 公共按钮样式（毛玻璃 + 圆角 + 阴影 + 悬停过渡）
-  const btnBaseClass = "absolute z-20 flex items-center bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md border border-stone-200/60 dark:border-zinc-700/60 shadow-xs transition-all cursor-pointer animate-fade-in";
+  const toggleNotes = (visible: boolean) => {
+    setIsTransitioning(true);
+    setNotesVisible(visible);
+
+    setTimeout(() => {
+      setIsTransitioning(false);
+      dispatchEvent(new Event("resize"));
+    }, 300);
+  };
+
+  const btn =
+    "absolute z-20 flex items-center rounded-full bg-white/80 backdrop-blur-md border border-stone-200/60 shadow-xs transition-all cursor-pointer";
 
   return (
-    <div class="w-full flex justify-center bg-[#fbfbfa] text-stone-800">
-      <div 
-        class="flex w-full max-w-7xl overflow-hidden relative shadow-xs border border-stone-200/60 rounded-2xl bg-white"
+    <div class="flex w-full justify-center bg-[#fbfbfa] text-stone-800">
+      <div
+        class="relative flex w-full max-w-7xl overflow-hidden rounded-2xl border border-stone-200/60 bg-white shadow-xs"
         style={{
           "background-color": props.bg,
-          "height": props.height !== undefined ? `${props.height}px` : "100vh"
+          height: props.height ? `${props.height}px` : "100vh",
         }}
       >
-        {/* 左侧阅读区 */}
-        <div 
-          class={`h-full overflow-y-auto min-w-0 relative transition-all duration-300 ${isPortrait() ? 'w-full' : 'w-[70%]'}`}
+        <main
+          class={`relative h-full min-w-0 overflow-y-auto transition-all duration-300 ${
+            isPortrait() || !notesVisible() ? "w-full" : "w-[70%]"
+          }`}
           style={{ "background-color": props.bg }}
         >
-          {/* 中间双击触发区（直径 4cm 的正圆） */}
-          <div 
-            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 cursor-default rounded-full"
+          <Show when={isTransitioning()}>
+            <div
+              class="absolute inset-0 z-40 flex items-center justify-center"
+              style={{ "background-color": props.bg || "#fff" }}
+            >
+              <div class="flex flex-col items-center gap-2">
+                <IconLoader2 size={28} class="animate-spin text-stone-400" />
+                <span class="text-xs text-stone-500">正在调整排版...</span>
+              </div>
+            </div>
+          </Show>
+
+          <div
+            class="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{ width: "4cm", height: "4cm" }}
-            onDblClick={() => setShowControls(!showControls())}
-            title="双击中间区域显示/隐藏菜单"
+            onDblClick={() => setShowControls(v => !v)}
           />
 
           {props.epub}
 
-          {/* 控制菜单显隐 */}
           <Show when={showControls()}>
             <Show when={props.onExit}>
               <button
-                type="button"
                 onClick={props.onExit}
-                class={`${btnBaseClass} top-3 left-3 gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-stone-600 dark:text-zinc-300 hover:text-stone-900 hover:bg-white group`}
-                title="退出阅读"
+                class={`${btn} left-3 top-3 gap-1.5 px-3 py-1.5 text-xs`}
               >
-                <IconDoorExit size={16} class="transition-transform group-hover:-translate-x-0.5" />
-                <span>退出</span>
+                <IconDoorExit size={16} />
+                退出
               </button>
             </Show>
 
             <Show when={props.onPrevPage}>
               <button
-                type="button"
                 onClick={props.onPrevPage}
-                class={`${btnBaseClass} bottom-3 left-3 gap-0.5 px-2.5 py-1 rounded-full text-[11px] font-medium text-stone-700 dark:text-zinc-200 hover:bg-white/90`}
-                title="上一页"
+                class={`${btn} bottom-3 left-3 px-2.5 py-1 text-[11px]`}
               >
                 <IconChevronLeft size={14} />
-                <span>上一页</span>
+                上一页
               </button>
             </Show>
 
             <Show when={props.onNextPage}>
               <button
-                type="button"
                 onClick={props.onNextPage}
-                class={`${btnBaseClass} bottom-3 right-3 gap-0.5 px-2.5 py-1 rounded-full text-[11px] font-medium text-stone-700 dark:text-zinc-200 hover:bg-white/90`}
-                title="下一页"
+                class={`${btn} bottom-3 right-3 px-2.5 py-1 text-[11px]`}
               >
-                <span>下一页</span>
+                下一页
                 <IconChevronRight size={14} />
               </button>
             </Show>
           </Show>
-        </div>
 
-        {/* 右侧笔记面板（横屏显示） */}
-        <Show when={!isPortrait()}>
-          <aside 
-            class="w-[30%] h-full border-l border-stone-200/80 flex flex-col overflow-hidden shrink-0 min-w-0 bg-stone-50/40"
+          <Show when={!isPortrait() && !notesVisible()}>
+            <button
+              onClick={() => toggleNotes(true)}
+              class="absolute right-8 top-3 z-20 rounded-lg bg-white/80 p-1.5 shadow-xs"
+            >
+              <IconNotebook size={15} />
+            </button>
+          </Show>
+        </main>
+
+        <Show when={!isPortrait() && notesVisible()}>
+          <aside
+            class="flex h-full w-[30%] min-w-0 shrink-0 flex-col overflow-hidden border-l border-stone-200/80"
             style={{ "background-color": props.bg }}
           >
-            <header class="flex items-center px-4 py-3.5 border-b border-stone-200/80 bg-white/60 shrink-0">
-              <span class="text-sm font-semibold text-stone-700 flex items-center gap-2 truncate">
-                <IconNotebook size={16} class="text-stone-400 shrink-0" />
+            <header class="flex items-center justify-between border-b border-stone-200/80 px-4 py-3.5">
+              <span class="flex items-center gap-2 truncate text-sm font-semibold">
+                <IconNotebook size={16} />
                 {props.notesTitle || "读书笔记"}
               </span>
+
+              <button
+                onClick={() => toggleNotes(false)}
+                class="flex h-6 w-6 items-center justify-center rounded-full"
+              >
+                <IconX size={14} />
+              </button>
             </header>
 
-            <div class="flex-1 overflow-y-auto overflow-x-hidden min-w-0 p-1">
+            <div class="flex-1 overflow-y-auto overflow-x-hidden p-1">
               {props.notes}
             </div>
           </aside>
