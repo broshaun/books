@@ -22,7 +22,7 @@ import BookInfoPanel from "./ui/BookInfoPanel";
 
 
 interface ReaderProps {
-  bookId: string;
+  path: string;
 }
 
 export interface NewNote {
@@ -42,9 +42,9 @@ export function Reader(props: ReaderProps) {
 
   const { openBook } = createEpubLoader();
   const [currentBook] = createResource(
-    () => props.bookId,
+    () => props.path,
     async () => {
-      const book = await openBook(props.bookId);
+      const book = await openBook(props.path);
       const bookTitle = book?.packaging?.metadata?.title || "";
       const bookIdentifier = book?.packaging?.metadata?.identifier || "";
       console.log("bookTitle", bookTitle);
@@ -71,7 +71,7 @@ export function Reader(props: ReaderProps) {
   const [searchOpened, setSearchOpened] = createSignal(false);
   const [styleOpened, setStyleOpened] = createSignal(false);
   const { hideNotes, toggleNotes } = useEpubViews(instance);
-  const { put: newNode, remove, current, currentIndexNodes } = useEpubNotes(instance, props.bookId);
+  const { put: newNode, remove, current, currentIndexNodes } = useEpubNotes(instance);
   const [activeNote, setActiveNote] = createSignal<NewNote>();
 
 
@@ -99,7 +99,7 @@ export function Reader(props: ReaderProps) {
     if (!text.trim()) return;
     opt("select");
     const newNoteItem: NewNote = {
-      book: props.bookId,
+      book: props.path,
       index: index,
       cfiRange: cfiRange,
       text: text.trim(),
@@ -152,22 +152,20 @@ export function Reader(props: ReaderProps) {
   // 在 Reader 组件内部加入这段代码
   createEffect(() => {
     console.log("currentSet 当前按键实时变化:", currentSet());
+    console.log('currentIndexNodes',currentIndexNodes())
   });
 
 
-  const visibleItems = [
-    { key: 'book1', name: '笔记1', onSelect: () => { } },
-    { key: 'book2', name: '笔记2', onSelect: () => { } },
-    { key: 'book3', name: '笔记3', onSelect: () => { } },
-  ];
 
 
   return (
 
     <Box height={height()}>
+
+
+
       <SplitLayout bg={backgroundColor()} height={height()}
         notesTitle={'笔记'}
-        // notesSelect={visibleItems}
         onExit={() => { navigate({ to: "/book/shelf" }) }}
         epub={
           <EpubPaper ref={viewerRef} />

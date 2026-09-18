@@ -2,8 +2,10 @@ import { For, Show } from 'solid-js';
 import { IconQuote, IconX } from '@tabler/icons-solidjs';
 import Accordion from '@corvu/accordion';
 
+// 同步更新为和 useEpubNotes 完全一致的接口结构
 export interface NewNote {
-  book: string;
+  bookId: string;
+  bookName: string;
   index: number;
   cfiRange: string;
   text: string;

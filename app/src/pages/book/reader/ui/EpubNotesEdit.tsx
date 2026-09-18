@@ -5,8 +5,10 @@ import {
   IconQuote,
 } from '@tabler/icons-solidjs';
 
+// 同步更新为和 NewNote 完全一致的结构
 export interface NoteItem {
-  book: string;
+  bookId: string;
+  bookName: string;
   index: number;
   cfiRange: string;
   text: string;
@@ -35,7 +37,8 @@ const getInitialNote = (data?: NoteItem | null, notes?: NoteItem | null): NoteIt
   if (data) return data;
   if (notes) return notes;
   return {
-    book: '',
+    bookId: '',
+    bookName: '',
     index: Date.now(),
     title: '读书笔记',
     cfiRange: '',
@@ -171,7 +174,7 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
         class="flex-1 w-full p-3 rounded-xl border border-stone-300/70 bg-stone-50/60 shadow-2xs text-stone-900 placeholder:text-stone-400 text-xs leading-relaxed resize-none outline-none"
       />
 
-      {/* 底部删除按钮：灰色虚线边框，无悬浮变色 */}
+      {/* 底部删除按钮 */}
       <Show when={props.onDelete}>
         <div class="pt-1 shrink-0">
           <button
