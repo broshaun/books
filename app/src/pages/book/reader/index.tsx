@@ -1,4 +1,4 @@
-import { IconList, IconSearch, IconArrowLeft, IconEyeOff, IconEye, IconTypography, IconNotebook, IconLetterCase } from "@tabler/icons-solidjs";
+import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase } from "@tabler/icons-solidjs";
 import { createSignal, onMount, onCleanup, createEffect, createResource } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
@@ -113,6 +113,7 @@ export function Reader(props: ReaderProps) {
     if (inst) {
       inst.themes.fontSize(`${size}px`);
     }
+    useStore2.setFontSize(size, inst);
   };
 
   const handleRelocated = (location: any) => {
@@ -126,9 +127,10 @@ export function Reader(props: ReaderProps) {
     return await inst.display(cfiRange);
   };
 
+  let hasInitialized = false;
   createEffect(() => {
     const inst = instance();
-    if (!inst) return;
+    if (!inst || hasInitialized) return;
 
     const contentHandler = (contents: any) => {
       const doc = contents.document;
@@ -140,13 +142,24 @@ export function Reader(props: ReaderProps) {
     inst.on("markClicked", handleMarkClicked);
     inst.on("selected", handleSelected);
     inst.on("relocated", handleRelocated);
-
-    const savedCfi = localStorage.getItem("READ_POSITION_KEY");
-    inst.display(savedCfi || undefined);
+    hasInitialized = true;
     onCleanup(() => {
+      hasInitialized = false;
       inst.destroy();
     });
   });
+
+
+  onMount(() => {
+    const inst = instance();
+    if (!inst) return;
+    const savedFontSize = useStore2.fontSize;
+    if (savedFontSize) {
+      inst.themes.fontSize(`${savedFontSize}px`);
+    }
+    const savedCfi = localStorage.getItem("READ_POSITION_KEY");
+    inst.display(savedCfi || undefined);
+  })
 
 
   // 在 Reader 组件内部加入这段代码
