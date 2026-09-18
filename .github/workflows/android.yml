@@ -1,4 +1,4 @@
-name: Tauri2 Android Split APK
+name: Tauri2 Android Build Split APK
 
 on:
   workflow_dispatch:
@@ -41,48 +41,48 @@ jobs:
     env:
       NODE_VERSION: "20"
       JAVA_VERSION: "17"
-      NDK_VERSION: "26.1.10909125"
-      BUILD_TOOLS_VERSION: "34.0.0"
+      NDK_VER: "26.1.10909125"
+      BUILD_TOOLS_VER: "34.0.0"
+      ANDROID_PLATFORM: "34"
       WORKING_DIR: "app"
 
     steps:
-      # ==========================================================
+      # ============================================================
       # Checkout
-      # ==========================================================
+      # ============================================================
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ==========================================================
+      # ============================================================
       # Java
-      # ==========================================================
+      # ============================================================
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      # ==========================================================
-      # Node
-      # ==========================================================
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      # ==========================================================
+      # ============================================================
       # Rust
-      # ==========================================================
+      # ============================================================
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.rust_target }}
 
-      # ==========================================================
+      # ============================================================
       # Android SDK
       #
-      # 不使用 android-actions/setup-android
-      # GitHub ubuntu-latest 已经自带 sdkmanager
-      # ==========================================================
+      # packages: "" 避免安装已经废弃的 tools package
+      # ============================================================
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ""
+
+      # ============================================================
+      # Android SDK / Build Tools / NDK
+      # ============================================================
       - name: Install Android SDK packages
         shell: bash
         run: |
@@ -90,15 +90,19 @@ jobs:
 
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
 
-          yes | sdkmanager --licenses >/dev/null || true
-
           sdkmanager \
             "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;${BUILD_TOOLS_VERSION}" \
-            "ndk;${NDK_VERSION}"
+            "platforms;android-${ANDROID_PLATFORM}" \
+            "build-tools;${BUILD_TOOLS_VER}" \
+            "ndk;${NDK_VER}"
 
-          NDK_PATH="$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}"
+          NDK_PATH="$ANDROID_SDK_ROOT/ndk/${NDK_VER}"
+
+          if [ ! -d "$NDK_PATH" ]; then
+            echo "ERROR: NDK not found at:"
+            echo "$NDK_PATH"
+            exit 1
+          fi
 
           echo "NDK_HOME=$NDK_PATH" >> "$GITHUB_ENV"
           echo "ANDROID_NDK_HOME=$NDK_PATH" >> "$GITHUB_ENV"
@@ -107,15 +111,21 @@ jobs:
             "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin" \
             >> "$GITHUB_PATH"
 
-          test -d "$NDK_PATH"
+          echo "Android SDK ready."
+          echo "NDK_PATH=$NDK_PATH"
 
-          echo "NDK installed:"
-          echo "$NDK_PATH"
+      # ============================================================
+      # Node
+      # ============================================================
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
-      # ==========================================================
+      # ============================================================
       # pnpm
-      # ==========================================================
-      - name: Setup pnpm
+      # ============================================================
+      - name: Enable Corepack and activate pnpm
         shell: bash
         run: |
           set -euxo pipefail
@@ -126,21 +136,25 @@ jobs:
           node --version
           pnpm --version
 
-      # ==========================================================
-      # Install frontend dependencies
-      # ==========================================================
-      - name: Install dependencies
+      # ============================================================
+      # Frontend dependencies
+      # ============================================================
+      - name: Install frontend dependencies
         shell: bash
         working-directory: ${{ env.WORKING_DIR }}
         run: |
           set -euxo pipefail
 
+          pnpm config set registry https://registry.npmmirror.com
+
           pnpm install --frozen-lockfile
 
-      # ==========================================================
-      # Initialize Android
-      # ==========================================================
-      - name: Initialize Android
+          pnpm tauri --version
+
+      # ============================================================
+      # Clean + Initialize Android
+      # ============================================================
+      - name: Clean and initialize Android project
         shell: bash
         working-directory: ${{ env.WORKING_DIR }}
         run: |
@@ -150,57 +164,67 @@ jobs:
 
           pnpm tauri android init --ci
 
-      # ==========================================================
-      # Build one ABI only
-      # ==========================================================
-      - name: Build APK - ${{ matrix.name }}
+      # ============================================================
+      # Build one ABI
+      # ============================================================
+      - name: Build Android APK - ${{ matrix.name }}
         shell: bash
         working-directory: ${{ env.WORKING_DIR }}
         run: |
           set -euxo pipefail
 
+          echo "Building ABI: ${{ matrix.name }}"
+          echo "Rust target: ${{ matrix.rust_target }}"
+
           pnpm tauri android build \
             --apk \
             --target ${{ matrix.abi }}
 
-      # ==========================================================
-      # Find release APK
-      # ==========================================================
-      - name: Find APK
+      # ============================================================
+      # Find generated APK
+      # ============================================================
+      - name: Find release APK
         id: apk
         shell: bash
         run: |
           set -euxo pipefail
 
-          echo "All generated APK files:"
+          ANDROID_DIR="${{ env.WORKING_DIR }}/src-tauri/gen/android"
 
-          find \
-            "${{ env.WORKING_DIR }}/src-tauri/gen/android" \
+          echo "Generated APK files:"
+
+          find "$ANDROID_DIR" \
             -type f \
             -name "*.apk" \
-            -print
+            -print || true
 
           APK_SRC=$(
-            find \
-              "${{ env.WORKING_DIR }}/src-tauri/gen/android" \
+            find "$ANDROID_DIR" \
               -type f \
               -name "*.apk" \
               | grep -i "release" \
-              | head -n 1
+              | head -n 1 \
+              || true
           )
 
           if [ -z "$APK_SRC" ]; then
             APK_SRC=$(
-              find \
-                "${{ env.WORKING_DIR }}/src-tauri/gen/android" \
+              find "$ANDROID_DIR" \
                 -type f \
                 -name "*.apk" \
-                | head -n 1
+                | head -n 1 \
+                || true
             )
           fi
 
           if [ -z "$APK_SRC" ]; then
-            echo "ERROR: APK not found"
+            echo "ERROR: APK NOT FOUND"
+
+            find "$ANDROID_DIR" \
+              -type f \
+              | sed -n '1,300p' \
+              || true
+
             exit 1
           fi
 
@@ -209,9 +233,9 @@ jobs:
 
           echo "apk_path=$APK_SRC" >> "$GITHUB_OUTPUT"
 
-      # ==========================================================
+      # ============================================================
       # Sign APK
-      # ==========================================================
+      # ============================================================
       - name: Sign APK - ${{ matrix.name }}
         id: sign
         shell: bash
@@ -225,30 +249,55 @@ jobs:
 
           mkdir -p dist
 
-          echo "$ANDROID_KEYSTORE_BASE64" \
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "ERROR: ANDROID_KEYSTORE_BASE64 is empty"
+            exit 1
+          fi
+
+          if [ -z "$ANDROID_KEY_ALIAS" ]; then
+            echo "ERROR: ANDROID_KEY_ALIAS is empty"
+            exit 1
+          fi
+
+          if [ -z "$ANDROID_KEYSTORE_PASSWORD" ]; then
+            echo "ERROR: ANDROID_KEYSTORE_PASSWORD is empty"
+            exit 1
+          fi
+
+          if [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "ERROR: ANDROID_KEY_PASSWORD is empty"
+            exit 1
+          fi
+
+          # Restore keystore
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" \
             | base64 --decode \
             > /tmp/release.jks
 
-          BUILD_TOOLS="$ANDROID_SDK_ROOT/build-tools/${BUILD_TOOLS_VERSION}"
+          BT="$ANDROID_SDK_ROOT/build-tools/${BUILD_TOOLS_VER}"
 
           UNSIGNED_APK="${{ steps.apk.outputs.apk_path }}"
 
-          SIGNED_APK="dist/app-${{ github.ref_name }}-${{ matrix.name }}.apk"
+          SAFE_REF=$(echo "${{ github.ref_name }}" | tr '/' '-')
 
-          echo "Input APK:"
+          SIGNED_APK="dist/app-${SAFE_REF}-${{ matrix.name }}.apk"
+
+          echo "Unsigned APK:"
           echo "$UNSIGNED_APK"
 
-          echo "Output APK:"
+          echo "Signed APK:"
           echo "$SIGNED_APK"
 
-          "$BUILD_TOOLS/zipalign" \
+          # Zipalign
+          "$BT/zipalign" \
             -f \
             -p \
             4 \
             "$UNSIGNED_APK" \
             /tmp/aligned.apk
 
-          "$BUILD_TOOLS/apksigner" sign \
+          # Sign
+          "$BT/apksigner" sign \
             --ks /tmp/release.jks \
             --ks-key-alias "$ANDROID_KEY_ALIAS" \
             --ks-pass "pass:$ANDROID_KEYSTORE_PASSWORD" \
@@ -256,22 +305,91 @@ jobs:
             --out "$SIGNED_APK" \
             /tmp/aligned.apk
 
-          "$BUILD_TOOLS/apksigner" verify \
+          # Verify
+          "$BT/apksigner" verify \
             --verbose \
             "$SIGNED_APK"
+
+          echo "Signed APK:"
+          ls -lh "$SIGNED_APK"
 
           echo "signed_apk=$SIGNED_APK" >> "$GITHUB_OUTPUT"
 
           rm -f /tmp/release.jks
           rm -f /tmp/aligned.apk
 
-      # ==========================================================
-      # Upload ABI-specific APK
-      # ==========================================================
-      - name: Upload APK - ${{ matrix.name }}
+      # ============================================================
+      # Upload APK
+      # ============================================================
+      - name: Upload APK artifact - ${{ matrix.name }}
         uses: actions/upload-artifact@v4
         with:
-          name: android-${{ matrix.name }}
+          name: app-android-${{ matrix.name }}
           path: ${{ steps.sign.outputs.signed_apk }}
           if-no-files-found: error
           retention-days: 14
+
+  # ==============================================================
+  # RELEASE
+  #
+  # 等四个 ABI 全部成功后统一发布
+  # ==============================================================
+  release:
+    name: Create GitHub Release
+    needs: android
+    runs-on: ubuntu-latest
+
+    # 手动运行 workflow 只生成 Artifact
+    # android-v* tag 才创建 Release
+    if: startsWith(github.ref, 'refs/tags/android-v')
+
+    steps:
+      # ============================================================
+      # Download all APKs
+      # ============================================================
+      - name: Download all APK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: app-android-*
+          path: release-apks
+          merge-multiple: true
+
+      # ============================================================
+      # Check APKs
+      # ============================================================
+      - name: Verify APK files
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          echo "APK files:"
+
+          find release-apks \
+            -type f \
+            -name "*.apk" \
+            -print
+
+          APK_COUNT=$(
+            find release-apks \
+              -type f \
+              -name "*.apk" \
+              | wc -l
+          )
+
+          echo "APK count: $APK_COUNT"
+
+          if [ "$APK_COUNT" -ne 4 ]; then
+            echo "ERROR: Expected 4 APK files, found $APK_COUNT"
+            exit 1
+          fi
+
+      # ============================================================
+      # GitHub Release
+      # ============================================================
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-apks/*.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
