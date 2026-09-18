@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "books",
-        "width": 800,
-        "height": 600,
+        "width": 1200,
+        "height": 860,
         "resizable": true,
         "fullscreen": false
       }
