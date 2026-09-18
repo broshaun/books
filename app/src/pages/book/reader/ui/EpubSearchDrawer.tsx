@@ -111,7 +111,7 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
       const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
       return parts.map((part) =>
         part.toLowerCase() === highlight.toLowerCase() ? (
-          <span class="bg-yellow-200 dark:bg-yellow-800 text-slate-900 dark:text-slate-100 font-semibold px-0.5 rounded">
+          <span class="bg-yellow-200/80 dark:bg-yellow-800/80 text-stone-900 dark:text-stone-100 font-semibold px-0.5 rounded">
             {part}
           </span>
         ) : (
@@ -127,7 +127,7 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
     <>
       {/* 1. 遮罩层 */}
       <div
-        class={`fixed inset-0 bg-black/40 z-45 transition-opacity duration-300 ease-in-out ${
+        class={`fixed inset-0 bg-black/30 backdrop-blur-[2px] z-45 transition-opacity duration-300 ease-in-out ${
           props.opened
             ? 'opacity-100 pointer-events-auto'
             : 'opacity-0 pointer-events-none'
@@ -135,22 +135,22 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
         onClick={handleClose}
       />
 
-      {/* 2. 底部弹出抽屉主体 */}
+      {/* 2. 底部弹出抽屉主体：采用无死板背景色 + 多层阴影 + 顶部细腻边框 */}
       <div
-        class={`fixed inset-x-0 bottom-0 z-50 w-full bg-white dark:bg-zinc-900 shadow-2xl rounded-t-2xl flex flex-col p-4 transform transition-transform duration-300 ease-in-out ${
+        class={`fixed inset-x-0 bottom-0 z-50 w-full shadow-2xl shadow-stone-900/20 border-t border-stone-200/80 dark:border-zinc-800/80 rounded-t-2xl flex flex-col p-4 transform transition-transform duration-300 ease-in-out backdrop-blur-xl bg-inherit/95 ${
           props.opened ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{ height: drawerHeightStyle(), 'max-height': '90vh' }}
       >
         {/* 顶部标题栏 */}
-        <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-zinc-800">
-          <span class="font-semibold text-base text-slate-800 dark:text-slate-100">
+        <div class="flex items-center justify-between pb-3.5 border-b border-stone-200/60 dark:border-zinc-800/60 shrink-0">
+          <span class="font-semibold text-base text-stone-800 dark:text-stone-100">
             搜索书中内容
           </span>
           <button
             type="button"
             onClick={handleClose}
-            class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+            class="text-xs text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 cursor-pointer px-2 py-1 rounded-md transition-colors"
           >
             关闭
           </button>
@@ -158,9 +158,9 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
 
         {/* 内容区域 */}
         <div class="flex-1 flex flex-col pt-3 overflow-hidden gap-3">
-          {/* 输入框 */}
+          {/* 输入框区 */}
           <div class="relative flex items-center">
-            <span class="absolute left-3 text-slate-400">
+            <span class="absolute left-3 text-stone-400">
               <IconSearch size={16} />
             </span>
             <input
@@ -174,13 +174,13 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
                   executeSearch(query());
                 }
               }}
-              class="w-full pl-9 pr-9 py-2 text-sm rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/60 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              class="w-full pl-9 pr-9 py-2 text-sm rounded-lg border border-stone-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/40 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
             <Show when={query()}>
               <button
                 type="button"
                 onClick={handleClear}
-                class="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                class="absolute right-3 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 cursor-pointer"
               >
                 <IconX size={16} />
               </button>
@@ -192,7 +192,7 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
             <Show
               when={!isSearching()}
               fallback={
-                <div class="flex justify-center items-center pt-24 gap-2 text-slate-400">
+                <div class="flex justify-center items-center pt-24 gap-2 text-stone-400">
                   <IconLoader2 size={18} class="animate-spin" />
                   <span class="text-xs">正在检索全书内容...</span>
                 </div>
@@ -201,7 +201,7 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
               <Show
                 when={!(lastSearched() && results().length === 0)}
                 fallback={
-                  <div class="text-xs text-slate-400 text-center py-20">
+                  <div class="text-xs text-stone-400 text-center py-20">
                     未找到包含“{lastSearched()}”的内容
                   </div>
                 }
@@ -213,7 +213,7 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
                         props.onSelectResult(item.cfi, lastSearched());
                         handleClose();
                       }}
-                      class="p-3 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer text-xs leading-relaxed text-slate-700 dark:text-slate-300 line-clamp-2"
+                      class="p-3 rounded-lg border border-stone-200/60 dark:border-zinc-800/60 text-xs leading-relaxed text-stone-700 dark:text-stone-300 line-clamp-2 cursor-pointer transition-colors"
                     >
                       {renderHighlightedExcerpt(item.excerpt, lastSearched())}
                     </div>

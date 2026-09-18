@@ -150,26 +150,44 @@ export function Reader(props: ReaderProps) {
 
 
   // 在 Reader 组件内部加入这段代码
-  createEffect(() => {
-    console.log("currentSet 当前按键实时变化:", currentSet());
-    console.log('currentIndexNodes',currentIndexNodes())
-  });
+  // createEffect(() => {
+  //   console.log("currentSet 当前按键实时变化:", currentSet());
+  //   console.log('currentIndexNodes', currentIndexNodes())
+  // });
 
+
+
+
+
+  let highlightTimer: number | undefined;
+  const HIGHLIGHT_DURATION = 3000;
+  const handleSelectResult = (cfi: string, keyword: string) => {
+    handleJump(cfi);
+    console.log("keyword:", keyword);
+    const inst = instance();
+    if (!inst || !cfi) return;
+    try { inst.annotations.add("highlight", cfi, {}, () => { }, "search-highlight-class", { fill: "#fef08a", "fill-opacity": "0.5" }); }
+    catch (err) { console.error("添加高亮失败:", err); }
+    if (highlightTimer) clearTimeout(highlightTimer);
+    highlightTimer = window.setTimeout(() => {
+      try { inst.annotations.remove(cfi, "highlight"); }
+      catch (e) { }
+    }, HIGHLIGHT_DURATION);
+  };
 
 
 
   return (
 
     <Box height={height()}>
-
-
-
       <SplitLayout bg={backgroundColor()} height={height()}
-        notesTitle={'笔记'}
         onExit={() => { navigate({ to: "/book/shelf" }) }}
+        onPrevPage={() => instance()?.prev()}
+        onNextPage={() => instance()?.next()}
         epub={
           <EpubPaper ref={viewerRef} />
         }
+        notesTitle={'笔记'}
         notes={
           currentSet().has("select") ? (
             <EpubNotesCreate newNote={activeNote()} onSave={(v) => { newNode(v); opt("mark"); }} onCancel={() => clear()} />
@@ -185,7 +203,6 @@ export function Reader(props: ReaderProps) {
             <BookInfoPanel book={currentBook()} />
           )
         }
-
       />
 
       <EpubTocDrawer
@@ -199,7 +216,7 @@ export function Reader(props: ReaderProps) {
         opened={searchOpened()}
         onClose={() => setSearchOpened(false)}
         book={currentBook()}
-        onSelectResult={(cfi) => handleJump(cfi)}
+        onSelectResult={handleSelectResult}
       />
 
       <EpubStyleDrawer

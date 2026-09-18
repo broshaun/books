@@ -22,10 +22,10 @@ function TocItem(props: {
 
   return (
     <div class="flex flex-col">
-      <div class="flex items-center justify-between w-full px-2.5 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-left group">
-        {/* 章节名称点击：触发跳转并关闭抽屉 */}
+      <div class="flex items-center justify-between w-full px-2.5 py-1.5 rounded-md text-left group">
+        {/* 章节名称 */}
         <span
-          class="text-sm truncate flex-1 text-slate-700 dark:text-slate-200 cursor-pointer"
+          class="text-sm truncate flex-1 text-stone-700 dark:text-stone-200 cursor-pointer"
           onClick={() => {
             if (props.item.href) {
               props.onSelectChapter(props.item.href);
@@ -44,11 +44,12 @@ function TocItem(props: {
               e.stopPropagation();
               setExpanded(!expanded());
             }}
-            class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+            class="p-1 cursor-pointer -mr-1" // 移除悬浮背景色，微调边距
           >
+            {/* [修改点] 这里明确指定了图标的颜色，确保在任何背景下都可见 */}
             <IconChevronRight
               size={14}
-              class={`transform transition-transform duration-200 ${
+              class={`transform transition-transform duration-200 text-blue-600 dark:text-blue-400 ${
                 expanded() ? 'rotate-90' : ''
               }`}
             />
@@ -56,9 +57,9 @@ function TocItem(props: {
         </Show>
       </div>
 
-      {/* 子目录递归渲染 */}
+      {/* 子目录区域 */}
       <Show when={hasChildren && expanded()}>
-        <div class="pl-3 space-y-0.5 mt-0.5 border-l border-slate-200 dark:border-zinc-800 ml-2">
+        <div class="pl-3 space-y-0.5 mt-0.5 border-l border-stone-200/60 dark:border-zinc-700/60 ml-2">
           <For each={props.item.subitems}>
             {(sub) => (
               <TocItem
@@ -114,34 +115,34 @@ export function EpubTocDrawer(props: EpubTocDrawerProps) {
       side="right"
     >
       <Drawer.Portal>
-        {/* 1. 遮罩层：使用 Drawer.Overlay */}
-        <Drawer.Overlay class="fixed inset-0 bg-black/40 z-40 transition-opacity duration-300" />
+        {/* 1. 遮罩层 */}
+        <Drawer.Overlay class="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-40 transition-opacity duration-300" />
 
-        {/* 2. 抽屉主体 (右侧滑出) */}
+        {/* 2. 抽屉主体 */}
         <Drawer.Content
-          class="fixed inset-y-0 right-0 z-50 h-full bg-white dark:bg-zinc-900 shadow-xl flex flex-col focus:outline-none"
+          class="fixed inset-y-0 right-0 z-50 h-full shadow-2xl shadow-stone-900/20 border-l border-stone-200/80 dark:border-zinc-800/80 flex flex-col focus:outline-none backdrop-blur-xl bg-inherit/95"
           style={{ width: drawerWidthStyle(), 'max-width': '100vw' }}
         >
           {/* 顶部标题栏 */}
-          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-zinc-800 shrink-0">
-            <span class="font-semibold text-base text-slate-800 dark:text-slate-100">
+          <div class="flex items-center justify-between px-4 py-3.5 border-b border-stone-200/60 dark:border-zinc-800/60 shrink-0 bg-white/30 dark:bg-zinc-900/30">
+            <span class="font-semibold text-base text-stone-800 dark:text-stone-100">
               目录
             </span>
             <button
               type="button"
               onClick={props.onClose}
-              class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+              class="text-xs text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 cursor-pointer px-2 py-1 rounded-md transition-colors"
             >
               关闭
             </button>
           </div>
 
-          {/* 内容区域 (带滚动条) */}
+          {/* 内容区域 */}
           <div class="flex-1 overflow-y-auto p-3">
             <Show
               when={!loading()}
               fallback={
-                <div class="flex justify-center items-center pt-24 gap-2 text-slate-400">
+                <div class="flex justify-center items-center pt-24 gap-2 text-stone-400">
                   <IconLoader2 size={18} class="animate-spin" />
                   <span class="text-xs">正在加载目录...</span>
                 </div>
@@ -151,7 +152,7 @@ export function EpubTocDrawer(props: EpubTocDrawerProps) {
                 <For
                   each={toc()}
                   fallback={
-                    <div class="text-xs text-slate-400 text-center py-12">
+                    <div class="text-xs text-stone-400 text-center py-12">
                       暂无目录
                     </div>
                   }
