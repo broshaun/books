@@ -4,7 +4,6 @@ import {
   IconDoorExit,
   IconChevronLeft,
   IconChevronRight,
-  IconX,
   IconLoader2,
 } from "@tabler/icons-solidjs";
 

@@ -54,7 +54,7 @@ export function Reader(props: ReaderProps) {
       return book
     });
 
-  const { bookmarks, loading, toggleBookmark, isBookmarked, removeBookmark } = useBookmarks(() => currentBook());
+  const { bookmarks, toggleBookmark, isBookmarked, removeBookmark } = useBookmarks(() => currentBook());
 
   // 🌟 点击书签按钮时直接调用（传入当前 cfi）
   const handleToggleBookmark = () => {
@@ -78,7 +78,7 @@ export function Reader(props: ReaderProps) {
     setInstance(renderInstance);
   });
 
-  const { currentSet, opt, clear } = useCurrentOperation<string>([]);
+  const { currentSet, opt } = useCurrentOperation<string>([]);
   const [tocOpened, setTocOpened] = createSignal(false);
   const [searchOpened, setSearchOpened] = createSignal(false);
   const [styleOpened, setStyleOpened] = createSignal(false);
@@ -254,12 +254,9 @@ export function Reader(props: ReaderProps) {
         <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconList size={20} />
         </button>
-        {/* 🌟 去除选中背景色后的书签按钮 */}
-        <button
-          type="button"
-          onClick={handleToggleBookmark}
-          class={`p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${isBookmarked(currentCfi()) ? "text-blue-500" : "text-slate-500"
-            }`}
+   
+        <button type="button" onClick={handleToggleBookmark}
+          class={`p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${isBookmarked(currentCfi()) ? "text-blue-500" : "text-slate-500"}`}
           title={isBookmarked(currentCfi()) ? "移除当前书签" : "添加当前书签"}
         >
           <IconTagPlus size={20} />
