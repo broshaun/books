@@ -3,9 +3,12 @@ import {
   IconCopy,
   IconCheck,
   IconQuote,
+  IconTag,
+  IconPlus,
+  IconX,
 } from '@tabler/icons-solidjs';
 
-// 同步更新为和 NewNote 完全一致的结构
+// 同步更新接口，增加 tags 数组
 export interface NoteItem {
   bookId: string;
   bookName: string;
@@ -14,6 +17,7 @@ export interface NoteItem {
   text: string;
   title?: string;
   color?: string;
+  tags?: string[]; // 👈 增加标签字段
   content?: string;
   updatedAt?: number;
 }
@@ -44,6 +48,7 @@ const getInitialNote = (data?: NoteItem | null, notes?: NoteItem | null): NoteIt
     cfiRange: '',
     text: '',
     color: HIGHLIGHT_COLORS[0].bg,
+    tags: [],
     content: '',
   };
 };
@@ -54,6 +59,11 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
   );
   const [copied, setCopied] = createSignal(false);
   const [popoverOpened, setPopoverOpened] = createSignal(false);
+  
+  // 🌟 新增：正在输入的临时标签文本
+  const [tagInput, setTagInput] = createSignal('');
+  // 🌟 新增：是否正在输入标签的开关状态（控制输入框显隐）
+  const [isAddingTag, setIsAddingTag] = createSignal(false);
 
   createEffect(() => {
     setCurrentNote(getInitialNote(props.data, props.notes));
@@ -63,6 +73,26 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
     const updated: NoteItem = { ...currentNote(), ...fields, updatedAt: Date.now() };
     setCurrentNote(updated);
     props.onNoteChange(updated);
+  };
+
+  // 🌟 标签添加方法
+  const handleAddTag = () => {
+    const val = tagInput().trim();
+    if (!val) return;
+    const currentTags = currentNote().tags || [];
+    if (currentTags.includes(val)) {
+      setTagInput('');
+      return;
+    }
+    handleFieldChange({ tags: [...currentTags, val] });
+    setTagInput('');
+    setIsAddingTag(false);
+  };
+
+  // 🌟 标签删除方法
+  const handleRemoveTag = (tagToRemove: string) => {
+    const currentTags = currentNote().tags || [];
+    handleFieldChange({ tags: currentTags.filter((t) => t !== tagToRemove) });
   };
 
   const selectedColorObj = () =>
@@ -82,7 +112,7 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
   };
 
   return (
-    <div class="h-full p-3 flex flex-col gap-2.5 box-border bg-transparent text-stone-900">
+    <div class="h-full p-3 flex flex-col gap-2.5 box-border bg-transparent text-stone-900 overflow-y-auto">
       {/* 顶部标题栏：居中对齐 */}
       <div class="flex items-center justify-center gap-2 border-b border-stone-300/60 pb-2">
         <input
@@ -92,6 +122,64 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
           onInput={(e) => handleFieldChange({ title: e.currentTarget.value })}
           class="w-full font-semibold text-sm bg-transparent border-none outline-none text-stone-900 placeholder:text-stone-400 text-center"
         />
+      </div>
+
+      {/* 🌟 标签管理栏 */}
+      <div class="flex items-center flex-wrap gap-1.5 min-h-[26px]">
+        <IconTag size={12} class="text-stone-400 shrink-0" />
+        
+        {/* 已有标签列表 */}
+        <For each={currentNote().tags || []}>
+          {(tag) => (
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] bg-stone-200/70 text-stone-700 font-medium group">
+              <span>{tag}</span>
+              <button
+                type="button"
+                onClick={() => handleRemoveTag(tag)}
+                class="text-stone-400 hover:text-stone-700 cursor-pointer"
+              >
+                <IconX size={10} />
+              </button>
+            </span>
+          )}
+        </For>
+
+        {/* 添加标签输入框或按钮 */}
+        <Show
+          when={isAddingTag()}
+          fallback={
+            <button
+              type="button"
+              onClick={() => setIsAddingTag(true)}
+              class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[11px] border border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 cursor-pointer transition-colors"
+            >
+              <IconPlus size={10} />
+              <span>添加标签</span>
+            </button>
+          }
+        >
+          <div class="inline-flex items-center gap-1">
+            <input
+              type="text"
+              autofocus
+              placeholder="回车确认..."
+              value={tagInput()}
+              onInput={(e) => setTagInput(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddTag();
+                if (e.key === 'Escape') {
+                  setIsAddingTag(false);
+                  setTagInput('');
+                }
+              }}
+              onBlur={() => {
+                if (tagInput().trim()) handleAddTag();
+                else setIsAddingTag(false);
+              }}
+              class="w-20 px-1.5 py-0.5 rounded border border-stone-400 bg-white text-[11px] outline-none text-stone-800"
+            />
+          </div>
+        </Show>
       </div>
 
       {/* 引用内容卡片区域 */}
@@ -171,7 +259,7 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
         placeholder="在此记录读书心得..."
         value={currentNote().content || ''}
         onInput={(e) => handleFieldChange({ content: e.currentTarget.value })}
-        class="flex-1 w-full p-3 rounded-xl border border-stone-300/70 bg-stone-50/60 shadow-2xs text-stone-900 placeholder:text-stone-400 text-xs leading-relaxed resize-none outline-none"
+        class="flex-1 w-full p-3 rounded-xl border border-stone-300/70 bg-stone-50/60 shadow-2xs text-stone-900 placeholder:text-stone-400 text-xs leading-relaxed resize-none outline-none min-h-[120px]"
       />
 
       {/* 底部删除按钮 */}

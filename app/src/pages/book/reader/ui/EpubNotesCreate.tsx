@@ -3,15 +3,20 @@ import {
   IconCopy,
   IconCheck,
   IconQuote,
+  IconTag,
+  IconX,
 } from '@tabler/icons-solidjs';
 
 export interface NewNote {
-  book: string;
+  book?: string;
+  bookId?: string;
+  bookName?: string;
   index: number;
   cfiRange: string;
   text: string;
   title?: string;
   color?: string;
+  tags?: string[]; // 🌟 增加 tags 数组字段
   updatedAt?: number;
 }
 
@@ -33,24 +38,25 @@ const PREF_COLOR_KEY = 'epub_pref_color';
 
 export function EpubNotesCreate(props: EpubNotesCreateProps) {
   const [draft, setDraft] = createSignal<NewNote>({
-    book: '',
     index: 0,
     cfiRange: '',
     text: '',
     ...props.newNote,
+    tags: props.newNote?.tags || [],
     color: props.newNote?.color || localStorage.getItem(PREF_COLOR_KEY) || HIGHLIGHT_COLORS[0].bg,
   });
 
   const [copied, setCopied] = createSignal(false);
   const [popoverOpened, setPopoverOpened] = createSignal(false);
+  const [tagInput, setTagInput] = createSignal('');
 
   createEffect(() => {
     setDraft({
-      book: '',
       index: 0,
       cfiRange: '',
       text: '',
       ...props.newNote,
+      tags: props.newNote?.tags || [],
       color: props.newNote?.color || localStorage.getItem(PREF_COLOR_KEY) || HIGHLIGHT_COLORS[0].bg,
     });
   });
@@ -78,9 +84,31 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
     }
   };
 
+  // 🌟 添加标签
+  const handleAddTag = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = tagInput().trim();
+      if (!val) return;
+      const currentTags = draft().tags || [];
+      if (!currentTags.includes(val)) {
+        setDraft((prev) => ({ ...prev, tags: [...currentTags, val] }));
+      }
+      setTagInput('');
+    }
+  };
+
+  // 🌟 移除标签
+  const handleRemoveTag = (tagToRemove: string) => {
+    setDraft((prev) => ({
+      ...prev,
+      tags: (prev.tags || []).filter((t) => t !== tagToRemove),
+    }));
+  };
+
   return (
     <div class="h-full p-3 flex flex-col gap-2.5 box-border bg-transparent text-stone-900">
-      {/* 顶部标题栏：改为居中对齐 */}
+      {/* 顶部标题栏：居中对齐 */}
       <div class="flex items-center justify-center gap-2 border-b border-stone-300/60 pb-2">
         <input
           type="text"
@@ -160,6 +188,42 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
         </div>
       </Show>
 
+      {/* 🌟 标签管理区域 */}
+      <div class="flex flex-col gap-1.5">
+        <div class="flex items-center gap-1.5 text-xs text-stone-500 px-0.5">
+          <IconTag size={13} />
+          <span>标签管理 (输入后按回车添加)</span>
+        </div>
+
+        {/* 已添加的标签展示列表 */}
+        <div class="flex flex-wrap gap-1.5">
+          <For each={draft().tags || []}>
+            {(tag) => (
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] bg-stone-200/70 dark:bg-zinc-800 text-stone-700 dark:text-stone-300">
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveTag(tag)}
+                  class="hover:text-red-500 cursor-pointer"
+                >
+                  <IconX size={12} />
+                </button>
+              </span>
+            )}
+          </For>
+        </div>
+
+        {/* 输入新标签的输入框 */}
+        <input
+          type="text"
+          placeholder="添加标签（如：灵感、核心、待办）..."
+          value={tagInput()}
+          onInput={(e) => setTagInput(e.currentTarget.value)}
+          onKeyDown={handleAddTag}
+          class="w-full text-xs px-2.5 py-1.5 rounded-md border border-stone-300/70 bg-stone-50/30 outline-none focus:border-stone-400 text-stone-800 placeholder:text-stone-400"
+        />
+      </div>
+
       {/* 底部操作按钮区 */}
       <div class="flex items-center gap-2 pt-1 shrink-0 mt-auto">
         <Show when={props.onCancel}>
@@ -171,7 +235,6 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
             <span>取消</span>
           </button>
         </Show>
-        {/* 保存按钮背景色调整为更轻量协调的石色/浅色系风格 */}
         <button
           type="button"
           onClick={() => props.onSave(draft())}

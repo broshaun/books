@@ -50,7 +50,7 @@ export default function SplitLayout(props: SplitLayoutProps) {
   return (
     <div class="flex w-full justify-center bg-[#fbfbfa] text-stone-800">
       <div
-        class="relative flex w-full max-w-7xl overflow-hidden rounded-2xl border border-stone-200/60 bg-white shadow-xs"
+        class="relative flex w-full max-w-7xl overflow-hidden border border-stone-200/60 bg-white shadow-xs"
         style={{
           "background-color": props.bg,
           height: props.height ? `${props.height}px` : "100vh",
@@ -139,7 +139,7 @@ export default function SplitLayout(props: SplitLayoutProps) {
                 onClick={() => toggleNotes(false)}
                 class="flex h-6 w-6 items-center justify-center rounded-full"
               >
-                <IconX size={14} />
+                <IconChevronRight size={14} />
               </button>
             </header>
 

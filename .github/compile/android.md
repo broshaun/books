@@ -58,6 +58,6 @@ Secret：
 
 
 正常部署
-- git tag android-v0.12
-- git push origin android-v0.12
+- git tag android-v0.13
+- git push origin android-v0.13
 

@@ -7,6 +7,8 @@ export interface NewNote {
   bookName: string;
   index: number;
   cfiRange: string;
+  // 🌟 新增：支持多标签/分类数组（例如 ['灵感', '代码', '重要']）
+  tags?: string[];
   text: string;
   title?: string;
   color?: string;
@@ -91,6 +93,7 @@ export function useEpubNotes(rendition: () => Rendition | null) {
       bookId: item.bookId || bookId,
       bookName: item.bookName || bookName,
       color: item.color || "#fffa65",
+      tags: Array.isArray(item.tags) ? item.tags : [], // 确保初始化时 tags 为数组
       isUnderline: item.isUnderline ?? false,
       updatedAt: item.updatedAt || Date.now(),
     }));
@@ -181,8 +184,24 @@ export function useEpubNotes(rendition: () => Rendition | null) {
     const existingIndex = notes.findIndex((n) => n.cfiRange === noteData.cfiRange);
 
     const fullNote: NewNote = existingIndex >= 0
-      ? { ...notes[existingIndex], ...noteData, bookId, bookName: notes[existingIndex].bookName || bookName, updatedAt: Date.now() }
-      : { color: "#fffa65", isUnderline: false, ...noteData, title: noteData.title || "读书笔记", bookId, bookName, updatedAt: Date.now() };
+      ? { 
+          ...notes[existingIndex], 
+          ...noteData, 
+          bookId, 
+          bookName: notes[existingIndex].bookName || bookName, 
+          tags: noteData.tags ?? notes[existingIndex].tags ?? [],
+          updatedAt: Date.now() 
+        }
+      : { 
+          color: "#fffa65", 
+          isUnderline: false, 
+          tags: noteData.tags ?? [],
+          ...noteData, 
+          title: noteData.title || "读书笔记", 
+          bookId, 
+          bookName, 
+          updatedAt: Date.now() 
+        };
 
     notes = existingIndex >= 0 ? notes.map((n, i) => (i === existingIndex ? fullNote : n)) : [...notes, fullNote];
     
@@ -202,5 +221,27 @@ export function useEpubNotes(rendition: () => Rendition | null) {
     setCurrent((prev) => (prev?.cfiRange === cfiRange ? null : prev));
   };
 
-  return { get: () => notes, set, put, remove, currentIndexNodes, current };
+  // 🌟 新增：根据标签筛选笔记的方法
+  const getByTag = (tag: string) => {
+    if (!tag || tag === 'all') return notes;
+    return notes.filter((n) => n.tags?.includes(tag));
+  };
+
+  // 🌟 新增：获取当前所有使用过的标签列表（用于动态渲染标签页 Tabs）
+  const getAllTags = () => {
+    const tagSet = new Set<string>();
+    notes.forEach((n) => n.tags?.forEach((t) => tagSet.add(t)));
+    return Array.from(tagSet);
+  };
+
+  return { 
+    get: () => notes, 
+    set, 
+    put, 
+    remove, 
+    getByTag,       // 👈 新增筛选
+    getAllTags,     // 👈 新增获取所有标签
+    currentIndexNodes, 
+    current 
+  };
 }

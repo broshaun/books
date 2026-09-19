@@ -1,4 +1,4 @@
-import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase } from "@tabler/icons-solidjs";
+import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus } from "@tabler/icons-solidjs";
 import { createSignal, onMount, onCleanup, createEffect, createResource } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
@@ -18,7 +18,7 @@ import EpubPaper from "./ui/EpubPaper";
 import Box from "@/components/Box";
 import SplitLayout from "./ui/SplitLayout";
 import BookInfoPanel from "./ui/BookInfoPanel";
-
+import { useBookmarks } from "./hook/useBookmarks";
 
 
 interface ReaderProps {
@@ -40,6 +40,8 @@ export function Reader(props: ReaderProps) {
   const setBackgroundColor = useStore2.setBackgroundColor;
 
 
+  const [currentCfi, setCfi] = createSignal<string>();
+
   const { openBook } = createEpubLoader();
   const [currentBook] = createResource(
     () => props.path,
@@ -51,6 +53,16 @@ export function Reader(props: ReaderProps) {
       console.log("bookIdentifier", bookIdentifier);
       return book
     });
+
+  const { bookmarks, loading, toggleBookmark, isBookmarked, removeBookmark } = useBookmarks(() => currentBook());
+
+  // 🌟 点击书签按钮时直接调用（传入当前 cfi）
+  const handleToggleBookmark = () => {
+    const cfi = currentCfi();
+    if (cfi) {
+      toggleBookmark(cfi); // 自动计算标题、自动存储
+    }
+  };
 
   let viewerRef!: HTMLDivElement;
   const [instance, setInstance] = createSignal<any>(null);
@@ -116,10 +128,20 @@ export function Reader(props: ReaderProps) {
     useStore2.setFontSize(size, inst);
   };
 
+  let debounceTimer: number | NodeJS.Timeout;
   const handleRelocated = (location: any) => {
     const cfi = location?.start?.cfi;
-    if (cfi) localStorage.setItem("READ_POSITION_KEY", cfi);
+    if (!cfi) return;
+    setCfi(cfi)
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      localStorage.setItem("READ_POSITION_KEY", cfi);
+    }, 3000);
   };
+  onCleanup(() => {
+    clearTimeout(debounceTimer);
+  });
+
 
   const handleJumpCfiRange = async (cfiRange: string) => {
     const inst = instance();
@@ -134,7 +156,6 @@ export function Reader(props: ReaderProps) {
 
     const contentHandler = (contents: any) => {
       const doc = contents.document;
-      // doc.addEventListener("mousedown", () => handleClick("mousedown"));
       doc.addEventListener("mouseup", handleMouseUp);
     };
 
@@ -161,17 +182,6 @@ export function Reader(props: ReaderProps) {
     inst.display(savedCfi || undefined);
   })
 
-
-  // 在 Reader 组件内部加入这段代码
-  // createEffect(() => {
-  //   console.log("currentSet 当前按键实时变化:", currentSet());
-  //   console.log('currentIndexNodes', currentIndexNodes())
-  // });
-
-
-
-
-
   let highlightTimer: number | undefined;
   const HIGHLIGHT_DURATION = 3000;
   const handleSelectResult = (cfi: string, keyword: string) => {
@@ -191,7 +201,6 @@ export function Reader(props: ReaderProps) {
 
 
   return (
-
     <Box height={height()}>
       <SplitLayout bg={backgroundColor()} height={height()}
         onExit={() => { navigate({ to: "/book/shelf" }) }}
@@ -203,7 +212,7 @@ export function Reader(props: ReaderProps) {
         notesTitle={'笔记'}
         notes={
           currentSet().has("select") ? (
-            <EpubNotesCreate newNote={activeNote()} onSave={(v) => { newNode(v); opt("mark"); }} onCancel={() => clear()} />
+            <EpubNotesCreate newNote={activeNote()} onSave={(v) => { newNode(v); opt("mark"); }} onCancel={() => { opt("click"); console.log('取消笔记') }} />
           ) : currentSet().has("mark") ? (
             <EpubNotesEdit notes={current()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
           ) : currentSet().has("click") ? (
@@ -223,6 +232,8 @@ export function Reader(props: ReaderProps) {
         onClose={() => setTocOpened(false)}
         book={currentBook()}
         onSelectChapter={(href) => { handleJump(href); }}
+        bookmarks={bookmarks}
+        onRemoveBookmark={removeBookmark}
       />
 
       <EpubSearchDrawer
@@ -240,29 +251,34 @@ export function Reader(props: ReaderProps) {
       />
 
       <QuickActionMenu>
-
-        <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
+        <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconList size={20} />
         </button>
+        {/* 🌟 去除选中背景色后的书签按钮 */}
+        <button
+          type="button"
+          onClick={handleToggleBookmark}
+          class={`p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${isBookmarked(currentCfi()) ? "text-blue-500" : "text-slate-500"
+            }`}
+          title={isBookmarked(currentCfi()) ? "移除当前书签" : "添加当前书签"}
+        >
+          <IconTagPlus size={20} />
+        </button>
 
-        <button type="button" onClick={() => setSearchOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
+        <button type="button" onClick={() => setSearchOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconSearch size={20} />
         </button>
 
-        <button type="button" onClick={() => setStyleOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
+        <button type="button" onClick={() => setStyleOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconLetterCase size={20} />
         </button>
 
-        <button type="button" onClick={toggleNotes} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500">
+        <button type="button" onClick={toggleNotes} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           {hideNotes() ? <IconEye size={20} /> : <IconEyeOff size={20} />}
         </button>
       </QuickActionMenu>
-
     </Box>
-
   )
-
-
 }
 
 export default Reader;
