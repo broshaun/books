@@ -20,7 +20,6 @@ interface EpubNotesTimelineProps {
   notes: NewNote[];
   onSelectNote?: (cfiRange: string) => void;
   onDelete?: (cfiRange: string) => void;
-  onSelectTag?: (tag: string | null) => void; // 👈 全部时传 null，单选时传具体 tag 字符串
 }
 
 const parseCfi = (cfi: string): number[] => {
@@ -37,22 +36,21 @@ const formatTime = (ts?: number) => {
 export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
   const [activeTag, setActiveTag] = createSignal<string>('all');
 
-  const handleTagClick = (tag: string) => {
-    setActiveTag(tag);
-    // 🌟 点击“全部”时传 null，单选标签时传对应的字符串
-    props.onSelectTag?.(tag === 'all' ? null : tag);
-  };
-
   const allTags = () => {
     const set = new Set<string>();
-    (props.notes || []).forEach((n) => n.tags?.forEach((t) => set.add(t)));
+    (props.notes || []).forEach((n) => {
+      n.tags?.forEach((t) => set.add(t));
+    });
     return Array.from(set);
   };
 
   const filteredAndSortedNotes = () => {
-    const tag = activeTag();
+    const currentTag = activeTag();
     const list = props.notes || [];
-    const matched = tag === 'all' ? list : list.filter((n) => n.tags?.includes(tag));
+
+    const matched = currentTag === 'all' 
+      ? list 
+      : list.filter((n) => n.tags?.includes(currentTag));
 
     return [...matched].sort((a, b) => {
       const posA = parseCfi(a.cfiRange);
@@ -65,22 +63,19 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
     });
   };
 
-  const getTagBtnClass = (isSelected: boolean) => 
-    `px-2.5 py-1 rounded-md text-xs font-medium shrink-0 transition-colors cursor-pointer flex items-center gap-1 ${
-      isSelected
-        ? 'bg-stone-200 text-stone-900 font-semibold shadow-2xs border border-stone-300/80'
-        : 'bg-stone-100/60 hover:bg-stone-200/60 text-stone-600'
-    }`;
-
   return (
+
     <div class="w-full h-full p-2 bg-transparent overflow-y-auto overflow-x-hidden text-stone-900 flex flex-col [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-stone-300/80 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-stone-400">
-      {/* 顶部标签栏 */}
       <Show when={(props.notes || []).length > 0}>
         <div class="flex items-center flex-wrap gap-1.5 pb-2.5 mb-2 border-b border-stone-200/60 shrink-0">
           <button
             type="button"
-            onClick={() => handleTagClick('all')}
-            class={getTagBtnClass(activeTag() === 'all')}
+            onClick={() => setActiveTag('all')}
+            class={`px-2.5 py-1 rounded-md text-xs font-medium shrink-0 transition-colors cursor-pointer ${
+              activeTag() === 'all'
+                ? 'bg-stone-200 text-stone-900 font-semibold shadow-2xs border border-stone-300/80'
+                : 'bg-stone-100/60 hover:bg-stone-200/60 text-stone-600'
+            }`}
           >
             全部 ({(props.notes || []).length})
           </button>
@@ -91,8 +86,12 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
               return (
                 <button
                   type="button"
-                  onClick={() => handleTagClick(tag)}
-                  class={getTagBtnClass(activeTag() === tag)}
+                  onClick={() => setActiveTag(tag)}
+                  class={`px-2.5 py-1 rounded-md text-xs font-medium shrink-0 transition-colors cursor-pointer flex items-center gap-1 ${
+                    activeTag() === tag
+                      ? 'bg-stone-200 text-stone-900 font-semibold shadow-2xs border border-stone-300/80'
+                      : 'bg-stone-100/60 hover:bg-stone-200/60 text-stone-600'
+                  }`}
                 >
                   <span>{tag}</span>
                   <span class="text-[10px] opacity-70">({count})</span>
@@ -103,7 +102,6 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
         </div>
       </Show>
 
-      {/* 笔记列表内容区 */}
       <div class="flex-1 min-h-0">
         <Show
           when={filteredAndSortedNotes().length > 0}

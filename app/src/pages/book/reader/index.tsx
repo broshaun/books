@@ -19,6 +19,8 @@ import Box from "@/components/Box";
 import SplitLayout from "./ui/SplitLayout";
 import BookInfoPanel from "./ui/BookInfoPanel";
 import { useBookmarks } from "./hook/useBookmarks";
+import { epubNotesStorage } from "./hook/epubNotesStorage";
+
 
 
 interface ReaderProps {
@@ -83,8 +85,16 @@ export function Reader(props: ReaderProps) {
   const [searchOpened, setSearchOpened] = createSignal(false);
   const [styleOpened, setStyleOpened] = createSignal(false);
   const { hideNotes, toggleNotes } = useEpubViews(instance);
-  const { put: newNode, remove, current, currentIndexNodes } = useEpubNotes(instance);
+  const { put: newNode, remove, current, currentIndexNodes, filter } = useEpubNotes(instance);
   const [activeNote, setActiveNote] = createSignal<NewNote>();
+
+
+  createResource(async () => {
+    console.log('epubNotesStorage.getNotes', await epubNotesStorage.getNotes())
+  })
+
+
+
 
 
 
@@ -220,6 +230,7 @@ export function Reader(props: ReaderProps) {
               notes={currentIndexNodes()}
               onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }}
               onDelete={(cfiRange) => { remove(cfiRange); }}
+              onSelectTag={(tag) => { console.log("tag", tag); filter({ tag: tag }) }}
             />
           ) : (
             <BookInfoPanel book={currentBook()} />
@@ -254,7 +265,7 @@ export function Reader(props: ReaderProps) {
         <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconList size={20} />
         </button>
-   
+
         <button type="button" onClick={handleToggleBookmark}
           class={`p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${isBookmarked(currentCfi()) ? "text-blue-500" : "text-slate-500"}`}
           title={isBookmarked(currentCfi()) ? "移除当前书签" : "添加当前书签"}

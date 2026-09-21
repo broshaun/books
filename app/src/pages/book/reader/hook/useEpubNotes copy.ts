@@ -16,12 +16,6 @@ export interface NewNote {
   updatedAt?: number;
 }
 
-export interface NoteFilter {
-  bookId?: string;
-  tag?: string | null;
-  [key: string]: any;
-}
-
 const GLOBAL_STORAGE_KEY = "epub_global_notes";
 
 export const getAllGlobalNotes = async (): Promise<NewNote[]> => {
@@ -35,7 +29,6 @@ export function useEpubNotes(rendition: () => Rendition | null) {
   const [current, setCurrent] = createSignal<NewNote | null>(null);
   const [currentIndexNodes, setCurrentIndexNodes] = createSignal<NewNote[]>([]);
   const [notes, setNotes] = createSignal<NewNote[]>([]);
-  const [internalFilter, setInternalFilter] = createSignal<NoteFilter>({});
 
   let isLoaded = false;
 
@@ -47,13 +40,7 @@ export function useEpubNotes(rendition: () => Rendition | null) {
     return { bookId, bookName: meta?.title || "未知书名" };
   };
 
-  const getResolvedFilter = (): NoteFilter => ({
-    bookId: getBookMeta().bookId,
-    tag: undefined,
-    ...internalFilter(),
-  });
-
-  const removeAnnotation = (cfiRange: string) => {
+  const removeAnnotationInstance = (cfiRange: string) => {
     try {
       const inst = rendition();
       inst?.annotations.remove(cfiRange, "highlight");
@@ -61,30 +48,16 @@ export function useEpubNotes(rendition: () => Rendition | null) {
     } catch {}
   };
 
-  const getFilteredNotes = (allNotes: NewNote[]) => {
-    const { bookId, tag } = getResolvedFilter();
-    return allNotes.filter((n) => {
-      if (bookId && n.bookId !== bookId) return false;
-      if (tag && !(Array.isArray(n.tags) && n.tags.includes(tag))) return false;
-      return true;
-    });
-  };
-
   const updateCurrentIndexNodes = (allNotes: NewNote[]) => {
     const inst = rendition();
-    if (!inst || !(inst as any).manager) return;
+    if (!inst || !(inst as any).manager) return; // 👈 解决 manager 类型报错
     
-    const filtered = getFilteredNotes(allNotes);
-    const { bookId } = getResolvedFilter();
-    const bookFiltered = filtered.filter((n) => !bookId || n.bookId === bookId);
+    const { bookId } = getBookMeta();
+    const bookNotes = allNotes.filter((n) => n.bookId === bookId);
     
     try {
       const sectionIndex = (inst.currentLocation() as any)?.start?.index;
-      setCurrentIndexNodes(
-        sectionIndex !== undefined 
-          ? bookFiltered.filter((n) => String(n.index) === String(sectionIndex)) 
-          : []
-      );
+      setCurrentIndexNodes(sectionIndex !== undefined ? bookNotes.filter((n) => String(n.index) === String(sectionIndex)) : []);
     } catch {
       setCurrentIndexNodes([]);
     }
@@ -94,10 +67,10 @@ export function useEpubNotes(rendition: () => Rendition | null) {
     const inst = rendition();
     if (!inst || !note.cfiRange) return;
 
-    const { bookId } = getResolvedFilter();
-    if (bookId && note.bookId && note.bookId !== bookId) return;
+    const { bookId } = getBookMeta();
+    if (note.bookId && note.bookId !== bookId) return;
 
-    removeAnnotation(note.cfiRange);
+    removeAnnotationInstance(note.cfiRange);
     const isUl = note.isUnderline;
     const color = note.color || "#fffa65";
 
@@ -107,7 +80,7 @@ export function useEpubNotes(rendition: () => Rendition | null) {
         note.cfiRange,
         { id: note.cfiRange },
         () => {
-          const matched = notes().find((i) => i.cfiRange === note.cfiRange && i.bookId === note.bookId);
+          const matched = notes().find((i) => i.cfiRange === note.cfiRange && i.bookId === bookId);
           if (matched) setCurrent(matched);
         },
         isUl ? "epub-note-underline" : "epub-note-highlight",
@@ -118,6 +91,7 @@ export function useEpubNotes(rendition: () => Rendition | null) {
     } catch {}
   };
 
+  // 注入高亮样式的函数
   const injectStyles = (doc: Document) => {
     if (!doc || doc.getElementById("epub-custom-highlight-style")) return;
     const style = doc.createElement("style");
@@ -130,21 +104,6 @@ export function useEpubNotes(rendition: () => Rendition | null) {
     doc.head.appendChild(style);
   };
 
-  // 监听过滤条件变化，自动重刷当前书本的高亮与章节节点
-  createEffect(() => {
-    const { bookId } = getResolvedFilter();
-    const allNotes = notes();
-    if (!isLoaded) return;
-
-    allNotes.forEach((n) => {
-      if (!bookId || n.bookId === bookId) removeAnnotation(n.cfiRange);
-    });
-
-    getFilteredNotes(allNotes).forEach(renderAnnotation);
-    updateCurrentIndexNodes(allNotes);
-  });
-
-  // 监听渲染实例生命周期与章节跳转
   createEffect(() => {
     const inst = rendition();
     if (!inst) return;
@@ -155,20 +114,24 @@ export function useEpubNotes(rendition: () => Rendition | null) {
       if (!mounted) return;
       setNotes(saved);
       isLoaded = true;
-      getFilteredNotes(saved).forEach(renderAnnotation);
+      
+      const { bookId } = getBookMeta();
+      saved.forEach((n) => n.bookId === bookId && renderAnnotation(n));
       updateCurrentIndexNodes(saved);
     });
 
     const contentHandler = (contents: any) => {
-      injectStyles(contents.document);
+      injectStyles(contents.document); // 👈 正确通过 contents.document 注入样式
       if (isLoaded) {
-        getFilteredNotes(notes()).forEach((n) => {
-          if (String(n.index) === String(contents.sectionIndex)) renderAnnotation(n);
-        });
+        const { bookId } = getBookMeta();
+        notes().forEach((n) => n.bookId === bookId && String(n.index) === String(contents.sectionIndex) && renderAnnotation(n));
       }
     };
 
-    const handleRelocated = () => updateCurrentIndexNodes(notes());
+    const handleRelocated = (location: any) => {
+      const idx = location?.start?.index;
+      if (idx !== undefined) updateCurrentIndexNodes(notes());
+    };
 
     inst.hooks.content.register(contentHandler);
     inst.on("relocated", handleRelocated);
@@ -184,7 +147,7 @@ export function useEpubNotes(rendition: () => Rendition | null) {
 
   const put = (noteData: Omit<NewNote, "bookId" | "bookName" | "updatedAt">) => {
     if (!noteData.cfiRange || !isLoaded) return;
-    removeAnnotation(noteData.cfiRange);
+    removeAnnotationInstance(noteData.cfiRange);
 
     const { bookId, bookName } = getBookMeta();
     const currentNotes = notes();
@@ -202,17 +165,12 @@ export function useEpubNotes(rendition: () => Rendition | null) {
     void setAllGlobalNotes(updatedList);
     updateCurrentIndexNodes(updatedList);
     setCurrent(fullNote);
-
-    const { bookId: fBookId, tag: fTag } = getResolvedFilter();
-    const matchBook = !fBookId || fullNote.bookId === fBookId;
-    const matchTag = !fTag || (Array.isArray(fullNote.tags) && fullNote.tags.includes(fTag));
-    
-    if (matchBook && matchTag) renderAnnotation(fullNote);
+    renderAnnotation(fullNote);
   };
 
   const remove = (cfiRange: string) => {
     if (!cfiRange || !isLoaded) return;
-    removeAnnotation(cfiRange);
+    removeAnnotationInstance(cfiRange);
 
     const { bookId } = getBookMeta();
     const updatedList = notes().filter((n) => !(n.cfiRange === cfiRange && n.bookId === bookId));
@@ -223,12 +181,5 @@ export function useEpubNotes(rendition: () => Rendition | null) {
     setCurrent((prev) => (prev?.cfiRange === cfiRange && prev?.bookId === bookId ? null : prev));
   };
 
-  const filter = (newFilter?: NoteFilter) => {
-    if (newFilter !== undefined) {
-      setInternalFilter((prev) => ({ ...prev, ...newFilter }));
-    }
-    return getResolvedFilter();
-  };
-
-  return { put, remove, current, currentIndexNodes, filter };
+  return { put, remove, currentIndexNodes, current };
 }
