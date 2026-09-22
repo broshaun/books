@@ -20,8 +20,8 @@ import SplitLayout from "./ui/SplitLayout";
 import BookInfoPanel from "./ui/BookInfoPanel";
 import { useBookmarks } from "./hook/useBookmarks";
 import { epubNotesStorage } from "./hook/epubNotesStorage";
-
-
+import { useEpubNotesSync } from "./hook/useEpubNotesSync";
+import { notesCache } from "@/api/cache/notesCache";
 
 
 interface ReaderProps {
@@ -95,6 +95,19 @@ export function Reader(props: ReaderProps) {
   })
 
 
+
+  const { isSyncing, syncNow } = useEpubNotesSync({
+    interval: 3000,
+    onSyncGet: async () => {
+      let note = await notesCache.get()
+      console.log('note',note)
+      return note
+    },
+    onSyncSet: async (localNotes) => {
+      console.log('同步数据localNotes',localNotes)
+      // await notesCache.set(localNotes)
+    },
+  });
 
 
 

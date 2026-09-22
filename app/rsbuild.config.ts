@@ -13,6 +13,7 @@ export default defineConfig({
     pluginSolid(),
     pluginTailwindcss(),
   ],
+
   tools: {
     rspack: {
       plugins: [
@@ -23,4 +24,9 @@ export default defineConfig({
       ],
     },
   },
+
+  output: {
+    assetPrefix: "/",
+  },
+
 });
