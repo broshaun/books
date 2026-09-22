@@ -20,6 +20,9 @@ importers:
       '@corvu/resizable':
         specifier: ^0.2.5
         version: 0.2.5(solid-js@1.9.15)
+      '@solid-primitives/event-listener':
+        specifier: ^2.4.6
+        version: 2.4.6(solid-js@1.9.15)
       '@tabler/icons-solidjs':
         specifier: ^3.46.0
         version: 3.46.0(solid-js@1.9.15)
@@ -519,6 +522,11 @@ packages:
         optional: true
       '@swc/helpers':
         optional: true
+
+  '@solid-primitives/event-listener@2.4.6':
+    resolution: {integrity: sha512-5I0YJcTVYIWoMmgBSROBZGcz+ymhew/pGTg2dHW74BUjFKsV8Li4bOZYl0YAGP4mHw5o4UBd9/BEesqBci3wxw==}
+    peerDependencies:
+      solid-js: ^1.6.12
 
   '@solid-primitives/memo@1.5.1':
     resolution: {integrity: sha512-VDPrkl9epp0tbby9MvsqphGFCYCtDRC5J8FKzTqHbQiG5hhR8n6xv4MfjhTW231IaBxxPHLxS43EE8c5Q23mSQ==}
@@ -1830,6 +1838,11 @@ snapshots:
       '@rspack/binding': 2.2.3
     optionalDependencies:
       '@swc/helpers': 0.5.23
+
+  '@solid-primitives/event-listener@2.4.6(solid-js@1.9.15)':
+    dependencies:
+      '@solid-primitives/utils': 6.4.1(solid-js@1.9.15)
+      solid-js: 1.9.15
 
   '@solid-primitives/memo@1.5.1(solid-js@1.9.15)':
     dependencies:

@@ -15,6 +15,7 @@
     "@corvu/disclosure": "^0.2.2",
     "@corvu/drawer": "^0.2.4",
     "@corvu/resizable": "^0.2.5",
+    "@solid-primitives/event-listener": "^2.4.6",
     "@tabler/icons-solidjs": "^3.46.0",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "~2",

@@ -22,6 +22,8 @@ import { useBookmarks } from "./hook/useBookmarks";
 import { epubNotesStorage } from "./hook/epubNotesStorage";
 
 
+
+
 interface ReaderProps {
   path: string;
 }
@@ -84,7 +86,7 @@ export function Reader(props: ReaderProps) {
   const [searchOpened, setSearchOpened] = createSignal(false);
   const [styleOpened, setStyleOpened] = createSignal(false);
   const { hideNotes, toggleNotes } = useEpubViews(instance);
-  const { put: newNode, remove, currentNote,indexTags, currentIndexNotes, filter } = useEpubNotes(instance);
+  const { put: newNode, remove, currentNote, indexTags, currentIndexNotes, filter } = useEpubNotes(instance);
   const [activeNote, setActiveNote] = createSignal<NewNote>();
 
 
@@ -207,8 +209,9 @@ export function Reader(props: ReaderProps) {
     }, HIGHLIGHT_DURATION);
   };
 
-  createEffect(()=>{
-    console.log(';currentIndexNotes()',currentIndexNotes()) 
+  createEffect(() => {
+    console.log(';currentIndexNotes()', currentIndexNotes())
+    console.log('indexTags()', indexTags())
   })
 
 
@@ -219,13 +222,11 @@ export function Reader(props: ReaderProps) {
         onExit={() => { navigate({ to: "/book/shelf" }) }}
         onPrevPage={() => instance()?.prev()}
         onNextPage={() => instance()?.next()}
-        epub={
-          <EpubPaper ref={viewerRef} />
-        }
+        epub={<EpubPaper ref={viewerRef} />}
         notesTitle={'笔记'}
         notes={
           currentSet().has("select") ? (
-            <EpubNotesCreate newNote={activeNote()} onSave={(v) => {  console.log('new',v);newNode(v); opt("mark"); }} onCancel={() => { opt("click"); console.log('取消笔记') }} />
+            <EpubNotesCreate newNote={activeNote()} onSave={(v) => { console.log('new', v); newNode(v); opt("mark"); }} onCancel={() => { opt("click"); console.log('取消笔记') }} />
           ) : currentSet().has("mark") ? (
             <EpubNotesEdit notes={currentNote()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
           ) : currentSet().has("click") ? (

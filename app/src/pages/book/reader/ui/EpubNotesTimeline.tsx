@@ -17,8 +17,8 @@ export interface NewNote {
 }
 
 interface EpubNotesTimelineProps {
-  tags: Record<string, number>;
-  notes: NewNote[];
+  tags: Record<string, number>; // 接收来自 useEpubNotes 的 indexTags
+  notes: NewNote[];             // 接收来自 useEpubNotes 的 currentIndexNotes
   onSelectNote?: (cfiRange: string) => void;
   onDelete?: (cfiRange: string) => void;
   onSelectTag?: (tag: string | null) => void;
@@ -37,7 +37,7 @@ const formatTime = (ts?: number) => {
 
 const getTagBtnClass = (isSelected: boolean) => 
   `px-2.5 py-1 rounded-md text-xs font-medium shrink-0 transition-colors cursor-pointer flex items-center gap-1 ${
-    isSelected ? 'bg-stone-200 text-stone-900 shadow-2xs' : 'bg-stone-100/60 hover:bg-stone-200/60 text-stone-600'
+    isSelected ? 'bg-stone-200 text-stone-900 shadow-2xs font-semibold' : 'bg-stone-100/60 hover:bg-stone-200/60 text-stone-600'
   }`;
 
 export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
@@ -45,10 +45,9 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
 
   const handleTagClick = (tag: string) => {
     setActiveTag(tag);
+    // 🌟 点击“全部”时传 null，单选标签时传对应的字符串
     props.onSelectTag?.(tag === 'all' ? null : tag);
   };
-
-  const totalCount = () => Object.values(props.tags || {}).reduce((a, b) => a + b, 0);
 
   const sortedNotes = () => [...(props.notes || [])].sort((a, b) => {
     const posA = parseCfi(a.cfiRange);
@@ -64,14 +63,25 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
     <div class="w-full h-full p-2 bg-transparent overflow-y-auto overflow-x-hidden text-stone-900 flex flex-col [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-stone-300/80 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-stone-400">
       
       {/* 顶部标签栏 */}
-      <Show when={Object.keys(props.tags || {}).length > 0 || totalCount() > 0}>
+      <Show when={props.tags && Object.keys(props.tags).length > 0}>
         <div class="flex items-center flex-wrap gap-1.5 pb-2.5 mb-2 border-b border-stone-200/60 shrink-0">
-          <button type="button" onClick={() => handleTagClick('all')} class={getTagBtnClass(activeTag() === 'all')}>
-            全部 ({totalCount()})
+          {/* 全部标签：利用 props.tags['all'] 显示总数 */}
+          <button 
+            type="button" 
+            onClick={() => handleTagClick('all')} 
+            class={getTagBtnClass(activeTag() === 'all')}
+          >
+            全部 ({props.tags['all'] ?? 0})
           </button>
-          <For each={Object.entries(props.tags || {})}>
+
+          {/* 其他具体标签循环（排除自带的 'all' key） */}
+          <For each={Object.entries(props.tags || {}).filter(([tag]) => tag !== 'all')}>
             {([tag, count]) => (
-              <button type="button" onClick={() => handleTagClick(tag)} class={getTagBtnClass(activeTag() === tag)}>
+              <button 
+                type="button" 
+                onClick={() => handleTagClick(tag)} 
+                class={getTagBtnClass(activeTag() === tag)}
+              >
                 <span>{tag}</span>
                 <span class="text-[10px] opacity-70">({count})</span>
               </button>

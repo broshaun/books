@@ -77,18 +77,25 @@ export function useEpubNotes(rendition: () => Rendition | null) {
     if (!inst || !(inst as any).manager) return;
     
     const { bookId } = getResolvedFilter();
-    const sectionIndex = (inst.currentLocation() as any)?.start?.index;
-    if (sectionIndex === undefined) return;
-
     const bookFiltered = allNotes.filter((n) => !bookId || n.bookId === bookId);
-    const rawMatched = bookFiltered.filter((n) => String(n.index) === String(sectionIndex));
     
-    // 统计当前章节所有原始笔记的标签数 {'标签': 计数}
-    const tagCountMap: Record<string, number> = {};
-    rawMatched.forEach((n) => n.tags?.forEach((t) => { tagCountMap[t] = (tagCountMap[t] || 0) + 1; }));
+    // 🌟 统计当前书本所有笔记的标签数，并默认带上 'all' 标签及总数
+    const tagCountMap: Record<string, number> = {
+      all: bookFiltered.length
+    };
+    
+    bookFiltered.forEach((n) => {
+      n.tags?.forEach((t) => { 
+        tagCountMap[t] = (tagCountMap[t] || 0) + 1; 
+      });
+    });
 
+    const sectionIndex = (inst.currentLocation() as any)?.start?.index;
+    
     // 获取当前过滤条件下的当前章节笔记列表
-    const filteredMatched = getFilteredNotes(allNotes).filter((n) => String(n.index) === String(sectionIndex));
+    const filteredMatched = sectionIndex !== undefined 
+      ? getFilteredNotes(allNotes).filter((n) => String(n.index) === String(sectionIndex))
+      : [];
 
     setIndexTags(tagCountMap);
     setCurrentIndexNotes(filteredMatched);

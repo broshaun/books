@@ -1,49 +1,38 @@
 import { type ParentProps, splitProps, type JSX } from 'solid-js';
-import { 
-  triggerLeftSwipeRight, 
-  triggerRightSwipeLeft, 
-  triggerTopSwipeBottom, 
-  triggerBottomSwipeTop 
-} from '@/hooks/useAppGesture';
 
 export interface AppGestureProps extends ParentProps, JSX.HTMLAttributes<HTMLDivElement> {
   height?: number | string;
+  onSwipeRight?: (e: PointerEvent) => void; // 向右滑
+  onSwipeLeft?: (e: PointerEvent) => void;  // 向左滑
+  threshold?: number;                       // 触发阈值，默认 40px
 }
 
 export function AppGesture(props: AppGestureProps) {
-  const [local, rest] = splitProps(props, ['children', 'height', 'class']);
+  const [local, rest] = splitProps(props, [
+    'children', 
+    'height', 
+    'class', 
+    'onSwipeRight', 
+    'onSwipeLeft',
+    'threshold'
+  ]);
 
   let startX = 0;
-  let startY = 0;
-  let containerWidth = 0;
-  let tracking = false;
+  const threshold = local.threshold ?? 40;
 
   const handlePointerDown = (e: PointerEvent) => {
-    const target = e.currentTarget as HTMLElement;
-    containerWidth = target.clientWidth;
     startX = e.clientX;
-    startY = e.clientY;
-    tracking = true;
-    target.setPointerCapture(e.pointerId);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
 
   const handlePointerUp = (e: PointerEvent) => {
-    if (!tracking) return;
-    tracking = false;
-
     const deltaX = e.clientX - startX;
-    const deltaY = e.clientY - startY;
-    const absX = Math.abs(deltaX);
-    const absY = Math.abs(deltaY);
+    if (Math.abs(deltaX) < threshold) return;
 
-    if (absY > absX && absY > 30) {
-      (deltaY > 0 ? triggerTopSwipeBottom : triggerBottomSwipeTop)(e);
-    } else if (absX > absY && absX > 30) {
-      if (startX < containerWidth / 2 && deltaX > 0) {
-        triggerLeftSwipeRight(e);
-      } else if (startX >= containerWidth / 2 && deltaX < 0) {
-        triggerRightSwipeLeft(e);
-      }
+    if (deltaX > 0) {
+      local.onSwipeRight?.(e);
+    } else {
+      local.onSwipeLeft?.(e);
     }
   };
 
@@ -52,8 +41,7 @@ export function AppGesture(props: AppGestureProps) {
       style={{ height: typeof local.height === 'number' ? `${local.height}px` : local.height }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
-      onPointerCancel={() => (tracking = false)}
-      class={`touch-none select-none ${local.class ?? ''}`}
+      class={`touch-pan-y select-none ${local.class ?? ''}`}
       {...rest}
     >
       {local.children}
