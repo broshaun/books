@@ -85,7 +85,7 @@ export function Reader(props: ReaderProps) {
   const [searchOpened, setSearchOpened] = createSignal(false);
   const [styleOpened, setStyleOpened] = createSignal(false);
   const { hideNotes, toggleNotes } = useEpubViews(instance);
-  const { put: newNode, remove, current, currentIndexNodes, filter } = useEpubNotes(instance);
+  const { put: newNode, remove, currentNote,indexTags, currentIndexNotes, filter } = useEpubNotes(instance);
   const [activeNote, setActiveNote] = createSignal<NewNote>();
 
 
@@ -208,7 +208,9 @@ export function Reader(props: ReaderProps) {
     }, HIGHLIGHT_DURATION);
   };
 
-
+  createEffect(()=>{
+    console.log(';currentIndexNotes()',currentIndexNotes()) 
+  })
 
   return (
     <Box height={height()}>
@@ -224,10 +226,11 @@ export function Reader(props: ReaderProps) {
           currentSet().has("select") ? (
             <EpubNotesCreate newNote={activeNote()} onSave={(v) => { newNode(v); opt("mark"); }} onCancel={() => { opt("click"); console.log('取消笔记') }} />
           ) : currentSet().has("mark") ? (
-            <EpubNotesEdit notes={current()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
+            <EpubNotesEdit notes={currentNote()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
           ) : currentSet().has("click") ? (
             <EpubNotesTimeline
-              notes={currentIndexNodes()}
+              tags={indexTags()}
+              notes={currentIndexNotes()}
               onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }}
               onDelete={(cfiRange) => { remove(cfiRange); }}
               onSelectTag={(tag) => { console.log("tag", tag); filter({ tag: tag }) }}
