@@ -1,59 +1,59 @@
+import { createSignal } from "solid-js";
 import { createStore } from "solid-js/store";
 
-interface StoreState {
+interface LayoutConfig {
   bottom: number;
   top: number;
 }
 
-interface SafetyStore extends StoreState {
-  setBottom: (bottom: number) => void;
-  setTop: (top: number) => void;
+interface SafetyState {
+  portrait: LayoutConfig;
+  landscape: LayoutConfig;
 }
 
-const STORAGE_KEY = "safety-config";
+const STORAGE_KEY = "safety-config-v2";
+const defaultLayout: LayoutConfig = { bottom: 0, top: 0 };
 
-const getInitialState = (): StoreState => {
+// 1. 使用 matchMedia 的 change 事件高效监听横竖屏切换
+const mediaQuery = typeof window !== "undefined" ? window.matchMedia("(orientation: landscape)") : null;
+const [isLandscape, setIsLandscape] = createSignal(mediaQuery?.matches ?? false);
+mediaQuery?.addEventListener("change", (e) => setIsLandscape(e.matches));
+
+// 2. 初始化状态读取
+const getInitialState = (): SafetyState => {
   try {
     const item = localStorage.getItem(STORAGE_KEY);
     if (item) {
-      const parsed = JSON.parse(item);
-      const data = parsed?.state ?? parsed;
+      const data = (JSON.parse(item)?.state ?? JSON.parse(item)) || {};
       return {
-        bottom: typeof data.bottom === "number" ? data.bottom : 0,
-        top: typeof data.top === "number" ? data.top : 0,
+        portrait: { top: Number(data.portrait?.top) || 0, bottom: Number(data.portrait?.bottom) || 0 },
+        landscape: { top: Number(data.landscape?.top) || 0, bottom: Number(data.landscape?.bottom) || 0 },
       };
     }
   } catch {}
-  return { bottom: 0, top: 0 };
+  return { portrait: defaultLayout, landscape: defaultLayout };
 };
 
-const [state, setState] = createStore<StoreState>(getInitialState());
+const [state, setState] = createStore<SafetyState>(getInitialState());
 
-const saveToPersist = (newState: StoreState) => {
+// 3. 统一保存逻辑
+const persistAndSet = (mode: "portrait" | "landscape", key: "top" | "bottom", value: number) => {
+  setState(mode, key, value);
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ state: newState, version: 0 })
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, version: 1 }));
   } catch {}
 };
 
-export const useSafety = (): SafetyStore => ({
-  get bottom() {
-    return state.bottom;
-  },
-  get top() {
-    return state.top;
-  },
-  setBottom: (bottom: number) => {
-    setState("bottom", bottom);
-    saveToPersist({ ...state, bottom });
-  },
-  setTop: (top: number) => {
-    setState("top", top);
-    saveToPersist({ ...state, top });
-  },
-});
+export const useSafety = () => {
+  const mode = () => (isLandscape() ? "landscape" : "portrait");
+
+  return {
+    get bottom() { return state[mode()].bottom; },
+    get top() { return state[mode()].top; },
+    setBottom: (val: number) => persistAndSet(mode(), "bottom", val),
+    setTop: (val: number) => persistAndSet(mode(), "top", val),
+  };
+};
 
 export const hasSafetyConfig = (): boolean => {
   try {

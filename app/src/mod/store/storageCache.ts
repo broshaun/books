@@ -18,17 +18,13 @@ const storeMap = new Map<string, CacheStoreState<any>>();
 const listenersMap = new Map<string, Set<() => void>>();
 const inflightMap = new Map<string, Promise<any>>();
 
-export async function clearStorageCache(): Promise<boolean> {
+export async function clearStorageCache() {
   inflightMap.clear();
   storeMap.clear();
   listenersMap.forEach((s) => s.forEach((cb) => cb()));
   listenersMap.clear();
-  try {
-    await localforage.clear();
-    return true;
-  } catch {
-    return false;
-  }
+  await localforage.clear();
+  return true;
 }
 
 export function createStorageCache<TData = any, TKey extends string | number = string>({
@@ -37,10 +33,6 @@ export function createStorageCache<TData = any, TKey extends string | number = s
   staleTime = 0,
   primaryKey,
 }: StorageCacheOptions<TData, TKey>) {
-  if (!cacheKey?.length || typeof queryFn !== "function") {
-    throw new Error("[Cache] Invalid options");
-  }
-
   const key = cacheKey.join("::");
 
   const getStore = (): CacheStoreState<TData> =>
@@ -53,8 +45,8 @@ export function createStorageCache<TData = any, TKey extends string | number = s
     return next;
   };
 
-  const getRecord = () => localforage.getItem<{ data: TData; timestamp: number }>(key).catch(() => null);
-  const saveToStorage = (data: TData) => localforage.setItem(key, { data, timestamp: Date.now() }).catch(() => {});
+  const getRecord = () => localforage.getItem<{ data: TData; timestamp: number }>(key);
+  const saveStorage = (data: TData) => localforage.setItem(key, { data, timestamp: Date.now() });
 
   const processData = (rawData: any): TData => {
     if (!primaryKey) return rawData;
@@ -83,7 +75,7 @@ export function createStorageCache<TData = any, TKey extends string | number = s
         if (res === undefined) return res;
         const data = processData(res);
         updateStore({ data, error: null, isInitialLoading: false });
-        saveToStorage(data);
+        await saveStorage(data);
         return data;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
@@ -110,7 +102,7 @@ export function createStorageCache<TData = any, TKey extends string | number = s
     const current = getStore().data;
     const data = processData(typeof updater === "function" ? (updater as any)(current) : updater);
     updateStore({ data, isInitialLoading: false });
-    saveToStorage(data);
+    saveStorage(data);
   };
 
   return {
@@ -127,16 +119,16 @@ export function createStorageCache<TData = any, TKey extends string | number = s
       const [state, setState] = createSignal<CacheStoreState<TData>>(getStore());
 
       onMount(() => {
-        let setListeners = listenersMap.get(key);
-        if (!setListeners) listenersMap.set(key, (setListeners = new Set()));
+        let listeners = listenersMap.get(key);
+        if (!listeners) listenersMap.set(key, (listeners = new Set()));
         
         const listener = () => setState(getStore());
-        setListeners.add(listener);
+        listeners.add(listener);
 
         if (!storeMap.has(key)) fetch();
         else setState(getStore());
 
-        onCleanup(() => setListeners?.delete(listener));
+        onCleanup(() => listeners.delete(listener));
       });
 
       const isOptObj = typeof selectorOrOptions === "object";

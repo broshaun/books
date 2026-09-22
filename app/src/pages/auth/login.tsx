@@ -1,6 +1,6 @@
 
-import { useNavigate } from "@tanstack/react-router";
-import { apiConfig } from "@/App";
+import { useNavigate } from "@tanstack/solid-router";
+import { apiConfig } from "@/config";
 // import { useCachedImage } from "@hooks/useCachedImage";
 import { useMemo } from "react";
 import { useLocalStorageState, useRequest } from "ahooks";
@@ -8,7 +8,6 @@ import { useAccountStorage } from "./hook/useAccountStorage";
 import { createHttpClient } from "@/lib/createHttpClient";
 import { useGlobalModal } from "@/store/useGlobalModal";
 import { tokenStore } from "@/store/tokenStore";
-import { userId } from "@/lib/idStore";
 import LoginUI from "./ui/LoginUI";
 
 
@@ -61,8 +60,8 @@ export const Login = () => {
     manual: true,
     onSuccess: async (data) => {
       setUser({ account, user: { ...data.user, timestamp: new Date().toISOString() } });
-      tokenStore.getState().set(data.login_token, data.login_expired);
-      userId.set(account);
+      tokenStore.set(data.login_token, data.login_expired);
+
 
       console.log('tokenStore++')
 
