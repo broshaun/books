@@ -5,13 +5,17 @@ export interface ThemeOption {
   id: string;
   name: string;
   bg: string;
+  style?: string;
 }
 
 export const READER_THEMES: ThemeOption[] = [
   { id: 'default', name: '默认白', bg: '#ffffff' },
-  { id: 'sepia', name: '羊皮纸', bg: '#f4ebd9' },
+  { id: 'sepia', name: '羊皮纸', bg: '#f4ebd9', 
+    style: 'background-color: #f6ecd9; background-image: radial-gradient(rgba(0,0,0,0.03) 1px, transparent 0); background-size: 4px 4px;'
+   },
   { id: 'eye-green', name: '护眼绿', bg: '#c7edcc' },
   { id: 'gray', name: '优雅灰', bg: '#e9ecef' },
+
 ];
 
 const DEFAULT_CONFIG = { FONT_SIZE: 18, THEME: 'default' };

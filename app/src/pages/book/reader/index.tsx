@@ -19,7 +19,6 @@ import Box from "@/components/Box";
 import SplitLayout from "./ui/SplitLayout";
 import BookInfoPanel from "./ui/BookInfoPanel";
 import { useBookmarks } from "./hook/useBookmarks";
-import { epubNotesStorage } from "./hook/epubNotesStorage";
 import { useEpubNotesSync } from "./hook/useEpubNotesSync";
 import { notesCache } from "@/api/cache/notesCache";
 
@@ -90,9 +89,6 @@ export function Reader(props: ReaderProps) {
   const [activeNote, setActiveNote] = createSignal<NewNote>();
 
 
-  createResource(async () => {
-    console.log('epubNotesStorage.getNotes', await epubNotesStorage.getNotes())
-  })
 
 
 
