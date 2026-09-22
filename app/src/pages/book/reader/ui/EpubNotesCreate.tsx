@@ -16,7 +16,7 @@ export interface NewNote {
   text: string;
   title?: string;
   color?: string;
-  tags?: string[]; // 🌟 增加 tags 数组字段
+  tags?: string[];
   updatedAt?: number;
 }
 
@@ -36,35 +36,28 @@ const HIGHLIGHT_COLORS = [
 
 const PREF_COLOR_KEY = 'epub_pref_color';
 
-export function EpubNotesCreate(props: EpubNotesCreateProps) {
-  const [draft, setDraft] = createSignal<NewNote>({
-    index: 0,
-    cfiRange: '',
-    text: '',
-    ...props.newNote,
-    tags: props.newNote?.tags || [],
-    color: props.newNote?.color || localStorage.getItem(PREF_COLOR_KEY) || HIGHLIGHT_COLORS[0].bg,
-  });
+const getInitialDraft = (n?: NewNote): NewNote => ({
+  index: 0,
+  cfiRange: '',
+  text: '',
+  ...n,
+  tags: n?.tags || [],
+  color: n?.color || localStorage.getItem(PREF_COLOR_KEY) || HIGHLIGHT_COLORS[0].bg,
+});
 
+export function EpubNotesCreate(props: EpubNotesCreateProps) {
+  const [draft, setDraft] = createSignal<NewNote>(getInitialDraft(props.newNote));
   const [copied, setCopied] = createSignal(false);
   const [popoverOpened, setPopoverOpened] = createSignal(false);
   const [tagInput, setTagInput] = createSignal('');
 
   createEffect(() => {
-    setDraft({
-      index: 0,
-      cfiRange: '',
-      text: '',
-      ...props.newNote,
-      tags: props.newNote?.tags || [],
-      color: props.newNote?.color || localStorage.getItem(PREF_COLOR_KEY) || HIGHLIGHT_COLORS[0].bg,
-    });
+    setDraft(getInitialDraft(props.newNote));
+    setTagInput('');
   });
 
   const currentColor = () => draft().color || HIGHLIGHT_COLORS[0].bg;
-
-  const selectedColorObj = () =>
-    HIGHLIGHT_COLORS.find((c) => c.bg === currentColor()) || HIGHLIGHT_COLORS[0];
+  const selectedColorObj = () => HIGHLIGHT_COLORS.find((c) => c.bg === currentColor()) || HIGHLIGHT_COLORS[0];
 
   const handleColorChange = (colorBg: string) => {
     localStorage.setItem(PREF_COLOR_KEY, colorBg);
@@ -73,10 +66,9 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
   };
 
   const handleCopy = async () => {
-    const text = draft().text;
-    if (!text) return;
+    if (!draft().text) return;
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(draft().text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (err) {
@@ -84,21 +76,24 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
     }
   };
 
-  // 🌟 添加标签
+  const addTag = (tagText: string) => {
+    const val = tagText.trim();
+    if (!val) return false;
+    const currentTags = draft().tags || [];
+    if (!currentTags.includes(val)) {
+      setDraft((prev) => ({ ...prev, tags: [...currentTags, val] }));
+      return true;
+    }
+    return false;
+  };
+
   const handleAddTag = (e: KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const val = tagInput().trim();
-      if (!val) return;
-      const currentTags = draft().tags || [];
-      if (!currentTags.includes(val)) {
-        setDraft((prev) => ({ ...prev, tags: [...currentTags, val] }));
-      }
-      setTagInput('');
+      if (addTag(tagInput())) setTagInput('');
     }
   };
 
-  // 🌟 移除标签
   const handleRemoveTag = (tagToRemove: string) => {
     setDraft((prev) => ({
       ...prev,
@@ -106,9 +101,14 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
     }));
   };
 
+  const handleSave = () => {
+    addTag(tagInput());
+    props.onSave(draft());
+  };
+
   return (
     <div class="h-full p-3 flex flex-col gap-2.5 box-border bg-transparent text-stone-900">
-      {/* 顶部标题栏：居中对齐 */}
+      {/* 顶部标题栏 */}
       <div class="flex items-center justify-center gap-2 border-b border-stone-300/60 pb-2">
         <input
           type="text"
@@ -122,10 +122,7 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
       <Show when={draft().text}>
         {/* 引用内容卡片 */}
         <div class="relative px-3 py-1.5 rounded-lg border border-stone-300/70 bg-stone-50/50 flex items-center justify-between gap-2 transition-all">
-          <div 
-            class="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full transition-colors duration-200"
-            style={{ background: currentColor() }}
-          />
+          <div class="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full transition-colors duration-200" style={{ background: currentColor() }} />
 
           <div class="flex items-center gap-2 flex-1 min-w-0 pl-1">
             <IconQuote size={13} class="shrink-0 text-stone-400" />
@@ -142,17 +139,12 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
                 onClick={() => setPopoverOpened(!popoverOpened())}
                 class="p-1 rounded hover:bg-stone-200/60 transition-colors cursor-pointer flex items-center"
               >
-                <div 
-                  class="w-3.5 h-3.5 rounded-full border border-stone-400 shadow-2xs"
-                  style={{ 'background-color': selectedColorObj().bg }}
-                />
+                <div class="w-3.5 h-3.5 rounded-full border border-stone-400 shadow-2xs" style={{ 'background-color': selectedColorObj().bg }} />
               </button>
 
               <Show when={popoverOpened()}>
                 <div class="absolute right-0 top-full mt-1.5 p-2 bg-white border border-stone-300 rounded-xl shadow-xl z-20 flex flex-col gap-1.5 min-w-[130px]">
-                  <span class="text-[10px] font-bold text-stone-500 uppercase tracking-wider px-1">
-                    标记高亮色彩
-                  </span>
+                  <span class="text-[10px] font-bold text-stone-500 uppercase tracking-wider px-1">标记高亮色彩</span>
                   <div class="flex items-center gap-1.5 px-1">
                     <For each={HIGHLIGHT_COLORS}>
                       {(c) => (
@@ -188,24 +180,19 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
         </div>
       </Show>
 
-      {/* 🌟 标签管理区域 */}
+      {/* 标签管理区域 */}
       <div class="flex flex-col gap-1.5">
         <div class="flex items-center gap-1.5 text-xs text-stone-500 px-0.5">
           <IconTag size={13} />
           <span>标签管理 (输入后按回车添加)</span>
         </div>
 
-        {/* 已添加的标签展示列表 */}
         <div class="flex flex-wrap gap-1.5">
           <For each={draft().tags || []}>
             {(tag) => (
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] bg-stone-200/70 dark:bg-zinc-800 text-stone-700 dark:text-stone-300">
                 {tag}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTag(tag)}
-                  class="hover:text-red-500 cursor-pointer"
-                >
+                <button type="button" onClick={() => handleRemoveTag(tag)} class="hover:text-red-500 cursor-pointer">
                   <IconX size={12} />
                 </button>
               </span>
@@ -213,7 +200,6 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
           </For>
         </div>
 
-        {/* 输入新标签的输入框 */}
         <input
           type="text"
           placeholder="添加标签（如：灵感、核心、待办）..."
@@ -237,7 +223,7 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
         </Show>
         <button
           type="button"
-          onClick={() => props.onSave(draft())}
+          onClick={handleSave}
           class="flex-1 py-1.5 px-3 rounded-lg border border-stone-300 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
         >
           <span>保存</span>

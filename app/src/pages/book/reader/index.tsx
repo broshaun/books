@@ -22,7 +22,6 @@ import { useBookmarks } from "./hook/useBookmarks";
 import { epubNotesStorage } from "./hook/epubNotesStorage";
 
 
-
 interface ReaderProps {
   path: string;
 }
@@ -212,6 +211,8 @@ export function Reader(props: ReaderProps) {
     console.log(';currentIndexNotes()',currentIndexNotes()) 
   })
 
+
+
   return (
     <Box height={height()}>
       <SplitLayout bg={backgroundColor()} height={height()}
@@ -224,7 +225,7 @@ export function Reader(props: ReaderProps) {
         notesTitle={'笔记'}
         notes={
           currentSet().has("select") ? (
-            <EpubNotesCreate newNote={activeNote()} onSave={(v) => { newNode(v); opt("mark"); }} onCancel={() => { opt("click"); console.log('取消笔记') }} />
+            <EpubNotesCreate newNote={activeNote()} onSave={(v) => {  console.log('new',v);newNode(v); opt("mark"); }} onCancel={() => { opt("click"); console.log('取消笔记') }} />
           ) : currentSet().has("mark") ? (
             <EpubNotesEdit notes={currentNote()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
           ) : currentSet().has("click") ? (

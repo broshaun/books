@@ -22,6 +22,7 @@
     "clsx": "^2.1.1",
     "epubjs": "^0.3.93",
     "localforage": "^1.10.0",
+    "solid-gesture": "^0.0.3",
     "solid-js": "^1.9.15",
     "solid-presence": "^0.2.0",
     "solid-transition-size": "^0.1.4",

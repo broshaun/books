@@ -41,6 +41,9 @@ importers:
       localforage:
         specifier: ^1.10.0
         version: 1.10.0
+      solid-gesture:
+        specifier: ^0.0.3
+        version: 0.0.3(solid-js@1.9.15)
       solid-js:
         specifier: ^1.9.15
         version: 1.9.15
@@ -828,6 +831,9 @@ packages:
   '@types/node@24.13.4':
     resolution: {integrity: sha512-YJ7EqCstVTzIr0fMr7qul/977en+pQHrfmuKIo6Zr9i75Be21dr3MovcfvGtyvi2HAUrRerWps5sMO9I7WaxDw==}
 
+  '@use-gesture/core@10.3.1':
+    resolution: {integrity: sha512-WcINiDt8WjqBdUXye25anHiNxPc0VOrlT8F6LLkU6cycrOGUDyY/yyFmsg3k8i5OLvv25llc0QC45GhR/C8llw==}
+
   '@xmldom/xmldom@0.7.13':
     resolution: {integrity: sha512-lm2GW5PkosIzccsaZIz7tp8cPADSIlIHWDFTR1N0SzfinhhYgeIQjFMz4rYzanCScr3DqQLeomUDArp6MWKm+g==}
     engines: {node: '>=10.0.0'}
@@ -1221,6 +1227,11 @@ packages:
     resolution: {integrity: sha512-LTyNki6GUJPRLXV5uMWPkYClB07SUMubbr2EkAddiR0CJCF/I283txilMU9RURSr/P8EewMfXWu2o3aWrK7A5A==}
     peerDependencies:
       solid-js: ^1.8
+
+  solid-gesture@0.0.3:
+    resolution: {integrity: sha512-7vbhm+eYXXqr0y9/uVMHknscn9THHozx4wA0SEUwVsRjEPUd1Y9BKWDaG2s+GZafAEEucr7bWsMQKb49c0X1Fw==}
+    peerDependencies:
+      solid-js: '>=1.4.0'
 
   solid-js@1.9.15:
     resolution: {integrity: sha512-EeiY2xfpZJqPLjXspVEKjAII4yv8NyG//NxZ3IpOFHdUNnnTyL0uJOeS9LWGvA7cFCz5y94cjFwYlmw5Luncsg==}
@@ -2102,6 +2113,8 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
 
+  '@use-gesture/core@10.3.1': {}
+
   '@xmldom/xmldom@0.7.13': {}
 
   ansis@4.4.0: {}
@@ -2429,6 +2442,11 @@ snapshots:
   solid-focus-trap@0.1.9(solid-js@1.9.15):
     dependencies:
       '@corvu/utils': 0.4.2(solid-js@1.9.15)
+      solid-js: 1.9.15
+
+  solid-gesture@0.0.3(solid-js@1.9.15):
+    dependencies:
+      '@use-gesture/core': 10.3.1
       solid-js: 1.9.15
 
   solid-js@1.9.15:
