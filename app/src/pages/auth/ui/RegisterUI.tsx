@@ -1,4 +1,4 @@
-import { createSignal, Show,type JSX } from "solid-js";
+import { createSignal, Show } from "solid-js";
 
 interface TextFieldProps {
   label?: string;
@@ -11,14 +11,12 @@ interface TextFieldProps {
 }
 
 function TextField(props: TextFieldProps) {
-  const maxWidth = props.maxWidth ?? 250;
-
   return (
     <div
       class={`w-full rounded-md border border-stone-300 bg-white overflow-hidden flex items-center transition-opacity ${
         props.disabled ? "opacity-60 cursor-not-allowed" : "opacity-100"
       }`}
-      style={{ "max-width": `${maxWidth}px` }}
+      style={{ "max-width": `${props.maxWidth ?? 250}px` }}
     >
       <Show when={props.label}>
         <div class="px-3 h-10 min-w-[66px] bg-stone-50 border-r border-stone-200 flex items-center justify-center shrink-0">
@@ -38,7 +36,7 @@ function TextField(props: TextFieldProps) {
   );
 }
 
-interface RegisterSubmitData {
+export interface RegisterSubmitData {
   account: string;
   password: string;
 }
@@ -52,14 +50,12 @@ export function RegisterUI(props: RegisterUIProps) {
   const [account, setAccount] = createSignal("");
   const [password, setPassword] = createSignal("");
 
-  const submit = async (): Promise<void> => {
+  const handleSubmit = async () => {
+    if (props.loading) return;
     await props.onSubmit?.({
       account: account().trim(),
       password: password(),
     });
-
-    setAccount("");
-    setPassword("");
   };
 
   return (
@@ -86,11 +82,12 @@ export function RegisterUI(props: RegisterUIProps) {
         onChanged={setPassword}
       />
 
+      {/* 蓝色注册按钮（已对齐 LoginUI 样式） */}
       <button
         type="button"
         disabled={props.loading}
-        onClick={() => void submit()}
-        class="w-full max-w-[250px] h-[42px] rounded-lg bg-stone-900 text-white font-medium text-sm flex items-center justify-center transition-colors hover:bg-stone-800 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+        onClick={handleSubmit}
+        class="w-full max-w-[250px] h-[42px] rounded-lg bg-sky-500 border border-sky-600 text-white font-medium text-sm flex items-center justify-center transition-colors hover:bg-sky-600 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-xs"
       >
         <Show when={props.loading} fallback="注册">
           <span class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />

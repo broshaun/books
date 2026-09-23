@@ -50,11 +50,20 @@ export const loginCache = {
     if (!account || !password) throw new Error("请输入账号密码 ...");
     const { code, data, message } = await http.requestBodyJson<LoginResponse>("POST", { email: account, pass_word: password, });
     if (code !== 200) throw new Error(message);
-    
-    const { set: setUser, get: getUser } = createAccountStorage<UserInfo>();
+
+    const { set: setUser } = createAccountStorage<UserInfo>();
     setUser({ account, user: { ...data.user, timestamp: new Date().toISOString() } });
     tokenStore.set(data.login_token, data.login_expired);
-
     return data;
-  }
+  },
+
+  register: async (account: string, password: string) => {
+    const { http } = createHttpClient('/rpc/auth/register/');
+    if (!account || !password) throw new Error("请输入账号密码 ...");
+    const { code, data, message } = await http.requestBodyJson<string>("PUT", { email: account, pass_word: password, });
+    if (code !== 200) throw new Error(message);
+    return data;
+  },
 };
+
+

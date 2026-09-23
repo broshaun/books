@@ -3,6 +3,8 @@ import {
   IconFolder,
   IconFolderPlus,
   IconFolderX,
+  IconUserCircle,
+  IconInfoCircle,
 } from "@tabler/icons-solidjs";
 
 export interface Folder {
@@ -18,6 +20,8 @@ export interface BookDirectoryDrawerProps {
   onSelectFolder?: (folder: Folder) => void;
   onAddFolder?: () => void;
   onDeleteFolders?: (ids: number[]) => void;
+  onOpenProfile?: () => void;
+  onOpenAbout?: () => void;
 }
 
 export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
@@ -44,6 +48,9 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
     toggleDeleteMode(false);
   };
 
+  // 检查是否有配置底部附加的个人或关于回调
+  const hasBottomActions = () => !!props.onOpenProfile || !!props.onOpenAbout;
+
   return (
     <>
       {/* 1. 遮罩层 */}
@@ -56,9 +63,9 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         onClick={() => props.onClose?.()}
       />
 
-      {/* 2. 抽屉主体 */}
+      {/* 2. 抽屉主体（已将最大宽度缩小至 max-w-[240px]） */}
       <div
-        class={`fixed inset-y-0 left-0 z-50 w-full max-w-xs bg-zinc-900 text-zinc-100 shadow-xl flex flex-col p-3 transform transition-transform duration-300 ease-in-out ${
+        class={`fixed inset-y-0 left-0 z-50 w-full max-w-[240px] bg-zinc-900 text-zinc-100 shadow-xl flex flex-col p-3 transform transition-transform duration-300 ease-in-out ${
           props.opened ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -71,7 +78,7 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
 
         <hr class="border-zinc-800 my-2" />
 
-        {/* 文件夹列表（改为扁平化菜单列表，无卡片边框与背景） */}
+        {/* 文件夹列表 */}
         <div class="flex-1 overflow-auto space-y-0.5">
           <For
             each={props.folders || []}
@@ -162,6 +169,41 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
             </div>
           </Show>
         </div>
+
+        {/* 🌟 只有存在回调时才渲染分割线与底部附加菜单 */}
+        <Show when={hasBottomActions()}>
+          <hr class="border-zinc-800 my-2" />
+
+          <div class="space-y-0.5 shrink-0">
+            <Show when={props.onOpenProfile}>
+              <button
+                type="button"
+                onClick={() => {
+                  props.onOpenProfile?.();
+                  props.onClose?.();
+                }}
+                class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-200 hover:text-white cursor-pointer"
+              >
+                <IconUserCircle size={16} class="text-zinc-400" />
+                <span class="text-xs font-medium">个人</span>
+              </button>
+            </Show>
+
+            <Show when={props.onOpenAbout}>
+              <button
+                type="button"
+                onClick={() => {
+                  props.onOpenAbout?.();
+                  props.onClose?.();
+                }}
+                class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-200 hover:text-white cursor-pointer"
+              >
+                <IconInfoCircle size={16} class="text-zinc-400" />
+                <span class="text-xs font-medium">关于</span>
+              </button>
+            </Show>
+          </div>
+        </Show>
       </div>
     </>
   );

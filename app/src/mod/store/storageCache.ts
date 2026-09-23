@@ -46,7 +46,6 @@ export function createStorageCache<TData = any, TKey extends string | number = s
   };
 
   const getRecord = () => localforage.getItem<{ data: TData; timestamp: number }>(key);
-  const saveStorage = (data: TData) => localforage.setItem(key, { data, timestamp: Date.now() });
 
   const processData = (rawData: any): TData => {
     if (!primaryKey) return rawData;
@@ -75,7 +74,7 @@ export function createStorageCache<TData = any, TKey extends string | number = s
         if (res === undefined) return res;
         const data = processData(res);
         updateStore({ data, error: null, isInitialLoading: false });
-        await saveStorage(data);
+        await localforage.setItem(key, { data, timestamp: Date.now() });
         return data;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
@@ -98,18 +97,10 @@ export function createStorageCache<TData = any, TKey extends string | number = s
     }
   };
 
-  const set = (updater: TData | ((prev: TData | null) => TData)) => {
-    const current = getStore().data;
-    const data = processData(typeof updater === "function" ? (updater as any)(current) : updater);
-    updateStore({ data, isInitialLoading: false });
-    saveStorage(data);
-  };
-
   return {
     get: async () => (await getRecord())?.data ?? null,
     fetch,
     refresh: safeNetworkFetch,
-    set,
 
     useQuery: <TSelected = TData>(
       selectorOrOptions?:
@@ -135,6 +126,7 @@ export function createStorageCache<TData = any, TKey extends string | number = s
       const select = isOptObj ? selectorOrOptions?.select : selectorOrOptions;
       const pk = isOptObj ? selectorOrOptions?.pk : undefined;
 
+      // 符合 Solid 风格的计算属性 Getter
       const data = () => {
         const d = state().data;
         if (d == null) return null;
@@ -151,11 +143,10 @@ export function createStorageCache<TData = any, TKey extends string | number = s
       };
 
       return {
-        get data() { return data(); },
-        get loading() { return loading(); },
-        get error() { return state().error; },
+        data,
+        loading,
+        error: () => state().error,
         refetch: safeNetworkFetch,
-        set,
       };
     },
   };
