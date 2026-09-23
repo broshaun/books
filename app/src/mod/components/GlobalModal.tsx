@@ -13,11 +13,18 @@ export function GlobalModal() {
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      if (state.onCancel) {
+        handleAction(state.onCancel);
+      } else {
+        close();
+      }
+    }
+  };
+
   return (
-    <Dialog
-      open={state.visible}
-      onOpenChange={(open) => !open && (state.onCancel ? handleAction(state.onCancel) : close())}
-    >
+    <Dialog open={state.visible} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay class="fixed inset-0 z-50 bg-black/35 backdrop-blur-[14px] transition-opacity duration-200 data-closed:opacity-0 data-open:opacity-100" />
         
@@ -25,7 +32,7 @@ export function GlobalModal() {
           <Dialog.Content class="pointer-events-auto w-[320px] max-w-full bg-white dark:bg-zinc-900 rounded-xl shadow-xl overflow-hidden flex flex-col transition-all duration-200 data-closed:scale-95 data-closed:opacity-0 data-open:scale-100 data-open:opacity-100">
             
             <Show when={state.title}>
-              <div class="py-2 bg-slate-50 dark:bg-zinc-800/50 border-b border-slate-200 dark:border-zinc-800 text-center">
+              <div class="py-2.5 bg-slate-50 dark:bg-zinc-800/50 border-b border-slate-200 dark:border-zinc-800 text-center">
                 <Dialog.Label class="text-base font-semibold text-slate-800 dark:text-slate-100">
                   {state.title}
                 </Dialog.Label>
@@ -33,7 +40,7 @@ export function GlobalModal() {
             </Show>
 
             <Show when={state.message}>
-              <div class="px-4 py-3 text-center">
+              <div class="px-4 py-4 text-center">
                 <p class="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed">
                   {state.message}
                 </p>

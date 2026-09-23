@@ -24,6 +24,9 @@ interface LoginSubmitData {
 
 
 export const Login = () => {
+
+
+
   const navigate = useNavigate();
   const { open } = useGlobalModal();
   const [account, setAccount] = createSignal('')
@@ -33,6 +36,10 @@ export const Login = () => {
   const login = getUser(account());
 
   const src = createMemo(() => `${apiConfig.apiAvatar}/${login?.avatar_url || 'default.png'}`, [login]);
+
+
+  console.log('src',src())
+
   const handleSubmit = async ({ account, password }: LoginSubmitData): Promise<void> => {
     if (loading()) return;
 

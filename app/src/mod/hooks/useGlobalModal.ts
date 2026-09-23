@@ -9,19 +9,28 @@ export interface ModalOptions {
   onCancel?: () => void | Promise<void>;
 }
 
-// 模块级全局响应式 Store
-const [state, setState] = createStore<ModalOptions & { visible: boolean }>({
+interface ModalState extends ModalOptions {
+  visible: boolean;
+}
+
+const initialState: ModalState = {
   visible: false,
+  title: undefined,
+  message: undefined,
   confirmText: "确认",
   cancelText: "取消",
-});
+  onConfirm: undefined,
+  onCancel: undefined,
+};
+
+const [state, setState] = createStore<ModalState>({ ...initialState });
 
 export function useGlobalModal() {
   const open = (options: ModalOptions) => {
+    // 先恢复默认值再覆盖新配置，彻底解决残留问题
     setState({
+      ...initialState,
       visible: true,
-      confirmText: "确认",
-      cancelText: "取消",
       ...options,
     });
   };

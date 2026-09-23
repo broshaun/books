@@ -7,7 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { DrawerMenuUI, MenuItem, type DrawerMenuItem } from "./ui/DrawerMeunUI";
 import { IconUserCircle, IconUserPlus } from "@tabler/icons-solidjs";
 import Burger from "./ui/Burger";
-
+import GlobalModal from "@/components/GlobalModal";
 
 export function Layout() {
     const navigate = useNavigate()
@@ -36,6 +36,7 @@ export function Layout() {
     return (
 
         <div>
+            <GlobalModal />
             <DrawerMenuUI
                 opened={opened()}
                 onClose={() => setOpened(false)}
