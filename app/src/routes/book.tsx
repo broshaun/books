@@ -22,9 +22,6 @@ function Layout() {
   });
 
 
-
-
-
   return (
     <AppShell header={{ height: 50 + safety.top }}>
       <AppShell.Header pt={50 + safety.top}>

@@ -1,59 +1,58 @@
-
+import { createEffect, createSignal } from "solid-js";
 import { Outlet, useNavigate } from "@tanstack/solid-router";
+import { useStore2 } from "@/hooks/useStore2";
+import { winSize } from "@/lib/winSize";
+import { useSafety } from "@/hooks/useSafety";
+import { AppShell } from "@/components/AppShell";
+import { DrawerMenuUI, MenuItem, type DrawerMenuItem } from "./ui/DrawerMeunUI";
 import { IconUserCircle, IconUserPlus } from "@tabler/icons-solidjs";
-import { Stack, Drawer, Title, AppShell, Burger, Divider, Button } from "@mantine/core";
-import { useBoolean } from "ahooks";
+import Burger from "./ui/Burger";
 
 
-interface DemoProps {
-    label: string;
-    Icon: React.ComponentType<{ size?: number | string }>;
-    onClick?: React.MouseEventHandler<HTMLButtonElement>;
-}
+export function Layout() {
+    const navigate = useNavigate()
+    const safety = useSafety();
+    const { height } = winSize();
+    createEffect(() => {
+        useStore2.setHeight(height - 50 - safety.bottom - safety.top);
+    });
+    const [opened, setOpened] = createSignal(false);
 
-function Demo({ label, Icon, onClick }: DemoProps) {
-    return (
-        <Button leftSection={<Icon size={16} />} variant="transparent" color="gray" onClick={onClick}> {label} </Button>
-    );
-}
-
-export const Layout = () => {
-    const navigate = useNavigate();
-    const [opened, { setTrue: open, setFalse: close }] = useBoolean(false);
-
-    const drawerMenu = [
-        { key: "login", display: true, icon: <Demo label="登录" Icon={IconUserCircle} onClick={() => { navigate({ 'to': "/web/auth/login" }); close(); }} /> },
-        { key: "register", display: true, icon: <Demo label="注册" Icon={IconUserPlus} onClick={() => { navigate({ 'to': "/web/auth/register" }); close(); }} /> },
+    const drawerMenu: DrawerMenuItem[] = [
+        {
+            key: "login",
+            display: true,
+            icon: <MenuItem label="登录" Icon={IconUserCircle} onClick={() => { navigate({ to: "/auth/login" }); setOpened(false); }} />
+        },
+        {
+            key: "register",
+            display: true,
+            icon: <MenuItem label="注册" Icon={IconUserPlus} onClick={() => { navigate({ to: "/auth/register" }); setOpened(false); }} />
+        },
     ];
 
+
+
     return (
-        <React.Fragment>
-            <Drawer opened={opened} onClose={close} size={120} withCloseButton={false}   >
-                <Title pt={25} order={4} mb="md">导航</Title>
-                <Divider mb="md"
-                    styles={{
-                        root: {
-                            border: 'none',
-                            height: '1px',
-                            backgroundImage: 'linear-gradient(to right, transparent, light-dark(rgba(0,0,0,0.15), rgba(255,255,255,0.15)) 20%, transparent)'
-                        }
-                    }}
-                />
-                <Stack gap={10}>{drawerMenu.filter(i => i.display !== false).map((item) => (<React.Fragment key={item.key}>{item.icon}</React.Fragment>))}</Stack>
-            </Drawer>
-            <AppShell
-                padding={10}
-                header={{ height: 55 }}
-            >
-                <AppShell.Header>
-                    <Burger onClick={open} color="gray" m="sm" size="sm" />
-                </AppShell.Header >
+
+        <div>
+            <DrawerMenuUI
+                opened={opened()}
+                onClose={() => setOpened(false)}
+                menu={drawerMenu}
+            />
+            <AppShell header={{ height: 50 + safety.top }}>
+                <AppShell.Header pt={50 + safety.top}>
+                    <Burger onClick={() => setOpened(p => !p)} color="gray" m="sm" size="sm" />
+                </AppShell.Header>
 
                 <AppShell.Main>
+
                     <Outlet />
+
                 </AppShell.Main>
-                <AppShell.Footer />
+
             </AppShell>
-        </React.Fragment>
+        </div>
     );
-};
+}

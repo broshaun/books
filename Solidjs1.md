@@ -16,6 +16,7 @@
     pnpm add @corvu/accordion
     pnpm add @corvu/disclosure
     pnpm add solid-gesture
+    pnpm add @corvu/dialog
     pnpm add localforage @tabler/icons-solidjs clsx tailwind-merge
 
 ## 业务库
