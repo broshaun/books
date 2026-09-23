@@ -1,5 +1,5 @@
 import { createSignal, For, Show } from 'solid-js';
-import { IconQuote, IconX } from '@tabler/icons-solidjs';
+import { IconQuote, IconX, IconLoader2 } from '@tabler/icons-solidjs';
 import Accordion from '@corvu/accordion';
 
 export interface NewNote {
@@ -19,6 +19,7 @@ export interface NewNote {
 interface EpubNotesTimelineProps {
   tags: Record<string, number>; // 接收来自 useEpubNotes 的 indexTags
   notes: NewNote[];             // 接收来自 useEpubNotes 的 currentIndexNotes
+  isSyncing?: boolean;          // 🌟 新增：外部传入的同步状态
   onSelectNote?: (cfiRange: string) => void;
   onDelete?: (cfiRange: string) => void;
   onSelectTag?: (tag: string | null) => void;
@@ -45,7 +46,6 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
 
   const handleTagClick = (tag: string) => {
     setActiveTag(tag);
-    // 🌟 点击“全部”时传 null，单选标签时传对应的字符串
     props.onSelectTag?.(tag === 'all' ? null : tag);
   };
 
@@ -62,10 +62,22 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
   return (
     <div class="w-full h-full p-2 bg-transparent overflow-y-auto overflow-x-hidden text-stone-900 flex flex-col [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-stone-300/80 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-stone-400">
       
+      {/* 🌟 最上方标题栏：【笔记】及右侧同步图标 */}
+      <div class="flex items-center justify-between px-1 pb-2 mb-2 border-b border-stone-200/60 shrink-0">
+        <span class="text-xs font-bold text-stone-800 tracking-wider">笔记</span>
+        
+        {/* 同步状态图标：当 isSyncing 为 true 时旋转，也可以根据需要调整隐藏逻辑 */}
+        <Show when={props.isSyncing}>
+          <div class="flex items-center gap-1 text-[10px] text-stone-400">
+            <IconLoader2 size={14} class="animate-spin text-blue-500" />
+            <span>同步中...</span>
+          </div>
+        </Show>
+      </div>
+
       {/* 顶部标签栏 */}
       <Show when={props.tags && Object.keys(props.tags).length > 0}>
         <div class="flex items-center flex-wrap gap-1.5 pb-2.5 mb-2 border-b border-stone-200/60 shrink-0">
-          {/* 全部标签：利用 props.tags['all'] 显示总数 */}
           <button 
             type="button" 
             onClick={() => handleTagClick('all')} 
@@ -74,7 +86,6 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
             全部 ({props.tags['all'] ?? 0})
           </button>
 
-          {/* 其他具体标签循环（排除自带的 'all' key） */}
           <For each={Object.entries(props.tags || {}).filter(([tag]) => tag !== 'all')}>
             {([tag, count]) => (
               <button 

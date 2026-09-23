@@ -18,18 +18,19 @@ export interface NewNote {
 }
 
 const GLOBAL_STORAGE_KEY = "epub_global_notes";
+const LAST_SYNC_TIME_KEY = "epub_last_synced_at"; // 用于记录上一次同步的时间戳
 
 export interface UseEpubNotesSyncOptions {
-    interval?: number;                             // 自动定时同步周期（毫秒），设为 0 则不自动定时
-    onSyncGet?: () => Promise<NewNote[] | null>;   // 定时从远端拉取数据的回调
-    onSyncSet?: (notes: NewNote[]) => Promise<void>; // 定时向远端推送数据的回调
+    interval?: number;                             
+    onSyncGet?: () => Promise<NewNote[] | null>;   
+    onSyncSet?: (updatedNotes: NewNote[]) => Promise<void>; // 此时传入的是最新时间戳更新的数据
 }
 
 export function useEpubNotesSync(options: UseEpubNotesSyncOptions = {}) {
     const { interval = 0, onSyncGet, onSyncSet } = options;
     const [isSyncing, setIsSyncing] = createSignal(false);
 
-    // 内部合并逻辑（按 bookId + cfiRange 联合判定，比对 updatedAt 取最新）
+    // 内部合并逻辑
     const mergeNotes = (existingNotes: NewNote[], incomingNotes: NewNote[]): NewNote[] => {
         const noteMap = new Map<string, NewNote>();
 
@@ -63,16 +64,22 @@ export function useEpubNotesSync(options: UseEpubNotesSyncOptions = {}) {
         return Array.from(noteMap.values());
     };
 
-    // 执行完整的同步流程（读本地 ➔ 远端拉取合并 ➔ 存本地 ➔ 远端推送）
     const syncNow = async () => {
         if (isSyncing()) return;
         setIsSyncing(true);
+
         try {
+            // 记录本次开始同步的时间点
+            const syncStartTime = Date.now();
+
+            // 获取上一次成功同步的时间戳（如果没有，默认为 0，表示全量）
+            const lastSyncedAt = (await localforage.getItem<number>(LAST_SYNC_TIME_KEY)) || 0;
+
             // 1. 读取本地笔记
             const saved = await localforage.getItem<NewNote[]>(GLOBAL_STORAGE_KEY);
             let currentNotes = Array.isArray(saved) ? saved : [];
 
-            // 2. 如果有远端获取回调，独立捕获异常
+            // 2. 远端拉取与合并
             if (onSyncGet) {
                 try {
                     const remoteNotes = await onSyncGet();
@@ -81,16 +88,23 @@ export function useEpubNotesSync(options: UseEpubNotesSyncOptions = {}) {
                         await localforage.setItem(GLOBAL_STORAGE_KEY, currentNotes);
                     }
                 } catch (getErr) {
-                    console.error("[Sync] onSyncGet error (Check your fetch URL or network):", getErr);
+                    console.error("[Sync] onSyncGet error:", getErr);
                 }
             }
 
-            // 3. 如果有远端推送回调，独立捕获异常
-            if (onSyncSet) {
+            // 3. 筛选出“最新时间戳更新的数据”（updatedAt 大于上次同步时间）
+            const changedNotes = currentNotes.filter(
+                (note) => (note.updatedAt || 0) > lastSyncedAt
+            );
+
+            // 4. 只有当有真正变动的数据时，才调用 onSyncSet 推送给远端
+            if (onSyncSet && changedNotes.length > 0) {
                 try {
-                    await onSyncSet(currentNotes);
+                    await onSyncSet(changedNotes);
+                    // 推送成功后，更新本地记录的上次同步时间戳
+                    await localforage.setItem(LAST_SYNC_TIME_KEY, syncStartTime);
                 } catch (setErr) {
-                    console.error("[Sync] onSyncSet error (Check your request builder/payload):", setErr);
+                    console.error("[Sync] onSyncSet error:", setErr);
                 }
             }
         } catch (err) {
@@ -100,7 +114,6 @@ export function useEpubNotesSync(options: UseEpubNotesSyncOptions = {}) {
         }
     };
 
-    // 自动定时执行同步
     if (interval > 0) {
         const timer = setInterval(() => {
             void syncNow();

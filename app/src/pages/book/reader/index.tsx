@@ -1,4 +1,4 @@
-import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus } from "@tabler/icons-solidjs";
+import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus, IconCloudDown, IconLoader2 } from "@tabler/icons-solidjs";
 import { createSignal, onMount, onCleanup, createEffect, createResource } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
@@ -96,12 +96,12 @@ export function Reader(props: ReaderProps) {
     interval: 3000,
     onSyncGet: async () => {
       let note = await notesCache.get()
-      console.log('note',note)
+      console.log('note', note)
       return note
     },
     onSyncSet: async (localNotes) => {
-      console.log('同步数据localNotes',localNotes)
-      // await notesCache.set(localNotes)
+      console.log('同步数据localNotes', localNotes)
+      await notesCache.set(localNotes)
     },
   });
 
@@ -240,6 +240,7 @@ export function Reader(props: ReaderProps) {
             <EpubNotesEdit notes={currentNote()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
           ) : currentSet().has("click") ? (
             <EpubNotesTimeline
+              isSyncing={isSyncing()}
               tags={indexTags()}
               notes={currentIndexNotes()}
               onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }}
@@ -290,6 +291,11 @@ export function Reader(props: ReaderProps) {
         <button type="button" onClick={() => setSearchOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconSearch size={20} />
         </button>
+
+        <button type="button" onClick={() => syncNow()} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
+          <IconCloudDown size={20} />
+        </button>
+
 
         <button type="button" onClick={() => setStyleOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconLetterCase size={20} />
