@@ -1,6 +1,9 @@
 import { createSignal, onMount, onCleanup } from "solid-js";
 import localforage from "localforage";
 
+// 创建专属的 API 缓存数据库实例
+const apiCacheStore = localforage.createInstance({ name: "cache", storeName: "store" });
+
 export interface CacheStoreState<TData> {
   data: TData | null;
   error: Error | null;
@@ -23,15 +26,13 @@ export async function clearStorageCache() {
   storeMap.clear();
   listenersMap.forEach((s) => s.forEach((cb) => cb()));
   listenersMap.clear();
-  await localforage.clear();
+  // 简化的错误处理
+  await apiCacheStore.clear().catch(console.error);
   return true;
 }
 
 export function createStorageCache<TData = any, TKey extends string | number = string>({
-  cacheKey,
-  queryFn,
-  staleTime = 0,
-  primaryKey,
+  cacheKey, queryFn, staleTime = 0, primaryKey,
 }: StorageCacheOptions<TData, TKey>) {
   const key = cacheKey.join("::");
 
@@ -39,29 +40,27 @@ export function createStorageCache<TData = any, TKey extends string | number = s
     storeMap.get(key) ?? { data: null, error: null, isInitialLoading: true };
 
   const updateStore = (patch: Partial<CacheStoreState<TData>>) => {
-    const next = Object.assign(getStore(), patch);
+    const next = { ...getStore(), ...patch };
     storeMap.set(key, next);
     listenersMap.get(key)?.forEach((cb) => cb());
     return next;
   };
 
-  const getRecord = () => localforage.getItem<{ data: TData; timestamp: number }>(key);
+  const getRecord = () => apiCacheStore.getItem<{ data: TData; timestamp: number }>(key);
 
+  // 回归最稳妥、最易读的数据处理，去除多余判断
   const processData = (rawData: any): TData => {
-    if (!primaryKey) return rawData;
+    if (!primaryKey || !rawData || typeof rawData !== "object") return rawData;
+    
     if (Array.isArray(rawData)) {
-      const map = new Map<TKey, any>();
+      const map = new Map();
       rawData.forEach((item, i) => map.set(primaryKey(item) ?? i, item));
       return Array.from(map.values()) as unknown as TData;
     }
-    if (rawData && typeof rawData === "object") {
-      const result: Record<string | number, any> = {};
-      Object.values(rawData).forEach((item, i) => {
-        result[primaryKey(item) ?? i] = item;
-      });
-      return result as unknown as TData;
-    }
-    return rawData;
+    
+    const result: Record<string | number, any> = {};
+    Object.values(rawData).forEach((item, i) => result[primaryKey(item) ?? i] = item);
+    return result as unknown as TData;
   };
 
   const safeNetworkFetch = async () => {
@@ -74,7 +73,7 @@ export function createStorageCache<TData = any, TKey extends string | number = s
         if (res === undefined) return res;
         const data = processData(res);
         updateStore({ data, error: null, isInitialLoading: false });
-        await localforage.setItem(key, { data, timestamp: Date.now() });
+        await apiCacheStore.setItem(key, { data, timestamp: Date.now() });
         return data;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
@@ -103,48 +102,36 @@ export function createStorageCache<TData = any, TKey extends string | number = s
     refresh: safeNetworkFetch,
 
     useQuery: <TSelected = TData>(
-      selectorOrOptions?:
-        | ((data: TData) => TSelected)
-        | { select?: (data: TData) => TSelected; pk?: TKey }
+      opts?: ((data: TData) => TSelected) | { select?: (data: TData) => TSelected; pk?: TKey }
     ) => {
-      const [state, setState] = createSignal<CacheStoreState<TData>>(getStore());
+      const [state, setState] = createSignal(getStore());
 
       onMount(() => {
-        let listeners = listenersMap.get(key);
-        if (!listeners) listenersMap.set(key, (listeners = new Set()));
-        
+        if (!listenersMap.has(key)) listenersMap.set(key, new Set());
         const listener = () => setState(getStore());
-        listeners.add(listener);
+        listenersMap.get(key)!.add(listener);
 
         if (!storeMap.has(key)) fetch();
         else setState(getStore());
 
-        onCleanup(() => listeners.delete(listener));
+        onCleanup(() => listenersMap.get(key)?.delete(listener));
       });
 
-      const isOptObj = typeof selectorOrOptions === "object";
-      const select = isOptObj ? selectorOrOptions?.select : selectorOrOptions;
-      const pk = isOptObj ? selectorOrOptions?.pk : undefined;
-
-      // 符合 Solid 风格的计算属性 Getter
-      const data = () => {
-        const d = state().data;
-        if (d == null) return null;
-        const target = pk !== undefined ? (d as any)?.[pk] ?? null : d;
-        if (target == null && pk !== undefined) return null;
-        return select ? select(target) : (target as unknown as TSelected);
-      };
-
-      const loading = () => {
-        const s = state();
-        return pk !== undefined 
-          ? s.isInitialLoading && (s.data as any)?.[pk] === undefined 
-          : s.isInitialLoading && s.data == null;
-      };
+      // 缩减了参数解析的代码行数
+      const isObj = typeof opts === "object";
+      const select = isObj ? opts?.select : opts;
+      const pk = isObj ? opts?.pk : undefined;
 
       return {
-        data,
-        loading,
+        data: () => {
+          const d = state().data;
+          if (d == null) return null;
+          const target = pk !== undefined ? (d as any)[pk] ?? null : d;
+          return target == null && pk !== undefined ? null : (select ? select(target) : target as any);
+        },
+        loading: () => pk !== undefined 
+          ? state().isInitialLoading && (state().data as any)?.[pk] === undefined 
+          : state().isInitialLoading && state().data == null,
         error: () => state().error,
         refetch: safeNetworkFetch,
       };

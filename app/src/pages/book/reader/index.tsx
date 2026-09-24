@@ -92,13 +92,8 @@ export function Reader(props: ReaderProps) {
 
 
 
-  const { isSyncing, syncNow } = useEpubNotesSync({
+  const { isSyncing } = useEpubNotesSync({
     interval: 3000,
-    onSyncGet: async () => {
-      let note = await notesCache.get()
-      console.log('note', note)
-      return note
-    },
     onSyncSet: async (localNotes) => {
       console.log('同步数据localNotes', localNotes)
       await notesCache.set(localNotes)
@@ -292,9 +287,9 @@ export function Reader(props: ReaderProps) {
           <IconSearch size={20} />
         </button>
 
-        <button type="button" onClick={() => syncNow()} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
+        {/* <button type="button" onClick={() => syncNow()} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconCloudDown size={20} />
-        </button>
+        </button> */}
 
 
         <button type="button" onClick={() => setStyleOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">

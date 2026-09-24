@@ -20,8 +20,8 @@ function RouteComponent() {
 
   onMount(() => {
     console.log('++++')
-    // navigate({ to: "/book/shelf" });
-    navigate({ to: "/auth/login" });
+    navigate({ to: "/book/shelf" });
+    // navigate({ to: "/auth/login" });
   })
 
   return (

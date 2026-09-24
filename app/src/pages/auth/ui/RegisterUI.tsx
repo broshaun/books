@@ -8,6 +8,7 @@ interface TextFieldProps {
   maxWidth?: number;
   obscureText?: boolean;
   disabled?: boolean;
+  autocomplete?: string;
 }
 
 function TextField(props: TextFieldProps) {
@@ -30,6 +31,7 @@ function TextField(props: TextFieldProps) {
         placeholder={props.hintText}
         disabled={props.disabled}
         onInput={(e) => props.onChanged?.(e.currentTarget.value)}
+        autocomplete={props.autocomplete}
         class="flex-1 px-3 h-10 text-sm bg-transparent border-none outline-none disabled:cursor-not-allowed text-stone-900 placeholder:text-stone-400"
       />
     </div>
@@ -44,6 +46,7 @@ export interface RegisterSubmitData {
 interface RegisterUIProps {
   loading?: boolean;
   onSubmit?: (data: RegisterSubmitData) => void | Promise<void>;
+  toLogin?: () => void; // 统一规范：跳转登录回调
 }
 
 export function RegisterUI(props: RegisterUIProps) {
@@ -65,14 +68,17 @@ export function RegisterUI(props: RegisterUIProps) {
       {/* 分割线 */}
       <div class="w-full h-[1px] bg-gradient-to-r from-transparent via-stone-300 to-transparent my-1" />
 
+      {/* 账号输入框 */}
       <TextField
         label="账号"
         hintText="请输入账号"
         value={account()}
         disabled={props.loading}
         onChanged={setAccount}
+        autocomplete="username"
       />
 
+      {/* 密码输入框 */}
       <TextField
         label="密码"
         hintText="请输入密码"
@@ -80,9 +86,10 @@ export function RegisterUI(props: RegisterUIProps) {
         value={password()}
         disabled={props.loading}
         onChanged={setPassword}
+        autocomplete="new-password"
       />
 
-      {/* 蓝色注册按钮（已对齐 LoginUI 样式） */}
+      {/* 蓝色注册按钮 */}
       <button
         type="button"
         disabled={props.loading}
@@ -93,6 +100,20 @@ export function RegisterUI(props: RegisterUIProps) {
           <span class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
         </Show>
       </button>
+
+      {/* 只有存在 toLogin 回调时才显示 */}
+      <Show when={props.toLogin}>
+        <div class="text-sm text-stone-600 mt-1">
+          已有账号？{" "}
+          <button
+            type="button"
+            onClick={() => props.toLogin?.()}
+            class="text-sky-600 hover:text-sky-700 underline cursor-pointer font-medium"
+          >
+            登录
+          </button>
+        </div>
+      </Show>
     </div>
   );
 }

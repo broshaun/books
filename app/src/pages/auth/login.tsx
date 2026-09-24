@@ -39,6 +39,7 @@ export const Login = () => {
     <LoginUI
       loading={loading()}
       onSubmit={handleSubmit}
+      toRegister={() => { navigate({ 'to': '/auth/register' }) }}
     />
   );
 };

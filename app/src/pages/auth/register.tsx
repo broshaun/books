@@ -42,6 +42,7 @@ export function Register() {
         <RegisterUI
             loading={loading()}
             onSubmit={handleSubmit}
+            toLogin={() => { navigate({ 'to': '/auth/login' }) }}
         />
     );
 }

@@ -57,7 +57,7 @@ export function Index() {
                 onDeleteFolders={(ids) => {
                     delFolder(ids);
                 }}
-                onOpenProfile={()=>{navigate({to:"/auth/"})}}
+                onOpenProfile={() => { navigate({ to: "/auth/" }) }}
             />
 
             <BookShelf

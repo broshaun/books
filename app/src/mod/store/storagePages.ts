@@ -1,6 +1,9 @@
 import { createSignal, onMount, onCleanup, createMemo } from "solid-js";
 import localforage from "localforage";
 
+// 创建专属的无限分页缓存实例
+const apiCacheStore = localforage.createInstance({ name: "cache", storeName: "pages" });
+
 export interface InfiniteData<T = any, P = any> {
   pages: T[];
   pageParams: P[];
@@ -19,7 +22,7 @@ const listenersMap = new Map<string, Set<() => void>>();
 export async function clearStoragePages() {
   storeMap.clear();
   listenersMap.clear();
-  await localforage.clear();
+  await apiCacheStore.clear().catch(console.error);
   return true;
 }
 
@@ -45,14 +48,14 @@ export function createStoragePages<TData = any, TPageParam = any>({
   const getStore = () => storeMap.get(key) ?? defaultState;
 
   const updateStore = (patch: Partial<CachePagesState<TData, TPageParam>>) => {
-    const next = Object.assign({}, getStore(), patch);
+    const next = { ...getStore(), ...patch };
     storeMap.set(key, next);
     listenersMap.get(key)?.forEach((cb) => cb());
     return next;
   };
 
   const getRecord = () =>
-    localforage.getItem<{ data: InfiniteData<TData, TPageParam>; timestamp: number; hasNextPage: boolean }>(key);
+    apiCacheStore.getItem<{ data: InfiniteData<TData, TPageParam>; timestamp: number; hasNextPage: boolean }>(key);
 
   const fetchNetwork = async (param: TPageParam = initialPageParam, append = false) => {
     try {
@@ -63,7 +66,7 @@ export function createStoragePages<TData = any, TPageParam = any>({
       const data = { pages, pageParams };
 
       updateStore({ data, error: null, isInitialLoading: false });
-      localforage.setItem(key, { data, timestamp: Date.now(), hasNextPage: getStore().hasNextPage });
+      await apiCacheStore.setItem(key, { data, timestamp: Date.now(), hasNextPage: getStore().hasNextPage });
       return data;
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
@@ -94,18 +97,14 @@ export function createStoragePages<TData = any, TPageParam = any>({
       const [isFetchingNextPage, setIsFetchingNextPage] = createSignal(false);
 
       onMount(() => {
-        let listeners = listenersMap.get(key);
-        if (!listeners) {
-          listeners = new Set();
-          listenersMap.set(key, listeners);
-        }
+        if (!listenersMap.has(key)) listenersMap.set(key, new Set());
         const listener = () => setState(getStore());
-        listeners.add(listener);
+        listenersMap.get(key)!.add(listener);
 
         if (!storeMap.has(key)) fetch();
         else setState(getStore());
 
-        onCleanup(() => listeners.delete(listener));
+        onCleanup(() => listenersMap.get(key)?.delete(listener));
       });
 
       const data = createMemo(() => {
