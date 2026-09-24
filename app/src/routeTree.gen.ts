@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as ReaderRouteImport } from './routes/reader'
+import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
@@ -37,6 +38,11 @@ const BookRoute = BookRouteImport.update({
 const ReaderRoute = ReaderRouteImport.update({
   id: '/reader',
   path: '/reader',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SafetyRoute = SafetyRouteImport.update({
+  id: '/safety',
+  path: '/safety',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/book': typeof BookRouteWithChildren
   '/reader': typeof ReaderRouteWithChildren
+  '/safety': typeof SafetyRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/book/shelf': typeof BookShelfRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/book': typeof BookRouteWithChildren
   '/reader': typeof ReaderRouteWithChildren
+  '/safety': typeof SafetyRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/book/shelf': typeof BookShelfRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/book': typeof BookRouteWithChildren
   '/reader': typeof ReaderRouteWithChildren
+  '/safety': typeof SafetyRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/book/shelf': typeof BookShelfRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/book'
     | '/reader'
+    | '/safety'
     | '/auth/login'
     | '/auth/register'
     | '/book/shelf'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/'
     | '/book'
     | '/reader'
+    | '/safety'
     | '/auth/login'
     | '/auth/register'
     | '/book/shelf'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/book'
     | '/reader'
+    | '/safety'
     | '/auth/login'
     | '/auth/register'
     | '/book/shelf'
@@ -138,6 +150,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   BookRoute: typeof BookRouteWithChildren
   ReaderRoute: typeof ReaderRouteWithChildren
+  SafetyRoute: typeof SafetyRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -168,6 +181,13 @@ declare module '@tanstack/solid-router' {
       path: '/reader'
       fullPath: '/reader'
       preLoaderRoute: typeof ReaderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety': {
+      id: '/safety'
+      path: '/safety'
+      fullPath: '/safety'
+      preLoaderRoute: typeof SafetyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/': {
@@ -248,6 +268,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   BookRoute: BookRouteWithChildren,
   ReaderRoute: ReaderRouteWithChildren,
+  SafetyRoute: SafetyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

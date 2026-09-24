@@ -8,7 +8,6 @@ import { useSafety } from "@/hooks/useSafety";
 import { AppShell } from "@/components/AppShell";
 
 
-
 export const Route = createFileRoute("/book")({
   component: Layout,
 });
@@ -18,13 +17,12 @@ function Layout() {
   const { height } = winSize();
 
   createEffect(() => {
-    useStore2.setHeight(height - 50 - safety.bottom - safety.top);
+    useStore2.setHeight(height - 50 - safety.bottom() - safety.top());
   });
 
-
   return (
-    <AppShell header={{ height: 50 + safety.top }}>
-      <AppShell.Header pt={50 + safety.top}>
+    <AppShell header={{ height: 50 + safety.top() }}>
+      <AppShell.Header pt={50 + safety.top()}>
         <AppBar
           title={appBarStore.title}
           left={appBarStore.left}
@@ -32,13 +30,9 @@ function Layout() {
           theme="zinc"
         />
       </AppShell.Header>
-
       <AppShell.Main>
-
         <Outlet />
-
       </AppShell.Main>
-
     </AppShell>
   );
 }

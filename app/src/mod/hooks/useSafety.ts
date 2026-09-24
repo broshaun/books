@@ -1,64 +1,53 @@
-import { createSignal } from "solid-js";
-import { createStore } from "solid-js/store";
+import { createSignal, createMemo } from "solid-js";
+import { createStore, unwrap } from "solid-js/store";
 
-interface LayoutConfig {
-  bottom: number;
-  top: number;
-}
+interface Config { top: number; bottom: number }
+interface State { portrait: Config; landscape: Config }
 
-interface SafetyState {
-  portrait: LayoutConfig;
-  landscape: LayoutConfig;
-}
+const KEY = "safety-config-v2";
+const def: Config = { top: 0, bottom: 0 };
+const isBrowser = typeof window !== "undefined";
 
-const STORAGE_KEY = "safety-config-v2";
-const defaultLayout: LayoutConfig = { bottom: 0, top: 0 };
+// 1. 全局监听横竖屏
+const media = isBrowser ? window.matchMedia("(orientation: landscape)") : null;
+const [isLandscape, setIsLandscape] = createSignal(media?.matches ?? false);
+media?.addEventListener("change", (e) => setIsLandscape(e.matches));
 
-// 1. 使用 matchMedia 的 change 事件高效监听横竖屏切换
-const mediaQuery = typeof window !== "undefined" ? window.matchMedia("(orientation: landscape)") : null;
-const [isLandscape, setIsLandscape] = createSignal(mediaQuery?.matches ?? false);
-mediaQuery?.addEventListener("change", (e) => setIsLandscape(e.matches));
-
-// 2. 初始化状态读取
-const getInitialState = (): SafetyState => {
+// 2. 加载本地缓存（精简了解析逻辑）
+const loadState = (): State => {
+  if (!isBrowser) return { portrait: def, landscape: def };
   try {
-    const item = localStorage.getItem(STORAGE_KEY);
-    if (item) {
-      const data = (JSON.parse(item)?.state ?? JSON.parse(item)) || {};
-      return {
-        portrait: { top: Number(data.portrait?.top) || 0, bottom: Number(data.portrait?.bottom) || 0 },
-        landscape: { top: Number(data.landscape?.top) || 0, bottom: Number(data.landscape?.bottom) || 0 },
-      };
-    }
-  } catch {}
-  return { portrait: defaultLayout, landscape: defaultLayout };
-};
-
-const [state, setState] = createStore<SafetyState>(getInitialState());
-
-// 3. 统一保存逻辑
-const persistAndSet = (mode: "portrait" | "landscape", key: "top" | "bottom", value: number) => {
-  setState(mode, key, value);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, version: 1 }));
-  } catch {}
-};
-
-export const useSafety = () => {
-  const mode = () => (isLandscape() ? "landscape" : "portrait");
-
-  return {
-    get bottom() { return state[mode()].bottom; },
-    get top() { return state[mode()].top; },
-    setBottom: (val: number) => persistAndSet(mode(), "bottom", val),
-    setTop: (val: number) => persistAndSet(mode(), "top", val),
-  };
-};
-
-export const hasSafetyConfig = (): boolean => {
-  try {
-    return localStorage.getItem(STORAGE_KEY) !== null;
+    const raw = localStorage.getItem(KEY);
+    const d = raw ? (JSON.parse(raw)?.state ?? JSON.parse(raw)) : {};
+    const parseCfg = (c: any) => ({ top: Number(c?.top) || 0, bottom: Number(c?.bottom) || 0 });
+    return { portrait: parseCfg(d.portrait), landscape: parseCfg(d.landscape) };
   } catch {
-    return false;
+    return { portrait: def, landscape: def };
   }
 };
+
+const [state, setState] = createStore<State>(loadState());
+
+// 3. 持久化存储封装
+const persist = (mode: keyof State, key: keyof Config, val: number) => {
+  setState(mode, key, val);
+  if (isBrowser) {
+    try { localStorage.setItem(KEY, JSON.stringify({ state: unwrap(state) })); } catch {}
+  }
+};
+
+
+/** 检查是否存在本地安全区配置 */
+export const hasSafetyConfig = () => isBrowser && localStorage.getItem(KEY) !== null;
+
+/** 屏幕安全区适配 Hook */
+export function useSafety() {
+  const mode = createMemo(() => (isLandscape() ? "landscape" : "portrait") as keyof State);
+
+  return {
+    top: () => state[mode()].top,
+    bottom: () => state[mode()].bottom,
+    setTop: (val: number) => persist(mode(), "top", val),
+    setBottom: (val: number) => persist(mode(), "bottom", val),
+  };
+}
