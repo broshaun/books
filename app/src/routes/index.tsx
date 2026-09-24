@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/solid-router'
 import { useNavigate } from '@tanstack/solid-router';
 import { apiConfig } from '@/config';
-import { onMount, createResource } from 'solid-js';
+import { createResource } from 'solid-js';
 import { hasSafetyConfig } from '@/hooks/useSafety';
 import { useSafety } from '@/hooks/useSafety';
 import { safetyCache } from '@/api/cache/safetyCache';
