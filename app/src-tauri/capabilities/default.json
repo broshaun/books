@@ -7,8 +7,6 @@
   ],
   "permissions": [
     "core:default",
-    "dialog:default",
-    "dialog:allow-open",
     "device-info:default",
     "fs:allow-read-dir",
     "fs:allow-read-file",
