@@ -1,5 +1,4 @@
 import { createSignal, onMount } from "solid-js";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { readDir } from "@tauri-apps/plugin-fs";
 import localforage from "localforage";
 
@@ -70,19 +69,17 @@ export function useLocalBooks() {
     return newFolders;
   };
 
-  const addFolder = async (folderPath?: unknown) => {
-    const rawPath = typeof folderPath === "string"
-      ? folderPath
-      : await openDialog({ directory: true, multiple: false });
+  // 🌟 直接接收外部传进来的文件夹路径字符串
+  const addFolder = async (folderPath: string) => {
+    if (!folderPath || !folderPath.trim()) return;
 
-    const path = Array.isArray(rawPath) ? rawPath[0] : rawPath;
     const currentFolders = folders();
-    if (typeof path !== "string" || !path.trim() || currentFolders.some((f) => f.path === path)) return;
+    if (currentFolders.some((f) => f.path === folderPath)) return;
 
     const newFolder: Folder = {
       id: currentFolders.length ? Math.max(...currentFolders.map((f) => f.id)) + 1 : 1,
-      name: getFolderName(path),
-      path,
+      name: getFolderName(folderPath),
+      path: folderPath,
     };
 
     return saveFolders([...currentFolders, newFolder]);

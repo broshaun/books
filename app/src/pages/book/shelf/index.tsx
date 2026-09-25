@@ -42,9 +42,9 @@ export function Index() {
                 opened={bookDir()}
                 onClose={() => setBookDir(false)}
                 folders={folders()}
-                onAddFolder={() => {
-                    console.log("添加文件夹");
-                    addFolder();
+                onAddFolder={async(file_path) => {
+                    console.log("添加文件夹",file_path);
+                    await addFolder(file_path);
                 }}
                 onSelectFolder={({ id, name, path }) => {
                     console.log("id", id);

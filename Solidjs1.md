@@ -11,12 +11,7 @@
 
 ## TanStack Router
     pnpm add @tanstack/solid-router @tanstack/solid-router-devtools @tanstack/router-plugin -D
-    pnpm add @kobalte/core 
-    pnpm add @corvu/drawer
-    pnpm add @corvu/accordion
-    pnpm add @corvu/disclosure
-    pnpm add solid-gesture
-    pnpm add @corvu/dialog
+    pnpm add corvu
     pnpm add localforage @tabler/icons-solidjs clsx tailwind-merge
 
 ## 业务库
@@ -38,4 +33,37 @@
 ```
 
 
-- pnpm tauri dev
+### 添加tsconfig.json配置
+```json
+ "compilerOptions": {
+  "paths": {
+    "@/*": [
+      "./src/mod/*",
+      "./src/*",
+    ],
+  }
+}
+```
+
+### rsbuild.config.ts
+### 在项目主目录下创建
+config
+- .env.development
+- .env.production
+
+### 修改package.json执行参数 
+```json
+  "scripts": {
+    "dev": "rsbuild dev --env-dir config",
+    "build": "rsbuild build --env-dir config",
+    "check": "biome check --write",
+    "format": "biome format --write",
+    "preview": "rsbuild preview"
+  }
+```
+
+```sh
+    pnpm tauri dev
+    pnpm tauri build
+    pnpm tauri build --debug
+```

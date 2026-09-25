@@ -1,6 +1,6 @@
 import { createSignal, For, Show } from 'solid-js';
 import { IconQuote, IconX, IconLoader2 } from '@tabler/icons-solidjs';
-import Accordion from '@corvu/accordion';
+import Accordion from 'corvu/accordion';
 
 export interface NewNote {
   bookId: string;

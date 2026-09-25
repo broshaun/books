@@ -1,6 +1,6 @@
 import { createSignal, createEffect, For, Show } from 'solid-js';
 import { IconChevronRight, IconLoader2, IconBookmark, IconTrash, IconList } from '@tabler/icons-solidjs';
-import Drawer from '@corvu/drawer';
+import Drawer from 'corvu/drawer';
 import type { NavItem } from 'epubjs';
 
 // 定义书签数据结构

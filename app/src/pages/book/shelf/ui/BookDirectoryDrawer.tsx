@@ -1,4 +1,5 @@
 import { createSignal, For, Show } from "solid-js";
+import { invoke } from "@tauri-apps/api/core";
 import {
   IconFolder,
   IconFolderPlus,
@@ -18,7 +19,7 @@ export interface BookDirectoryDrawerProps {
   onClose?: () => void;
   folders?: Folder[];
   onSelectFolder?: (folder: Folder) => void;
-  onAddFolder?: () => void;
+  onAddFolder?: (filePath: string) => void;
   onDeleteFolders?: (ids: number[]) => void;
   onOpenProfile?: () => void;
   onOpenAbout?: () => void;
@@ -35,9 +36,7 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
 
   const toggleFolder = (id: number) => {
     setSelectedIds((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : [...current, id]
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
     );
   };
 
@@ -48,7 +47,17 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
     toggleDeleteMode(false);
   };
 
-  // 检查是否有配置底部附加的个人或关于回调
+  const handleAddFolderClick = async () => {
+    try {
+      const selectedPath = await invoke<string | null>("select_folder");
+      if (selectedPath) {
+        props.onAddFolder?.(selectedPath);
+      }
+    } catch (error) {
+      console.error("选择文件夹失败:", error);
+    }
+  };
+
   const hasBottomActions = () => !!props.onOpenProfile || !!props.onOpenAbout;
 
   return (
@@ -56,14 +65,12 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
       {/* 1. 遮罩层 */}
       <div
         class={`fixed inset-0 bg-black/50 backdrop-blur-2xs z-40 transition-opacity duration-300 ease-in-out ${
-          props.opened
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          props.opened ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => props.onClose?.()}
       />
 
-      {/* 2. 抽屉主体（已将最大宽度缩小至 max-w-[240px]） */}
+      {/* 2. 抽屉主体 */}
       <div
         class={`fixed inset-y-0 left-0 z-50 w-full max-w-[240px] bg-zinc-900 text-zinc-100 shadow-xl flex flex-col p-3 transform transition-transform duration-300 ease-in-out ${
           props.opened ? "translate-x-0" : "-translate-x-full"
@@ -71,9 +78,7 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
       >
         {/* 标题 */}
         <div class="flex items-center px-1 pt-2 pb-1">
-          <span class="font-semibold text-sm text-zinc-100 tracking-tight">
-            我的书籍
-          </span>
+          <span class="font-semibold text-sm text-zinc-100 tracking-tight">我的书籍</span>
         </div>
 
         <hr class="border-zinc-800 my-2" />
@@ -129,24 +134,17 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
             when={deleteMode()}
             fallback={
               <>
-                <button
-                  type="button"
-                  onClick={() => props.onAddFolder?.()}
-                  class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-200 hover:text-white cursor-pointer"
-                >
-                  <IconFolderPlus size={16} class="text-zinc-400" />
-                  <span class="text-xs font-medium">添加</span>
-                </button>
-
-                <button
-                  type="button"
+                <ActionButton
+                  icon={<IconFolderPlus size={16} class="text-zinc-400" />}
+                  label="添加"
+                  onClick={handleAddFolderClick}
+                />
+                <ActionButton
+                  icon={<IconFolderX size={16} class="text-zinc-400" />}
+                  label="移除"
                   disabled={!props.folders?.length}
                   onClick={() => toggleDeleteMode(true)}
-                  class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-200 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  <IconFolderX size={16} class="text-zinc-400" />
-                  <span class="text-xs font-medium">移除</span>
-                </button>
+                />
               </>
             }
           >
@@ -170,42 +168,54 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
           </Show>
         </div>
 
-        {/* 🌟 只有存在回调时才渲染分割线与底部附加菜单 */}
+        {/* 底部附加菜单 */}
         <Show when={hasBottomActions()}>
           <hr class="border-zinc-800 my-2" />
-
           <div class="space-y-0.5 shrink-0">
             <Show when={props.onOpenProfile}>
-              <button
-                type="button"
+              <ActionButton
+                icon={<IconUserCircle size={16} class="text-zinc-400" />}
+                label="个人"
                 onClick={() => {
                   props.onOpenProfile?.();
                   props.onClose?.();
                 }}
-                class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-200 hover:text-white cursor-pointer"
-              >
-                <IconUserCircle size={16} class="text-zinc-400" />
-                <span class="text-xs font-medium">个人</span>
-              </button>
+              />
             </Show>
-
             <Show when={props.onOpenAbout}>
-              <button
-                type="button"
+              <ActionButton
+                icon={<IconInfoCircle size={16} class="text-zinc-400" />}
+                label="关于"
                 onClick={() => {
                   props.onOpenAbout?.();
                   props.onClose?.();
                 }}
-                class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-200 hover:text-white cursor-pointer"
-              >
-                <IconInfoCircle size={16} class="text-zinc-400" />
-                <span class="text-xs font-medium">关于</span>
-              </button>
+              />
             </Show>
           </div>
         </Show>
       </div>
     </>
+  );
+}
+
+// 辅助子组件：抽屉菜单按钮
+function ActionButton(props: {
+  icon: any;
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={props.disabled}
+      onClick={props.onClick}
+      class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-200 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+    >
+      {props.icon}
+      <span class="text-xs font-medium">{props.label}</span>
+    </button>
   );
 }
 

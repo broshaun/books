@@ -1,5 +1,5 @@
 import { For, type JSX } from 'solid-js';
-import Drawer from '@corvu/drawer';
+import Drawer from 'corvu/drawer';
 
 export interface DrawerMenuItem {
   key: string;

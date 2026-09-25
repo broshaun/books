@@ -1,5 +1,5 @@
 import { Show } from "solid-js";
-import Dialog from "@corvu/dialog";
+import Dialog from "corvu/dialog";
 import { useGlobalModal } from "@/hooks/useGlobalModal";
 
 export function GlobalModal() {
