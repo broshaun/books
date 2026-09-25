@@ -1,5 +1,5 @@
 import { createSignal, For, Show } from "solid-js";
-import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog"; // 🌟 使用官方 dialog 插件
 import {
   IconFolder,
   IconFolderPlus,
@@ -47,11 +47,18 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
     toggleDeleteMode(false);
   };
 
+  // 🌟 使用官方插件直接打开文件夹选择弹窗
   const handleAddFolderClick = async () => {
     try {
-      const selectedPath = await invoke<string | null>("select_folder");
+      const selectedPath = await open({
+        directory: true,
+        multiple: false,
+        title: "选择书籍文件夹",
+      });
+
       if (selectedPath) {
-        props.onAddFolder?.(selectedPath);
+        console.log("获取到完整文件夹路径：", selectedPath);
+        props.onAddFolder?.(selectedPath as string);
       }
     } catch (error) {
       console.error("选择文件夹失败:", error);

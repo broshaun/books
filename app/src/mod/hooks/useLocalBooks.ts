@@ -69,7 +69,7 @@ export function useLocalBooks() {
     return newFolders;
   };
 
-  // 🌟 直接接收外部传进来的文件夹路径字符串
+  // 直接接收外部传进来的文件夹路径字符串
   const addFolder = async (folderPath: string) => {
     if (!folderPath || !folderPath.trim()) return;
 
@@ -98,6 +98,15 @@ export function useLocalBooks() {
     return newFolders;
   };
 
+  // 🌟 新增：清空所有文件夹及图书缓存
+  const clearFolder = async () => {
+    setFolders([]);
+    setBooks([]);
+    await localforage.removeItem(LEAF_FOLDERS_KEY);
+    await localforage.removeItem(CACHED_BOOKS_KEY);
+    return [];
+  };
+
   const selectFolder = async (folderPath: string) => {
     try {
       const entries = await readDir(folderPath);
@@ -115,5 +124,6 @@ export function useLocalBooks() {
     }
   };
 
-  return { folders, books, addFolder, delFolder, selectFolder };
+  // 🌟 别忘了在返回值中暴露 clearFolder
+  return { folders, books, addFolder, delFolder, clearFolder, selectFolder };
 }
