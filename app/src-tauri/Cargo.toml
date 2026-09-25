@@ -33,4 +33,3 @@ dashmap = "6.2.1"
 rumqttc = "0.25" # mqtt通讯库
 regex = "1" # 正则库
 tauri-plugin-fs = "2"
-rfd = "0.15"
