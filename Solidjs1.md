@@ -67,3 +67,18 @@ config
     pnpm tauri build
     pnpm tauri build --debug
 ```
+
+
+
+```ts
+const isOnline = navigator.onLine;
+console.log("当前网络状态：", isOnline ? "在线" : "离线");
+
+// 监听网络连接/断开事件
+window.addEventListener('online', () => {
+  console.log("网络已连接");
+});
+window.addEventListener('offline', () => {
+  console.log("网络已断开");
+});
+```

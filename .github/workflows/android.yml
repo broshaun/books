@@ -129,10 +129,8 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-
           corepack enable
           corepack prepare pnpm@9.12.3 --activate
-
           node --version
           pnpm --version
 
@@ -144,11 +142,8 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
         run: |
           set -euxo pipefail
-
           pnpm config set registry https://registry.npmmirror.com
-
-          pnpm install --frozen-lockfile
-
+          pnpm install --no-frozen-lockfile
           pnpm tauri --version
 
       # ============================================================
@@ -159,9 +154,7 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
         run: |
           set -euxo pipefail
-
           rm -rf src-tauri/gen/android || true
-
           pnpm tauri android init --ci
 
       # ============================================================
