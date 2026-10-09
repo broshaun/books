@@ -15,98 +15,70 @@ export interface LocalBook {
   path: string;
 }
 
-const LEAF_FOLDERS_KEY = "EPUB_LEAF_FOLDERS";
+const BASE_DIR_KEY = "EPUB_BASE_DIR";
 const CACHED_BOOKS_KEY = "EPUB_CACHED_BOOKS";
 
-const getFolderName = (p: string) => p.split(/[/\\]/).pop() || "未命名文件夹";
-
 export function useLocalBooks() {
+  const [baseDir, setBaseDir] = createSignal<string>("");
   const [folders, setFolders] = createSignal<Folder[]>([]);
   const [books, setBooks] = createSignal<LocalBook[]>([]);
 
+  // 根据基础目录扫描其下的子目录作为 folders
+  const scanSubFolders = async (dirPath: string) => {
+    try {
+      const entries = await readDir(dirPath);
+      // 仅保留未隐藏的目录作为 folders
+      const subFolders: Folder[] = entries
+        .filter((e) => e.isDirectory && !e.name.startsWith("."))
+        .map((e, index) => ({
+          id: index + 1,
+          name: e.name,
+          path: `${dirPath}/${e.name}`, // 注意：跨平台路径拼接可按需调整或使用 @tauri-apps/api/path 的 join
+        }));
+
+      setFolders(subFolders);
+      setBaseDir(dirPath);
+      await localforage.setItem(BASE_DIR_KEY, dirPath);
+      return subFolders;
+    } catch (e) {
+      console.error(`扫描基础目录失败: ${dirPath}`, e);
+      setFolders([]);
+      return [];
+    }
+  };
+
+  // 初始化加载缓存的基础目录及子文件夹
   onMount(() => {
-    const initData = async () => {
+    const init = async () => {
       try {
-        const [savedFolders, savedBooks] = await Promise.all([
-          localforage.getItem<unknown[]>(LEAF_FOLDERS_KEY),
+        const [savedBaseDir, savedBooks] = await Promise.all([
+          localforage.getItem<string>(BASE_DIR_KEY),
           localforage.getItem<LocalBook[]>(CACHED_BOOKS_KEY),
         ]);
 
-        if (Array.isArray(savedFolders)) {
-          const normalized: Folder[] = savedFolders
-            .map((item, index) => {
-              const rawRecord = item as Record<string, unknown> | null;
-              const rawPath = typeof item === "string" ? item : rawRecord?.path;
-              if (!rawPath) return null;
-              const path = String(rawPath);
-              return {
-                id: typeof rawRecord?.id === "number" ? rawRecord.id : index + 1,
-                name: rawRecord?.name ? String(rawRecord.name) : getFolderName(path),
-                path,
-              };
-            })
-            .filter((f): f is Folder => f !== null);
-
-          setFolders(normalized);
-          await localforage.setItem(LEAF_FOLDERS_KEY, normalized);
+        if (savedBaseDir) {
+          await scanSubFolders(savedBaseDir);
         }
-
         if (Array.isArray(savedBooks)) {
           setBooks(savedBooks);
         }
-      } catch {
-        setFolders([]);
-        setBooks([]);
+      } catch (e) {
+        console.error("初始化本地数据失败", e);
       }
     };
 
-    void initData();
+    void init();
   });
 
-  const saveFolders = async (newFolders: Folder[]) => {
-    setFolders(newFolders);
-    await localforage.setItem(LEAF_FOLDERS_KEY, newFolders);
-    return newFolders;
-  };
-
-  // 直接接收外部传进来的文件夹路径字符串
-  const addFolder = async (folderPath: string) => {
+  // 设置基础目录并刷新子文件夹列表
+  const setBaseFolder = async (folderPath: string) => {
     if (!folderPath || !folderPath.trim()) return;
-
-    const currentFolders = folders();
-    if (currentFolders.some((f) => f.path === folderPath)) return;
-
-    const newFolder: Folder = {
-      id: currentFolders.length ? Math.max(...currentFolders.map((f) => f.id)) + 1 : 1,
-      name: getFolderName(folderPath),
-      path: folderPath,
-    };
-
-    return saveFolders([...currentFolders, newFolder]);
-  };
-
-  const delFolder = async (folderIds: number | number[]) => {
-    const idsToRemove = new Set(Array.isArray(folderIds) ? folderIds : [folderIds]);
-    const currentFolders = folders();
-    const newFolders = currentFolders.filter((f) => !idsToRemove.has(f.id));
-    
-    if (newFolders.length === currentFolders.length) return currentFolders;
-
-    await saveFolders(newFolders);
     setBooks([]);
     await localforage.removeItem(CACHED_BOOKS_KEY);
-    return newFolders;
+    return await scanSubFolders(folderPath);
   };
 
-  // 🌟 新增：清空所有文件夹及图书缓存
-  const clearFolder = async () => {
-    setFolders([]);
-    setBooks([]);
-    await localforage.removeItem(LEAF_FOLDERS_KEY);
-    await localforage.removeItem(CACHED_BOOKS_KEY);
-    return [];
-  };
-
+  // 点击选中子目录，扫描其中的 epub 文件
   const selectFolder = async (folderPath: string) => {
     try {
       const entries = await readDir(folderPath);
@@ -124,6 +96,11 @@ export function useLocalBooks() {
     }
   };
 
-  // 🌟 别忘了在返回值中暴露 clearFolder
-  return { folders, books, addFolder, delFolder, clearFolder, selectFolder };
+  return { 
+    baseDir, 
+    folders, 
+    books, 
+    setBaseFolder, 
+    selectFolder 
+  };
 }

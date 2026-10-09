@@ -5,6 +5,7 @@ import './index.css';
 
 
 const router = createRouter({ routeTree })
+
 function App() {
   return <RouterProvider router={router} />
 }

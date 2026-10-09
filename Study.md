@@ -201,3 +201,9 @@ function Chart(props: { id: number }) {
 | `setState('path', val)` | 默认改为草稿修改 `setState(s => { s.path = val })` |
 | `batch` / `startTransition` | 废弃，系统默认微任务自动批量处理 |
 | `@solidjs/web` 依赖 | 独立包，DOM 渲染与核心响应式系统解耦 |
+
+
+
+
+const {open(path), dir() } = useFolder()
+open为打开指定目录，dir为返回当前目录文件夹
