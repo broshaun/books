@@ -1,7 +1,6 @@
-import { type Component, For, Show, createSignal, onMount } from "solid-js";
+import { For, Show, createSignal, onMount } from "solid-js";
 import { readDir } from "@tauri-apps/plugin-fs";
 import { documentDir, homeDir, join, dirname } from "@tauri-apps/api/path";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   IconFolder,
   IconFolderCog,
@@ -10,8 +9,6 @@ import {
   IconArrowBackUp,
   IconCheck,
   IconX,
-  IconShieldLock,
-  IconFolderCheck,
 } from "@tabler/icons-solidjs";
 import Dialog from "corvu/dialog";
 
@@ -33,22 +30,6 @@ export interface BookDirectoryDrawerProps {
 
 export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
   const [selectorOpen, setSelectorOpen] = createSignal(false);
-  const [permissionModalOpen, setPermissionModalOpen] = createSignal(false);
-
-  // 检测是否为移动端环境
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
-
-  const handleSettingsClick = () => {
-    if (isMobile) {
-      // 手机端：唤醒独立的权限与文件选择弹窗
-      setPermissionModalOpen(true);
-    } else {
-      // 桌面端：打开原有的文件夹目录选择树
-      setSelectorOpen(true);
-    }
-  };
 
   const hasBottomActions = () => !!props.onOpenProfile || !!props.onOpenAbout;
 
@@ -109,8 +90,8 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         <div class="space-y-1">
           <ActionButton
             icon={<IconFolderCog size={16} class="text-zinc-400" />}
-            label="设置"
-            onClick={handleSettingsClick}
+            label="设置目录"
+            onClick={() => setSelectorOpen(true)}
           />
         </div>
 
@@ -146,21 +127,9 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
       <FolderSelector
         opened={selectorOpen()}
         onClose={() => setSelectorOpen(false)}
-        onConfirm={async (path) => {
-          console.log("设置文件夹", path);
+        onConfirm={(path) => {
           props.onSetFolder?.(path);
           setSelectorOpen(false);
-        }}
-      />
-
-      {/* 4. 手机端独立权限与文件授权唤醒组件 */}
-      <MobilePermissionPrompt
-        opened={permissionModalOpen()}
-        onClose={() => setPermissionModalOpen(false)}
-        onGranted={(path) => {
-          console.log("手机端授权并获取路径:", path);
-          props.onSetFolder?.(path);
-          setPermissionModalOpen(false);
         }}
       />
     </>
@@ -187,84 +156,7 @@ function ActionButton(props: {
   );
 }
 
-// 手机端独立权限与文件选择唤醒组件（适配移动端沙盒限制）
-interface MobilePermissionPromptProps {
-  opened: boolean;
-  onClose?: () => void;
-  onGranted?: (path: string) => void;
-}
-
-function MobilePermissionPrompt(props: MobilePermissionPromptProps) {
-  const handleRequestPermission = async () => {
-    try {
-      // 移动端采用 directory: false 选择文件，可完美调起系统权限框并获取绝对路径
-      const selected = await openDialog({
-        directory: false,
-        multiple: false,
-        filters: [
-          {
-            name: "Epub Books",
-            extensions: ["epub"],
-          },
-        ],
-        title: "请选择并授权一本 .epub 书籍",
-      });
-
-      if (selected && typeof selected === "string") {
-        props.onGranted?.(selected);
-      }
-    } catch (error) {
-      console.error("唤起手机系统文件选择失败", error);
-    }
-  };
-
-  return (
-    <Dialog open={props.opened} onOpenChange={(open) => !open && props.onClose?.()}>
-      <Dialog.Portal>
-        <Dialog.Overlay class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 transition-opacity" />
-
-        <Dialog.Content class="fixed bottom-0 left-0 right-0 bg-zinc-900 text-zinc-100 border-t border-zinc-800 rounded-t-2xl p-5 flex flex-col items-center gap-4 z-50 outline-none shadow-2xl">
-          <div class="w-full flex justify-end">
-            <Dialog.Close class="bg-transparent border-none cursor-pointer text-zinc-400 hover:text-zinc-100 p-1">
-              <IconX size={20} />
-            </Dialog.Close>
-          </div>
-
-          <div class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 mb-1">
-            <IconShieldLock size={28} />
-          </div>
-
-          <div class="text-center space-y-1">
-            <h3 class="font-semibold text-base text-zinc-100">需要存储读取权限</h3>
-            <p class="text-xs text-zinc-400 max-w-[280px] leading-relaxed">
-              手机端由于系统安全限制，请点击下方按钮选择您的 .epub 书籍文件以自动获取访问授权。
-            </p>
-          </div>
-
-          <div class="w-full pt-2 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={handleRequestPermission}
-              class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-900/20"
-            >
-              <IconFolderCheck size={18} />
-              选择书籍文件并授权
-            </button>
-            <button
-              type="button"
-              onClick={() => props.onClose?.()}
-              class="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-medium transition-colors cursor-pointer border border-zinc-700/50"
-            >
-              稍后设置
-            </button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog>
-  );
-}
-
-// 文件夹选择器弹窗组件 (桌面端专用)
+// 文件夹选择器弹窗组件 (PC 端专用)
 interface FolderSelectorProps {
   opened: boolean;
   onClose?: () => void;

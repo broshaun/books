@@ -1,4 +1,4 @@
-import { createSignal, onMount, Show } from "solid-js";
+import { createSignal, onMount } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
 import { useLocalBooks } from "@/hooks/useLocalBooks";
@@ -6,14 +6,13 @@ import { appBarStore } from "@/components/appBarStore";
 import BookShelf from "./ui/BookShelf";
 import BookDirectoryDrawer from "./ui/BookDirectoryDrawer";
 import { IconMenu2 } from "@tabler/icons-solidjs";
-import FolderSelector from "./ui/FolderSelector";
 
 
-export function Index() {
+export function Shelf() {
     const navigate = useNavigate();
     const height = () => useStore2.height;
     const { folders, books, selectFolder, setBaseFolder } = useLocalBooks();
-      const [left, setLeft] = createSignal(false);
+    const [left, setLeft] = createSignal(false);
 
     const handleOpen = async (name: string) => {
         try {
@@ -38,17 +37,11 @@ export function Index() {
 
     console.log('height', height())
 
-    // const isAndroid = /Android/i.test(navigator.userAgent);
-    // console.log("当前是否为安卓环境：", isAndroid);
 
 
     return (
         <div>
-            {/* <FolderSelector opened={bookDir()} onClose={() => setBookDir(false)} /> */}
-
-
-
-
+       
 
             <BookDirectoryDrawer
                 opened={left()}
@@ -67,7 +60,7 @@ export function Index() {
 
                     selectFolder(path);
                 }}
-            
+
                 onOpenProfile={() => { navigate({ to: "/auth/" }) }}
             />
 
@@ -87,4 +80,4 @@ export function Index() {
     );
 }
 
-export default Index;
+export default Shelf;

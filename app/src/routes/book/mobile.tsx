@@ -1,11 +1,9 @@
 import { createFileRoute } from '@tanstack/solid-router'
-import { Index } from '@/pages/book/shelf'
 
-
-export const Route = createFileRoute('/book/shelf')({
+export const Route = createFileRoute('/book/mobile')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  return <Index/>
+  return <div>Hello "/book/mobile"!</div>
 }

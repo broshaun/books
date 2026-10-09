@@ -25,14 +25,14 @@ function RouteComponent() {
 
   createResource(async () => {
     if (hasSafetyConfig()) {
-      return navigate({ to: "/book/shelf" });
+      return navigate({ to: "/book" });
     }
     try {
       const data = await safetyCache.get();
       if (data) {
         setTop(data.top);
         setBottom(data.bottom);
-        navigate({ to: "/book/shelf" });
+        navigate({ to: "/book" });
       }
     } catch (err) {
       console.error("加载安全配置失败", err);
