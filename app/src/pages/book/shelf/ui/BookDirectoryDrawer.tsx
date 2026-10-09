@@ -1,6 +1,7 @@
 import { type Component, For, Show, createSignal, onMount } from "solid-js";
 import { readDir } from "@tauri-apps/plugin-fs";
 import { documentDir, homeDir, join, dirname } from "@tauri-apps/api/path";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   IconFolder,
   IconFolderCog,
@@ -30,6 +31,38 @@ export interface BookDirectoryDrawerProps {
 
 export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
   const [selectorOpen, setSelectorOpen] = createSignal(false);
+
+  // 检测是否为移动端环境
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+
+  // 点击设置按钮时的跨平台处理
+  const handleSettingsClick = async () => {
+    if (isMobile) {
+      // 📱 手机端：直接调用文件选择器导入 .epub 文件，绕过文件夹遍历限制
+      try {
+        const selected = await openDialog({
+          multiple: true,
+          directory: false,
+          filters: [{ name: "Epub Books", extensions: ["epub"] }],
+          title: "选择并导入书籍",
+        });
+
+        if (selected) {
+          const paths = Array.isArray(selected) ? selected : [selected];
+          console.log("手机端导入文件路径：", paths);
+          // 可将路径传给外部处理
+          props.onSetFolder?.(paths[0]); // 视你的业务需求调整
+        }
+      } catch (e) {
+        console.error("手机端选择文件失败:", e);
+      }
+    } else {
+      // 💻 桌面端：打开自定义的文件夹选择弹窗
+      setSelectorOpen(true);
+    }
+  };
 
   const hasBottomActions = () => !!props.onOpenProfile || !!props.onOpenAbout;
 
@@ -90,8 +123,8 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         <div class="space-y-1">
           <ActionButton
             icon={<IconFolderCog size={16} class="text-zinc-400" />}
-            label="设置"
-            onClick={() => setSelectorOpen(true)}
+            label={isMobile ? "导入书籍" : "设置目录"}
+            onClick={handleSettingsClick}
           />
         </div>
 
@@ -123,16 +156,18 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         </Show>
       </div>
 
-      {/* 3. 文件夹选择弹窗 */}
-      <FolderSelector
-        opened={selectorOpen()}
-        onClose={() => setSelectorOpen(false)}
-        onConfirm={async (path) => {
-          console.log("设置文件夹", path);
-          props.onSetFolder?.(path);
-          setSelectorOpen(false);
-        }}
-      />
+      {/* 3. 文件夹选择弹窗（仅桌面端启用） */}
+      <Show when={!isMobile}>
+        <FolderSelector
+          opened={selectorOpen()}
+          onClose={() => setSelectorOpen(false)}
+          onConfirm={async (path) => {
+            console.log("设置文件夹", path);
+            props.onSetFolder?.(path);
+            setSelectorOpen(false);
+          }}
+        />
+      </Show>
     </>
   );
 }
@@ -157,7 +192,7 @@ function ActionButton(props: {
   );
 }
 
-// 文件夹选择器弹窗组件 (适配暗黑风格)
+// 文件夹选择器弹窗组件 (桌面端专用)
 interface FolderSelectorProps {
   opened: boolean;
   onClose?: () => void;
@@ -175,7 +210,7 @@ function FolderSelector(props: FolderSelectorProps) {
       setEntries(res.filter((e) => e.isDirectory && !e.name.startsWith(".")));
       setPath(target);
     } catch (e) {
-      console.error(`打开目录失败: ${target}`, e);
+      console.error(`打开目录失败: ${target} (请检查 Tauri Capabilities 权限配置)`, e);
     }
   };
 

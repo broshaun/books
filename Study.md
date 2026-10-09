@@ -205,5 +205,3 @@ function Chart(props: { id: number }) {
 
 
 
-const {open(path), dir() } = useFolder()
-open为打开指定目录，dir为返回当前目录文件夹
