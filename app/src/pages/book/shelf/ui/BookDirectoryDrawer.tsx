@@ -42,7 +42,7 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
 
   const handleSettingsClick = () => {
     if (isMobile) {
-      // 手机端：唤醒独立的权限开通与授权组件
+      // 手机端：唤醒独立的权限与文件选择弹窗
       setPermissionModalOpen(true);
     } else {
       // 桌面端：打开原有的文件夹目录选择树
@@ -153,12 +153,12 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         }}
       />
 
-      {/* 4. 手机端独立权限唤醒组件 */}
+      {/* 4. 手机端独立权限与文件授权唤醒组件 */}
       <MobilePermissionPrompt
         opened={permissionModalOpen()}
         onClose={() => setPermissionModalOpen(false)}
         onGranted={(path) => {
-          console.log("手机端权限开通并获取路径:", path);
+          console.log("手机端授权并获取路径:", path);
           props.onSetFolder?.(path);
           setPermissionModalOpen(false);
         }}
@@ -187,7 +187,7 @@ function ActionButton(props: {
   );
 }
 
-// 手机端独立权限唤醒组件
+// 手机端独立权限与文件选择唤醒组件（适配移动端沙盒限制）
 interface MobilePermissionPromptProps {
   opened: boolean;
   onClose?: () => void;
@@ -197,17 +197,24 @@ interface MobilePermissionPromptProps {
 function MobilePermissionPrompt(props: MobilePermissionPromptProps) {
   const handleRequestPermission = async () => {
     try {
+      // 移动端采用 directory: false 选择文件，可完美调起系统权限框并获取绝对路径
       const selected = await openDialog({
-        directory: true,
+        directory: false,
         multiple: false,
-        title: "请授予存储读取权限以加载书籍",
+        filters: [
+          {
+            name: "Epub Books",
+            extensions: ["epub"],
+          },
+        ],
+        title: "请选择并授权一本 .epub 书籍",
       });
 
       if (selected && typeof selected === "string") {
         props.onGranted?.(selected);
       }
     } catch (error) {
-      console.error("唤起系统权限失败", error);
+      console.error("唤起手机系统文件选择失败", error);
     }
   };
 
@@ -230,7 +237,7 @@ function MobilePermissionPrompt(props: MobilePermissionPromptProps) {
           <div class="text-center space-y-1">
             <h3 class="font-semibold text-base text-zinc-100">需要存储读取权限</h3>
             <p class="text-xs text-zinc-400 max-w-[280px] leading-relaxed">
-              为了能够扫描和阅读您手机本地的 .epub 书籍，我们需要获取系统的文件读取授权。
+              手机端由于系统安全限制，请点击下方按钮选择您的 .epub 书籍文件以自动获取访问授权。
             </p>
           </div>
 
@@ -241,7 +248,7 @@ function MobilePermissionPrompt(props: MobilePermissionPromptProps) {
               class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-900/20"
             >
               <IconFolderCheck size={18} />
-              立即开启授权并选择目录
+              选择书籍文件并授权
             </button>
             <button
               type="button"
