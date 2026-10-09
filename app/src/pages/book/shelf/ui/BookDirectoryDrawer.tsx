@@ -10,6 +10,8 @@ import {
   IconArrowBackUp,
   IconCheck,
   IconX,
+  IconShieldLock,
+  IconFolderCheck,
 } from "@tabler/icons-solidjs";
 import Dialog from "corvu/dialog";
 
@@ -31,35 +33,19 @@ export interface BookDirectoryDrawerProps {
 
 export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
   const [selectorOpen, setSelectorOpen] = createSignal(false);
+  const [permissionModalOpen, setPermissionModalOpen] = createSignal(false);
 
   // 检测是否为移动端环境
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
   );
 
-  // 点击设置按钮时的跨平台处理
-  const handleSettingsClick = async () => {
+  const handleSettingsClick = () => {
     if (isMobile) {
-      // 📱 手机端：直接调用文件选择器导入 .epub 文件，绕过文件夹遍历限制
-      try {
-        const selected = await openDialog({
-          multiple: true,
-          directory: false,
-          filters: [{ name: "Epub Books", extensions: ["epub"] }],
-          title: "选择并导入书籍",
-        });
-
-        if (selected) {
-          const paths = Array.isArray(selected) ? selected : [selected];
-          console.log("手机端导入文件路径：", paths);
-          // 可将路径传给外部处理
-          props.onSetFolder?.(paths[0]); // 视你的业务需求调整
-        }
-      } catch (e) {
-        console.error("手机端选择文件失败:", e);
-      }
+      // 手机端：唤醒独立的权限开通与授权组件
+      setPermissionModalOpen(true);
     } else {
-      // 💻 桌面端：打开自定义的文件夹选择弹窗
+      // 桌面端：打开原有的文件夹目录选择树
       setSelectorOpen(true);
     }
   };
@@ -123,7 +109,7 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         <div class="space-y-1">
           <ActionButton
             icon={<IconFolderCog size={16} class="text-zinc-400" />}
-            label={isMobile ? "导入书籍" : "设置目录"}
+            label="设置"
             onClick={handleSettingsClick}
           />
         </div>
@@ -156,18 +142,27 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         </Show>
       </div>
 
-      {/* 3. 文件夹选择弹窗（仅桌面端启用） */}
-      <Show when={!isMobile}>
-        <FolderSelector
-          opened={selectorOpen()}
-          onClose={() => setSelectorOpen(false)}
-          onConfirm={async (path) => {
-            console.log("设置文件夹", path);
-            props.onSetFolder?.(path);
-            setSelectorOpen(false);
-          }}
-        />
-      </Show>
+      {/* 3. 桌面端文件夹选择弹窗 */}
+      <FolderSelector
+        opened={selectorOpen()}
+        onClose={() => setSelectorOpen(false)}
+        onConfirm={async (path) => {
+          console.log("设置文件夹", path);
+          props.onSetFolder?.(path);
+          setSelectorOpen(false);
+        }}
+      />
+
+      {/* 4. 手机端独立权限唤醒组件 */}
+      <MobilePermissionPrompt
+        opened={permissionModalOpen()}
+        onClose={() => setPermissionModalOpen(false)}
+        onGranted={(path) => {
+          console.log("手机端权限开通并获取路径:", path);
+          props.onSetFolder?.(path);
+          setPermissionModalOpen(false);
+        }}
+      />
     </>
   );
 }
@@ -192,6 +187,76 @@ function ActionButton(props: {
   );
 }
 
+// 手机端独立权限唤醒组件
+interface MobilePermissionPromptProps {
+  opened: boolean;
+  onClose?: () => void;
+  onGranted?: (path: string) => void;
+}
+
+function MobilePermissionPrompt(props: MobilePermissionPromptProps) {
+  const handleRequestPermission = async () => {
+    try {
+      const selected = await openDialog({
+        directory: true,
+        multiple: false,
+        title: "请授予存储读取权限以加载书籍",
+      });
+
+      if (selected && typeof selected === "string") {
+        props.onGranted?.(selected);
+      }
+    } catch (error) {
+      console.error("唤起系统权限失败", error);
+    }
+  };
+
+  return (
+    <Dialog open={props.opened} onOpenChange={(open) => !open && props.onClose?.()}>
+      <Dialog.Portal>
+        <Dialog.Overlay class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 transition-opacity" />
+
+        <Dialog.Content class="fixed bottom-0 left-0 right-0 bg-zinc-900 text-zinc-100 border-t border-zinc-800 rounded-t-2xl p-5 flex flex-col items-center gap-4 z-50 outline-none shadow-2xl">
+          <div class="w-full flex justify-end">
+            <Dialog.Close class="bg-transparent border-none cursor-pointer text-zinc-400 hover:text-zinc-100 p-1">
+              <IconX size={20} />
+            </Dialog.Close>
+          </div>
+
+          <div class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 mb-1">
+            <IconShieldLock size={28} />
+          </div>
+
+          <div class="text-center space-y-1">
+            <h3 class="font-semibold text-base text-zinc-100">需要存储读取权限</h3>
+            <p class="text-xs text-zinc-400 max-w-[280px] leading-relaxed">
+              为了能够扫描和阅读您手机本地的 .epub 书籍，我们需要获取系统的文件读取授权。
+            </p>
+          </div>
+
+          <div class="w-full pt-2 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={handleRequestPermission}
+              class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-900/20"
+            >
+              <IconFolderCheck size={18} />
+              立即开启授权并选择目录
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onClose?.()}
+              class="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-medium transition-colors cursor-pointer border border-zinc-700/50"
+            >
+              稍后设置
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog>
+  );
+}
+
 // 文件夹选择器弹窗组件 (桌面端专用)
 interface FolderSelectorProps {
   opened: boolean;
@@ -210,7 +275,7 @@ function FolderSelector(props: FolderSelectorProps) {
       setEntries(res.filter((e) => e.isDirectory && !e.name.startsWith(".")));
       setPath(target);
     } catch (e) {
-      console.error(`打开目录失败: ${target} (请检查 Tauri Capabilities 权限配置)`, e);
+      console.error(`打开目录失败: ${target}`, e);
     }
   };
 
