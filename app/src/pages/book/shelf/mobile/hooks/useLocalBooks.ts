@@ -18,10 +18,35 @@ export function useLocalBooks() {
   const addTag = async (name: string) => {
     const trimmed = name?.trim();
     if (!trimmed || tags().some((t) => t.name === trimmed)) return;
-    
+
     const updated = [...tags(), { id: Date.now(), name: trimmed }];
     setTags(updated);
     await localforage.setItem(TAGS_KEY, updated);
+  };
+
+  // 🌟 修改分组名（同步更新标签列表以及关联书籍的 tagName）
+  const updateTag = async (oldName: string, newName: string) => {
+    const trimmedOld = oldName?.trim();
+    const trimmedNew = newName?.trim();
+    if (!trimmedOld || !trimmedNew || trimmedOld === trimmedNew) return;
+
+    // 检查新名称是否已存在
+    if (tags().some((t) => t.name === trimmedNew)) return;
+
+    try {
+      // 1. 更新标签列表中的名称
+      const updatedTags = tags().map((t) => (t.name === trimmedOld ? { ...t, name: trimmedNew } : t));
+      setTags(updatedTags);
+      await localforage.setItem(TAGS_KEY, updatedTags);
+
+      // 2. 获取所有书籍，同步更新属于该分组的书籍的 tagName
+      const allBooks = (await localforage.getItem<LocalBook[]>(BOOKS_KEY)) || [];
+      const updatedBooks = allBooks.map((b) => (b.tagName === trimmedOld ? { ...b, tagName: trimmedNew } : b));
+      setBooks(updatedBooks);
+      await localforage.setItem(BOOKS_KEY, updatedBooks);
+    } catch (e) {
+      console.error(`修改分组名失败: ${trimmedOld} -> ${trimmedNew}`, e);
+    }
   };
 
   // 🗑️ 删除标签（同步清理该分组下的所有书籍及二进制缓存）
@@ -59,13 +84,21 @@ export function useLocalBooks() {
     if (!path) return;
     try {
       const buffer = await readFile(path);
-      const name = path.split(/[/\\]/).pop() || "未知图书.epub";
+
+      // 🌟 1. 对传入的 URI 路径进行 URL 解码（把 %3A 转成 : 等）
+      const decodedPath = decodeURIComponent(path);
+
+      // 🌟 2. 智能提取真正的文件名：
+      // 无论是 Windows/Linux 的反斜杠，还是 Android 的 content:// 路径、URL 路径，
+      // 我们通过正则或 split 取出最后一段，并且把可能存在的多余查询参数（如 ? 后面带的）过滤掉
+      const rawName = decodedPath.split(/[/\\]/).pop() || "未知图书.epub";
+      const name = rawName.split("?")[0].trim() || "未知图书.epub";
 
       await localforage.setItem(`BOOK_CACHE_${name}`, buffer);
 
       const allBooks = (await localforage.getItem<LocalBook[]>(BOOKS_KEY)) || [];
       if (!allBooks.some((b) => b.name === name)) {
-        const updated = [...allBooks, { name, path, tagName: tagName || null }];
+        const updated = [...allBooks, { name, path: decodedPath, tagName: tagName || null }];
         await localforage.setItem(BOOKS_KEY, updated);
         setBooks(updated);
       }
@@ -115,5 +148,5 @@ export function useLocalBooks() {
     }
   });
 
-  return { tags, books, addEpub, addTag, delTag, selectTag, delEpub, updEpub };
+  return { tags, books, addEpub, addTag, updateTag, delTag, selectTag, delEpub, updEpub };
 }

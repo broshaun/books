@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, Show } from 'solid-js';
+import { createSignal, For, Show } from 'solid-js';
 import { IconSearch, IconX, IconLoader2 } from '@tabler/icons-solidjs';
 
 export interface SearchResult {
@@ -21,7 +21,6 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
   const [lastSearched, setLastSearched] = createSignal('');
   let searchToken = 0;
 
-  // 清除状态
   const handleClear = () => {
     searchToken++;
     setQuery('');
@@ -38,10 +37,7 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
   // 执行 EPUB 全文搜索
   const executeSearch = async (keyword: string) => {
     const trimmed = keyword.trim();
-    if (!trimmed || !props.book) {
-      handleClear();
-      return;
-    }
+    if (!trimmed || !props.book) return handleClear();
 
     const currentToken = ++searchToken;
     setIsSearching(true);
@@ -65,7 +61,6 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
             matches.forEach((m: any) => {
               let excerpt = m.excerpt || m.text || '';
 
-              // 补充富上下文片段（前后各 40 字符）
               if (excerpt.length < 30 && fullText) {
                 const idx = fullText.toLowerCase().indexOf(trimmed.toLowerCase());
                 if (idx !== -1) {
@@ -83,19 +78,15 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
           }
           item.unload();
         } catch {
-          /* 忽略单个章节解析失败 */
+          // 忽略单个章节解析失败
         }
       }
 
-      if (currentToken === searchToken) {
-        setSearchResults(matchesList);
-      }
+      if (currentToken === searchToken) setSearchResults(matchesList);
     } catch (err) {
       console.error('EPUB Search Error:', err);
     } finally {
-      if (currentToken === searchToken) {
-        setIsSearching(false);
-      }
+      if (currentToken === searchToken) setIsSearching(false);
     }
   };
 
@@ -104,7 +95,7 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
     return typeof s === 'number' ? `${s}px` : s;
   };
 
-  // 辅助函数：高亮关键词片段
+  // 高亮关键词片段
   const renderHighlightedExcerpt = (text: string, highlight: string) => {
     if (!highlight) return text;
     try {
@@ -128,14 +119,12 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
       {/* 1. 遮罩层 */}
       <div
         class={`fixed inset-0 bg-black/30 backdrop-blur-[2px] z-45 transition-opacity duration-300 ease-in-out ${
-          props.opened
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
+          props.opened ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={handleClose}
       />
 
-      {/* 2. 底部弹出抽屉主体：采用无死板背景色 + 多层阴影 + 顶部细腻边框 */}
+      {/* 2. 底部弹出抽屉主体 */}
       <div
         class={`fixed inset-x-0 bottom-0 z-50 w-full shadow-2xl shadow-stone-900/20 border-t border-stone-200/80 dark:border-zinc-800/80 rounded-t-2xl flex flex-col p-4 transform transition-transform duration-300 ease-in-out backdrop-blur-xl bg-inherit/95 ${
           props.opened ? 'translate-y-0' : 'translate-y-full'
@@ -168,12 +157,7 @@ export function EpubSearchDrawer(props: EpubSearchDrawerProps) {
               placeholder="输入关键词，按 Enter 搜索..."
               value={query()}
               onInput={(e) => setQuery(e.currentTarget.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  executeSearch(query());
-                }
-              }}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), executeSearch(query()))}
               class="w-full pl-9 pr-9 py-2 text-sm rounded-lg border border-stone-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/40 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
             <Show when={query()}>

@@ -11,7 +11,7 @@ import { IconMenu2 } from "@tabler/icons-solidjs";
 export function Shelf() {
     const navigate = useNavigate();
     const height = () => useStore2.height;
-    const { tags, books, selectTag, addTag, delTag, addEpub, delEpub, updEpub } = useLocalBooks();
+    const { tags, books, selectTag, addTag, delTag, addEpub, updateTag, delEpub, updEpub } = useLocalBooks();
     const [left, setLeft] = createSignal(false);
 
     const handleOpen = async (name: string) => {
@@ -58,6 +58,9 @@ export function Shelf() {
                 onDelTag={async (name) => {
                     await delTag(name);
                 }}
+                onUpdateTag={async (id, tagName) => {
+                    await updateTag(id, tagName);
+                }}
                 onSelectTag={({ id, name }) => {
                     console.log("id", id);
                     console.log("name", name);
@@ -86,7 +89,7 @@ export function Shelf() {
                 onUpdEpub={async (bookName, tagName) => {
                     console.log('bookName,tagName', bookName, tagName)
                     await updEpub(bookName, tagName)
-                 
+
                 }}
             />
         </div>

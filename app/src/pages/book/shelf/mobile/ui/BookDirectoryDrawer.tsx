@@ -7,6 +7,7 @@ import {
   IconUserCircle,
   IconInfoCircle,
   IconTrash,
+  IconEdit,
   IconX,
   IconDotsVertical,
   IconBook,
@@ -23,6 +24,7 @@ export interface BookDirectoryDrawerProps {
   onSelectTag?: (tag: { id: number | null; name: string | null }) => void;
   onAddTag?: (name: string) => void;
   onDelTag?: (name: string) => void;
+  onUpdateTag?: (oldName: string, newName: string) => void; // 🌟 增加修改分组名回调
   onAddEpub?: (filePath: string, tagName?: string | null) => void;
   onDelBook?: (bookName: string) => void;
   onOpenProfile?: () => void;
@@ -33,12 +35,17 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
   let drawerRef!: HTMLDivElement;
   const [tagInputOpen, setTagInputOpen] = createSignal(false);
   const [tagNameInput, setTagNameInput] = createSignal("");
+  
+  // 🌟 修改分组名相关状态
+  const [editingTag, setEditingTag] = createSignal<string | null>(null);
+  const [editTagNameInput, setEditTagNameInput] = createSignal("");
+
   const [activeMenuTag, setActiveMenuTag] = createSignal<string | null>(null);
   const [confirmDelTag, setConfirmDelTag] = createSignal<string | null>(null);
 
   // 点击外部收起
   const handleClickOutside = (e: MouseEvent) => {
-    if (tagInputOpen() || confirmDelTag()) return;
+    if (tagInputOpen() || confirmDelTag() || editingTag()) return;
     if (props.opened && drawerRef && !drawerRef.contains(e.target as Node)) {
       props.onClose?.();
       setActiveMenuTag(null);
@@ -63,7 +70,7 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
 
   return (
     <>
-      {/* 遮罩层（受父容器边界限制，需确保父容器具有 relative 定位） */}
+      {/* 遮罩层（受父容器边界限制） */}
       <div
         class={`absolute inset-0 bg-black/50 backdrop-blur-2xs z-40 transition-opacity duration-300 ${
           props.opened ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -71,7 +78,7 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         onClick={() => { props.onClose?.(); setActiveMenuTag(null); }}
       />
 
-      {/* 抽屉主体（改为 absolute，完全受外部父容器边界限制） */}
+      {/* 抽屉主体 */}
       <div
         ref={drawerRef}
         class={`absolute inset-y-0 left-0 z-50 w-full max-w-[240px] bg-zinc-900 text-zinc-100 shadow-xl flex flex-col p-3 overflow-hidden transform transition-transform duration-300 ${
@@ -128,6 +135,19 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
                           <IconBook size={13} class="text-zinc-400" />
                           <span>添加书籍</span>
                         </button>
+                        {/* 🌟 修改分组名按钮 */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveMenuTag(null);
+                            setEditTagNameInput(tag.name);
+                            setEditingTag(tag.name);
+                          }}
+                          class="flex items-center gap-2 w-full px-2.5 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800 rounded transition-colors text-left cursor-pointer border-none bg-transparent outline-none"
+                        >
+                          <IconEdit size={13} class="text-zinc-400" />
+                          <span>修改名称</span>
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -180,6 +200,31 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         <div class="flex gap-2 pt-1">
           <ModalBtn label="取消" onClick={() => setTagInputOpen(false)} />
           <ModalBtn primary label="确定" onClick={() => { if (tagNameInput().trim()) { props.onAddTag?.(tagNameInput().trim()); setTagNameInput(""); setTagInputOpen(false); } }} />
+        </div>
+      </Modal>
+
+      {/* 🌟 修改分组名弹窗 */}
+      <Modal open={!!editingTag()} onClose={() => setEditingTag(null)} title="修改分组名称">
+        <input
+          type="text" placeholder="请输入新的分组名称..." value={editTagNameInput()}
+          onInput={(e) => setEditTagNameInput(e.currentTarget.value)}
+          class="bg-zinc-800 text-zinc-100 text-xs px-3 py-2.5 rounded-lg border border-zinc-700 outline-none focus:border-zinc-500 w-full"
+          autofocus
+        />
+        <div class="flex gap-2 pt-1">
+          <ModalBtn label="取消" onClick={() => setEditingTag(null)} />
+          <ModalBtn
+            primary
+            label="确定"
+            onClick={() => {
+              const oldName = editingTag();
+              const newName = editTagNameInput().trim();
+              if (oldName && newName && newName !== oldName) {
+                props.onUpdateTag?.(oldName, newName);
+              }
+              setEditingTag(null);
+            }}
+          />
         </div>
       </Modal>
 
