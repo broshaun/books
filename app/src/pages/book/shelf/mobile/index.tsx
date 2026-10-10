@@ -11,7 +11,7 @@ import { IconMenu2 } from "@tabler/icons-solidjs";
 export function Shelf() {
     const navigate = useNavigate();
     const height = () => useStore2.height;
-    const { folders, books, selectFolder, addFolder, delFolder } = useLocalBooks();
+    const { tags, books, selectTag, addTag, delTag, addEpub, delEpub, updEpub } = useLocalBooks();
     const [left, setLeft] = createSignal(false);
 
     const handleOpen = async (name: string) => {
@@ -46,22 +46,24 @@ export function Shelf() {
             <BookDirectoryDrawer
                 opened={left()}
                 onClose={() => setLeft(false)}
-                folders={folders()}
-                onAddFolder={async (path) => {
-                    console.log("设置文件夹", path);
-                    await addFolder(path);
+                tags={tags()}
+                onAddEpub={async (filePath, name) => {
+                    console.log('filePath,name', filePath, name)
+                    await addEpub(filePath, name ?? undefined)
+                }}
+                onAddTag={async (name) => {
+                    console.log("选择标签组", name);
+                    await addTag(name);
 
                 }}
-                onDelFolder={async (path) => {
-                    await delFolder(path);
+                onDelTag={async (name) => {
+                    await delTag(name);
                 }}
-                onSelectFolder={({ id, name, path }) => {
+                onSelectTag={({ id, name }) => {
                     console.log("id", id);
                     console.log("name", name);
-                    console.log("path", path);
-                    appBarStore.set({ title: name })
-
-                    selectFolder(path);
+                    appBarStore.set({ title: name ?? undefined })
+                    selectTag(name ?? undefined);
                 }}
 
                 onOpenProfile={() => { navigate({ to: "/auth/" }) }}
@@ -77,6 +79,15 @@ export function Shelf() {
                 onSelectBook={(book) => {
                     console.log("book", book);
                     handleOpen(book.path);
+                }}
+                onDelEpub={async (tagName) => {
+                    delEpub(tagName)
+                }}
+                tags={tags()}
+                onUpdEpub={async (bookName, tagName) => {
+                    console.log('bookName,tagName', bookName, tagName)
+                    await updEpub(bookName, tagName)
+                 
                 }}
             />
         </div>

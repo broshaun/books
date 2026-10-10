@@ -13,24 +13,23 @@ export interface AppBarProps {
 }
 
 export function AppBar(props: AppBarProps) {
-  // 根据不同的主题返回对应的样式类名
   const themeClasses = () => {
     if (props.theme === "zinc") {
       return "bg-zinc-900 text-zinc-100 border-b border-zinc-800";
     }
-    // 默认主题（保持原样）
     return "bg-transparent text-slate-900";
   };
 
   const titleClasses = () => {
     if (props.theme === "zinc") {
-      return "text-base font-semibold truncate text-zinc-100 tracking-tight";
+      return "text-base font-semibold truncate text-zinc-100 tracking-tight select-none";
     }
-    return "text-base font-semibold truncate text-slate-800 dark:text-slate-100";
+    return "text-base font-semibold truncate text-slate-800 dark:text-slate-100 select-none";
   };
 
   return (
-    <div class={`grid grid-cols-12 items-center p-3.5 w-full ${themeClasses()}`}>
+    // 🌟 加上 pt-[env(safe-area-inset-top)] 适配移动端状态栏安全区，并防止点击引发抖动
+    <div class={`grid grid-cols-12 items-center p-3.5 w-full select-none outline-none box-border ${themeClasses()}`}>
       <div class="col-span-2 flex items-center justify-start">{props.left}</div>
       <div class="col-span-8 flex items-center justify-center">
         <h1 class={titleClasses()}>{props.title}</h1>
