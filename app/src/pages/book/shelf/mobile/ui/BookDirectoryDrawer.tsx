@@ -36,11 +36,9 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
   const [activeMenuTag, setActiveMenuTag] = createSignal<string | null>(null);
   const [confirmDelTag, setConfirmDelTag] = createSignal<string | null>(null);
 
-  // 🌟 点击抽屉外部时自动收起（如果弹窗开着则不收起）
+  // 点击外部收起
   const handleClickOutside = (e: MouseEvent) => {
-    // 如果新建分组弹窗或删除确认弹窗处于打开状态，直接拦截，不关闭抽屉
     if (tagInputOpen() || confirmDelTag()) return;
-
     if (props.opened && drawerRef && !drawerRef.contains(e.target as Node)) {
       props.onClose?.();
       setActiveMenuTag(null);
@@ -65,16 +63,20 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
 
   return (
     <>
-      {/* 遮罩层 */}
+      {/* 遮罩层（受父容器边界限制，需确保父容器具有 relative 定位） */}
       <div
-        class={`fixed inset-0 bg-black/50 backdrop-blur-2xs z-40 transition-opacity duration-300 ${props.opened ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        class={`absolute inset-0 bg-black/50 backdrop-blur-2xs z-40 transition-opacity duration-300 ${
+          props.opened ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
         onClick={() => { props.onClose?.(); setActiveMenuTag(null); }}
       />
 
-      {/* 抽屉主体 */}
+      {/* 抽屉主体（改为 absolute，完全受外部父容器边界限制） */}
       <div
         ref={drawerRef}
-        class={`fixed inset-y-0 left-0 z-50 w-full max-w-[240px] bg-zinc-900 text-zinc-100 shadow-xl flex flex-col p-3 overflow-hidden transform transition-transform duration-300 ${props.opened ? "translate-x-0" : "-translate-x-full"}`}
+        class={`absolute inset-y-0 left-0 z-50 w-full max-w-[240px] bg-zinc-900 text-zinc-100 shadow-xl flex flex-col p-3 overflow-hidden transform transition-transform duration-300 ${
+          props.opened ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         <div class="px-1 pt-2 pb-1 font-semibold text-sm tracking-tight">我的书籍</div>
         <hr class="border-zinc-800 my-2" />

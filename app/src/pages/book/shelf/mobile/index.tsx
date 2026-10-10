@@ -42,7 +42,6 @@ export function Shelf() {
     return (
         <div>
 
-
             <BookDirectoryDrawer
                 opened={left()}
                 onClose={() => setLeft(false)}

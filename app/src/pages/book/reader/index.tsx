@@ -22,7 +22,6 @@ import { useBookmarks } from "./hook/useBookmarks";
 import { useEpubNotesSync } from "./hook/useEpubNotesSync";
 import { notesCache } from "@/api/cache/notesCache";
 
-
 interface ReaderProps {
   path: string;
 }
@@ -41,7 +40,6 @@ export function Reader(props: ReaderProps) {
   const backgroundColor = () => useStore2.backgroundColor;
   const setBackgroundColor = useStore2.setBackgroundColor;
 
-
   const [currentCfi, setCfi] = createSignal<string>();
 
   const { openBook } = createEpubLoader();
@@ -53,16 +51,16 @@ export function Reader(props: ReaderProps) {
       const bookIdentifier = book?.packaging?.metadata?.identifier || "";
       console.log("bookTitle", bookTitle);
       console.log("bookIdentifier", bookIdentifier);
-      return book
-    });
+      return book;
+    }
+  );
 
   const { bookmarks, toggleBookmark, isBookmarked, removeBookmark } = useBookmarks(() => currentBook());
 
-  // 🌟 点击书签按钮时直接调用（传入当前 cfi）
   const handleToggleBookmark = () => {
     const cfi = currentCfi();
     if (cfi) {
-      toggleBookmark(cfi); // 自动计算标题、自动存储
+      toggleBookmark(cfi);
     }
   };
 
@@ -88,25 +86,17 @@ export function Reader(props: ReaderProps) {
   const { put: newNode, remove, currentNote, indexTags, currentIndexNotes, filter } = useEpubNotes(instance);
   const [activeNote, setActiveNote] = createSignal<NewNote>();
 
-
-
-
-
   const { isSyncing } = useEpubNotesSync({
     interval: 3000,
     onSyncSet: async (localNotes) => {
-      console.log('同步数据localNotes', localNotes)
-      await notesCache.set(localNotes)
+      console.log('同步数据localNotes', localNotes);
+      await notesCache.set(localNotes);
     },
   });
-
-
-
 
   const handleJump = (cfiOrHref: string) => {
     instance()?.display(cfiOrHref);
   };
-
 
   const handleMouseUp = () => {
     const hasSelection = currentSet().has("select");
@@ -117,7 +107,7 @@ export function Reader(props: ReaderProps) {
 
   const handleMarkClicked = (cfiRange: string) => {
     opt("mark");
-    console.log('选中文字', cfiRange)
+    console.log('选中文字', cfiRange);
   };
 
   const handleSelected = (cfiRange: string, contents: any) => {
@@ -135,19 +125,24 @@ export function Reader(props: ReaderProps) {
     setActiveNote(newNoteItem);
   };
 
+  // 🌟 加上 Try-Catch 保护，防止移动端 WebView 解析字体抛错导致崩溃
   const handleFontSizeChange = (size: number) => {
     const inst = instance();
-    if (inst) {
-      inst.themes.fontSize(`${size}px`);
+    if (!inst) return;
+    try {
+      const sizeStr = typeof size === "number" ? `${size}px` : size;
+      inst.themes.fontSize(sizeStr);
+      useStore2.setFontSize(size, inst);
+    } catch (e) {
+      console.error("设置字体大小失败:", e);
     }
-    useStore2.setFontSize(size, inst);
   };
 
   let debounceTimer: number | NodeJS.Timeout;
   const handleRelocated = (location: any) => {
     const cfi = location?.start?.cfi;
     if (!cfi) return;
-    setCfi(cfi)
+    setCfi(cfi);
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
       localStorage.setItem("READ_POSITION_KEY", cfi);
@@ -156,7 +151,6 @@ export function Reader(props: ReaderProps) {
   onCleanup(() => {
     clearTimeout(debounceTimer);
   });
-
 
   const handleJumpCfiRange = async (cfiRange: string) => {
     const inst = instance();
@@ -185,17 +179,28 @@ export function Reader(props: ReaderProps) {
     });
   });
 
-
+  // 🌟 加上 Try-Catch 保护，避免初始化恢复字号或进度时异常导致白屏
   onMount(() => {
     const inst = instance();
     if (!inst) return;
-    const savedFontSize = useStore2.fontSize;
-    if (savedFontSize) {
-      inst.themes.fontSize(`${savedFontSize}px`);
+
+    try {
+      const savedFontSize = useStore2.fontSize;
+      if (savedFontSize) {
+        inst.themes.fontSize(`${savedFontSize}px`);
+      }
+    } catch (e) {
+      console.error("初始化恢复字号失败:", e);
     }
-    const savedCfi = localStorage.getItem("READ_POSITION_KEY");
-    inst.display(savedCfi || undefined);
-  })
+
+    try {
+      const savedCfi = localStorage.getItem("READ_POSITION_KEY");
+      inst.display(savedCfi || undefined);
+    } catch (e) {
+      console.error("恢复阅读进度失败:", e);
+      inst.display();
+    }
+  });
 
   let highlightTimer: number | undefined;
   const HIGHLIGHT_DURATION = 3000;
@@ -204,33 +209,37 @@ export function Reader(props: ReaderProps) {
     console.log("keyword:", keyword);
     const inst = instance();
     if (!inst || !cfi) return;
-    try { inst.annotations.add("highlight", cfi, {}, () => { }, "search-highlight-class", { fill: "#fef08a", "fill-opacity": "0.5" }); }
-    catch (err) { console.error("添加高亮失败:", err); }
+    try {
+      inst.annotations.add("highlight", cfi, {}, () => {}, "search-highlight-class", { fill: "#fef08a", "fill-opacity": "0.5" });
+    } catch (err) {
+      console.error("添加高亮失败:", err);
+    }
     if (highlightTimer) clearTimeout(highlightTimer);
     highlightTimer = window.setTimeout(() => {
-      try { inst.annotations.remove(cfi, "highlight"); }
-      catch (e) { }
+      try {
+        inst.annotations.remove(cfi, "highlight");
+      } catch (e) {}
     }, HIGHLIGHT_DURATION);
   };
 
   createEffect(() => {
-    console.log(';currentIndexNotes()', currentIndexNotes())
-    console.log('indexTags()', indexTags())
-  })
-
-
+    console.log(';currentIndexNotes()', currentIndexNotes());
+    console.log('indexTags()', indexTags());
+  });
 
   return (
     <Box height={height()}>
-      <SplitLayout bg={backgroundColor()} height={height()}
-        onExit={() => { navigate({ to: "/book/" }) }}
+      <SplitLayout
+        bg={backgroundColor()}
+        height={height()}
+        onExit={() => { navigate({ to: "/book/" }); }}
         onPrevPage={() => instance()?.prev()}
         onNextPage={() => instance()?.next()}
         epub={<EpubPaper ref={viewerRef} />}
         notesTitle={'笔记'}
         notes={
           currentSet().has("select") ? (
-            <EpubNotesCreate newNote={activeNote()} onSave={(v) => { console.log('new', v); newNode(v); opt("mark"); }} onCancel={() => { opt("click"); console.log('取消笔记') }} />
+            <EpubNotesCreate newNote={activeNote()} onSave={(v) => { console.log('new', v); newNode(v); opt("mark"); }} onCancel={() => { opt("click"); console.log('取消笔记'); }} />
           ) : currentSet().has("mark") ? (
             <EpubNotesEdit notes={currentNote()} onNoteChange={(v) => { newNode(v); }} onDelete={(cfiRange) => { remove(cfiRange); }} />
           ) : currentSet().has("click") ? (
@@ -240,7 +249,7 @@ export function Reader(props: ReaderProps) {
               notes={currentIndexNotes()}
               onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }}
               onDelete={(cfiRange) => { remove(cfiRange); }}
-              onSelectTag={(tag) => { console.log("tag", tag); filter({ tag: tag }) }}
+              onSelectTag={(tag) => { console.log("tag", tag); filter({ tag: tag }); }}
             />
           ) : (
             <BookInfoPanel book={currentBook()} />
@@ -276,7 +285,9 @@ export function Reader(props: ReaderProps) {
           <IconList size={20} />
         </button>
 
-        <button type="button" onClick={handleToggleBookmark}
+        <button
+          type="button"
+          onClick={handleToggleBookmark}
           class={`p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${isBookmarked(currentCfi()) ? "text-blue-500" : "text-slate-500"}`}
           title={isBookmarked(currentCfi()) ? "移除当前书签" : "添加当前书签"}
         >
@@ -287,11 +298,6 @@ export function Reader(props: ReaderProps) {
           <IconSearch size={20} />
         </button>
 
-        {/* <button type="button" onClick={() => syncNow()} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
-          <IconCloudDown size={20} />
-        </button> */}
-
-
         <button type="button" onClick={() => setStyleOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconLetterCase size={20} />
         </button>
@@ -301,7 +307,7 @@ export function Reader(props: ReaderProps) {
         </button>
       </QuickActionMenu>
     </Box>
-  )
+  );
 }
 
 export default Reader;

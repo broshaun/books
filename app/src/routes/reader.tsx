@@ -13,9 +13,10 @@ export const Route = createFileRoute("/reader")({
 function Layout() {
     const { height } = winSize();
     const safety = useSafety();
+    
 
     createEffect(() => {
-        useStore2.setHeight(height);
+        useStore2.setHeight(height - safety.bottom() - safety.top());
     });
 
     return (
