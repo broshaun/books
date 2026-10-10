@@ -31,7 +31,7 @@ function ThemeOptionItem(props: {
         type="button"
         onClick={() => props.onSelect(props.theme.id, props.theme)}
         aria-label={props.theme.name}
-        class="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 cursor-pointer shadow-xs"
+        class="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 cursor-pointer shadow-sm"
         style={{
           'background-color': props.theme.bg,
           border: props.isSelected ? '2px solid #3b82f6' : '1px solid #d1d5db',
@@ -39,7 +39,6 @@ function ThemeOptionItem(props: {
       >
         {props.isSelected && <IconCheck size={14} class="text-blue-500" />}
       </button>
-      {/* 增强主题名称的文字对比度 */}
       <span class="text-xs font-medium text-stone-700 dark:text-stone-300">{props.theme.name}</span>
     </div>
   );
@@ -89,7 +88,7 @@ export function EpubStyleDrawer(props: EpubStyleDrawerProps) {
         onClick={props.onClose}
       />
 
-      {/* 2. 抽屉主体：保持毛玻璃背景，且带有 pt-12 向下偏移 */}
+      {/* 2. 抽屉主体：完美恢复你原本使用的 bg-inherit/95 继承背景和毛玻璃效果 */}
       <div
         class={`fixed inset-y-0 right-0 z-50 w-[320px] max-w-full shadow-2xl shadow-stone-900/20 border-l border-stone-200/80 dark:border-zinc-800/80 flex flex-col pt-12 px-4 pb-4 transform transition-transform duration-300 ease-in-out backdrop-blur-xl bg-inherit/95 ${
           props.opened ? 'translate-x-0' : 'translate-x-full'
@@ -125,7 +124,7 @@ export function EpubStyleDrawer(props: EpubStyleDrawerProps) {
                   type="button"
                   onClick={() => handleFontSizeChange(-1)}
                   disabled={fontSize() <= 12}
-                  class="p-1.5 rounded border border-stone-300 dark:border-zinc-600 hover:bg-stone-100 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-stone-800 dark:text-stone-200 transition-colors"
+                  class="p-1.5 rounded border border-stone-300 dark:border-zinc-600 hover:bg-stone-100/50 dark:hover:bg-zinc-800/50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-stone-800 dark:text-stone-200 transition-colors"
                 >
                   <IconMinus size={16} />
                 </button>
@@ -136,7 +135,7 @@ export function EpubStyleDrawer(props: EpubStyleDrawerProps) {
                   type="button"
                   onClick={() => handleFontSizeChange(1)}
                   disabled={fontSize() >= 32}
-                  class="p-1.5 rounded border border-stone-300 dark:border-zinc-600 hover:bg-stone-100 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-stone-800 dark:text-stone-200 transition-colors"
+                  class="p-1.5 rounded border border-stone-300 dark:border-zinc-600 hover:bg-stone-100/50 dark:hover:bg-zinc-800/50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-stone-800 dark:text-stone-200 transition-colors"
                 >
                   <IconPlus size={16} />
                 </button>
