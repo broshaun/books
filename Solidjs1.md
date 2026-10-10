@@ -46,6 +46,9 @@
 ```
 
 ### rsbuild.config.ts
+```js
+
+```
 ### 在项目主目录下创建
 config
 - .env.development

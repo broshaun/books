@@ -1,10 +1,8 @@
 import { createFileRoute } from '@tanstack/solid-router'
 import { useNavigate } from '@tanstack/solid-router';
 import { apiConfig } from '@/config';
-import { createResource } from 'solid-js';
-import { hasSafetyConfig } from '@/hooks/useSafety';
-import { useSafety } from '@/hooks/useSafety';
-import { safetyCache } from '@/api/cache/safetyCache';
+import { onMount } from 'solid-js';
+
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
@@ -13,30 +11,19 @@ export const Route = createFileRoute('/')({
 
 function RouteComponent() {
   const navigate = useNavigate()
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
   console.log('apiBase: ', apiConfig.apiBase);
   console.log('apiMqtt: ', apiConfig.apiMqtt);
   console.log('apiImgs: ', apiConfig.apiImgs);
   console.log('apiImg30: ', apiConfig.apiImg30);
   console.log('apiAvatar: ', apiConfig.apiAvatar);
 
-
-  const { setTop, setBottom } = useSafety()
-
-
-  createResource(async () => {
-    if (hasSafetyConfig()) {
-      return navigate({ to: "/book" });
-    }
-    try {
-      const data = await safetyCache.get();
-      if (data) {
-        setTop(data.top);
-        setBottom(data.bottom);
-        navigate({ to: "/book" });
-      }
-    } catch (err) {
-      console.error("加载安全配置失败", err);
-      navigate({ to: "/safety" });
+  onMount(() => {
+    if (isMobile) {
+      return navigate({ to: "/mobile/" });
+    } else {
+      return navigate({ to: "/desktop/shelf" });
     }
   })
 

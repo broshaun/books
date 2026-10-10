@@ -10,169 +10,209 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as BookRouteImport } from './routes/book'
-import { Route as ReaderRouteImport } from './routes/reader'
-import { Route as SafetyRouteImport } from './routes/safety'
-import { Route as AuthIndexRouteImport } from './routes/auth/index'
-import { Route as AuthLoginRouteImport } from './routes/auth/login'
-import { Route as AuthRegisterRouteImport } from './routes/auth/register'
-import { Route as BookIndexRouteImport } from './routes/book/index'
-import { Route as BookDesktopRouteImport } from './routes/book/desktop'
-import { Route as BookMobileRouteImport } from './routes/book/mobile'
-import { Route as ReaderPathRouteImport } from './routes/reader/$path'
+import { Route as DesktopAuthRouteImport } from './routes/desktop/auth'
+import { Route as MobileIndexRouteImport } from './routes/mobile/index'
+import { Route as MobileAuthRouteImport } from './routes/mobile/auth'
+import { Route as MobileSafetyRouteImport } from './routes/mobile/safety'
+import { Route as DesktopAuthIndexRouteImport } from './routes/desktop/auth/index'
+import { Route as DesktopAuthLoginRouteImport } from './routes/desktop/auth/login'
+import { Route as DesktopAuthRegisterRouteImport } from './routes/desktop/auth/register'
+import { Route as DesktopReaderPathRouteImport } from './routes/desktop/reader/$path'
+import { Route as DesktopShelfIndexRouteImport } from './routes/desktop/shelf/index'
+import { Route as MobileAuthIndexRouteImport } from './routes/mobile/auth/index'
+import { Route as MobileAuthLoginRouteImport } from './routes/mobile/auth/login'
+import { Route as MobileAuthRegisterRouteImport } from './routes/mobile/auth/register'
+import { Route as MobileReaderPathRouteImport } from './routes/mobile/reader/$path'
+import { Route as MobileShelfIndexRouteImport } from './routes/mobile/shelf/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const DesktopAuthRoute = DesktopAuthRouteImport.update({
+  id: '/desktop/auth',
+  path: '/desktop/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BookRoute = BookRouteImport.update({
-  id: '/book',
-  path: '/book',
+const MobileIndexRoute = MobileIndexRouteImport.update({
+  id: '/mobile/',
+  path: '/mobile/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReaderRoute = ReaderRouteImport.update({
-  id: '/reader',
-  path: '/reader',
+const MobileAuthRoute = MobileAuthRouteImport.update({
+  id: '/mobile/auth',
+  path: '/mobile/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SafetyRoute = SafetyRouteImport.update({
-  id: '/safety',
-  path: '/safety',
+const MobileSafetyRoute = MobileSafetyRouteImport.update({
+  id: '/mobile/safety',
+  path: '/mobile/safety',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthIndexRoute = AuthIndexRouteImport.update({
+const DesktopAuthIndexRoute = DesktopAuthIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthRoute,
+  getParentRoute: () => DesktopAuthRoute,
 } as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
+const DesktopAuthLoginRoute = DesktopAuthLoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => AuthRoute,
+  getParentRoute: () => DesktopAuthRoute,
 } as any)
-const AuthRegisterRoute = AuthRegisterRouteImport.update({
+const DesktopAuthRegisterRoute = DesktopAuthRegisterRouteImport.update({
   id: '/register',
   path: '/register',
-  getParentRoute: () => AuthRoute,
+  getParentRoute: () => DesktopAuthRoute,
 } as any)
-const BookIndexRoute = BookIndexRouteImport.update({
+const DesktopReaderPathRoute = DesktopReaderPathRouteImport.update({
+  id: '/desktop/reader/$path',
+  path: '/desktop/reader/$path',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesktopShelfIndexRoute = DesktopShelfIndexRouteImport.update({
+  id: '/desktop/shelf/',
+  path: '/desktop/shelf/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MobileAuthIndexRoute = MobileAuthIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => BookRoute,
+  getParentRoute: () => MobileAuthRoute,
 } as any)
-const BookDesktopRoute = BookDesktopRouteImport.update({
-  id: '/desktop',
-  path: '/desktop',
-  getParentRoute: () => BookRoute,
+const MobileAuthLoginRoute = MobileAuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => MobileAuthRoute,
 } as any)
-const BookMobileRoute = BookMobileRouteImport.update({
-  id: '/mobile',
-  path: '/mobile',
-  getParentRoute: () => BookRoute,
+const MobileAuthRegisterRoute = MobileAuthRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => MobileAuthRoute,
 } as any)
-const ReaderPathRoute = ReaderPathRouteImport.update({
-  id: '/$path',
-  path: '/$path',
-  getParentRoute: () => ReaderRoute,
+const MobileReaderPathRoute = MobileReaderPathRouteImport.update({
+  id: '/mobile/reader/$path',
+  path: '/mobile/reader/$path',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MobileShelfIndexRoute = MobileShelfIndexRouteImport.update({
+  id: '/mobile/shelf/',
+  path: '/mobile/shelf/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRouteWithChildren
-  '/book': typeof BookRouteWithChildren
-  '/reader': typeof ReaderRouteWithChildren
-  '/safety': typeof SafetyRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/register': typeof AuthRegisterRoute
-  '/book/desktop': typeof BookDesktopRoute
-  '/book/mobile': typeof BookMobileRoute
-  '/reader/$path': typeof ReaderPathRoute
-  '/auth/': typeof AuthIndexRoute
-  '/book/': typeof BookIndexRoute
+  '/desktop/auth': typeof DesktopAuthRouteWithChildren
+  '/mobile/auth': typeof MobileAuthRouteWithChildren
+  '/mobile/safety': typeof MobileSafetyRoute
+  '/mobile/': typeof MobileIndexRoute
+  '/desktop/auth/login': typeof DesktopAuthLoginRoute
+  '/desktop/auth/register': typeof DesktopAuthRegisterRoute
+  '/desktop/reader/$path': typeof DesktopReaderPathRoute
+  '/mobile/auth/login': typeof MobileAuthLoginRoute
+  '/mobile/auth/register': typeof MobileAuthRegisterRoute
+  '/mobile/reader/$path': typeof MobileReaderPathRoute
+  '/desktop/auth/': typeof DesktopAuthIndexRoute
+  '/desktop/shelf/': typeof DesktopShelfIndexRoute
+  '/mobile/auth/': typeof MobileAuthIndexRoute
+  '/mobile/shelf/': typeof MobileShelfIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/reader': typeof ReaderRouteWithChildren
-  '/safety': typeof SafetyRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/register': typeof AuthRegisterRoute
-  '/book/desktop': typeof BookDesktopRoute
-  '/book/mobile': typeof BookMobileRoute
-  '/reader/$path': typeof ReaderPathRoute
-  '/auth': typeof AuthIndexRoute
-  '/book': typeof BookIndexRoute
+  '/mobile/safety': typeof MobileSafetyRoute
+  '/mobile': typeof MobileIndexRoute
+  '/desktop/auth/login': typeof DesktopAuthLoginRoute
+  '/desktop/auth/register': typeof DesktopAuthRegisterRoute
+  '/desktop/reader/$path': typeof DesktopReaderPathRoute
+  '/mobile/auth/login': typeof MobileAuthLoginRoute
+  '/mobile/auth/register': typeof MobileAuthRegisterRoute
+  '/mobile/reader/$path': typeof MobileReaderPathRoute
+  '/desktop/auth': typeof DesktopAuthIndexRoute
+  '/desktop/shelf': typeof DesktopShelfIndexRoute
+  '/mobile/auth': typeof MobileAuthIndexRoute
+  '/mobile/shelf': typeof MobileShelfIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRouteWithChildren
-  '/book': typeof BookRouteWithChildren
-  '/reader': typeof ReaderRouteWithChildren
-  '/safety': typeof SafetyRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/register': typeof AuthRegisterRoute
-  '/book/desktop': typeof BookDesktopRoute
-  '/book/mobile': typeof BookMobileRoute
-  '/reader/$path': typeof ReaderPathRoute
-  '/auth/': typeof AuthIndexRoute
-  '/book/': typeof BookIndexRoute
+  '/desktop/auth': typeof DesktopAuthRouteWithChildren
+  '/mobile/auth': typeof MobileAuthRouteWithChildren
+  '/mobile/safety': typeof MobileSafetyRoute
+  '/mobile/': typeof MobileIndexRoute
+  '/desktop/auth/login': typeof DesktopAuthLoginRoute
+  '/desktop/auth/register': typeof DesktopAuthRegisterRoute
+  '/desktop/reader/$path': typeof DesktopReaderPathRoute
+  '/mobile/auth/login': typeof MobileAuthLoginRoute
+  '/mobile/auth/register': typeof MobileAuthRegisterRoute
+  '/mobile/reader/$path': typeof MobileReaderPathRoute
+  '/desktop/auth/': typeof DesktopAuthIndexRoute
+  '/desktop/shelf/': typeof DesktopShelfIndexRoute
+  '/mobile/auth/': typeof MobileAuthIndexRoute
+  '/mobile/shelf/': typeof MobileShelfIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
-    | '/book'
-    | '/reader'
-    | '/safety'
-    | '/auth/login'
-    | '/auth/register'
-    | '/book/desktop'
-    | '/book/mobile'
-    | '/reader/$path'
-    | '/auth/'
-    | '/book/'
+    | '/desktop/auth'
+    | '/mobile/auth'
+    | '/mobile/safety'
+    | '/mobile/'
+    | '/desktop/auth/login'
+    | '/desktop/auth/register'
+    | '/desktop/reader/$path'
+    | '/mobile/auth/login'
+    | '/mobile/auth/register'
+    | '/mobile/reader/$path'
+    | '/desktop/auth/'
+    | '/desktop/shelf/'
+    | '/mobile/auth/'
+    | '/mobile/shelf/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/reader'
-    | '/safety'
-    | '/auth/login'
-    | '/auth/register'
-    | '/book/desktop'
-    | '/book/mobile'
-    | '/reader/$path'
-    | '/auth'
-    | '/book'
+    | '/mobile/safety'
+    | '/mobile'
+    | '/desktop/auth/login'
+    | '/desktop/auth/register'
+    | '/desktop/reader/$path'
+    | '/mobile/auth/login'
+    | '/mobile/auth/register'
+    | '/mobile/reader/$path'
+    | '/desktop/auth'
+    | '/desktop/shelf'
+    | '/mobile/auth'
+    | '/mobile/shelf'
   id:
     | '__root__'
     | '/'
-    | '/auth'
-    | '/book'
-    | '/reader'
-    | '/safety'
-    | '/auth/login'
-    | '/auth/register'
-    | '/book/desktop'
-    | '/book/mobile'
-    | '/reader/$path'
-    | '/auth/'
-    | '/book/'
+    | '/desktop/auth'
+    | '/mobile/auth'
+    | '/mobile/safety'
+    | '/mobile/'
+    | '/desktop/auth/login'
+    | '/desktop/auth/register'
+    | '/desktop/reader/$path'
+    | '/mobile/auth/login'
+    | '/mobile/auth/register'
+    | '/mobile/reader/$path'
+    | '/desktop/auth/'
+    | '/desktop/shelf/'
+    | '/mobile/auth/'
+    | '/mobile/shelf/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRouteWithChildren
-  BookRoute: typeof BookRouteWithChildren
-  ReaderRoute: typeof ReaderRouteWithChildren
-  SafetyRoute: typeof SafetyRoute
+  DesktopAuthRoute: typeof DesktopAuthRouteWithChildren
+  MobileAuthRoute: typeof MobileAuthRouteWithChildren
+  MobileSafetyRoute: typeof MobileSafetyRoute
+  MobileIndexRoute: typeof MobileIndexRoute
+  DesktopReaderPathRoute: typeof DesktopReaderPathRoute
+  MobileReaderPathRoute: typeof MobileReaderPathRoute
+  DesktopShelfIndexRoute: typeof DesktopShelfIndexRoute
+  MobileShelfIndexRoute: typeof MobileShelfIndexRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -184,131 +224,149 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/desktop/auth': {
+      id: '/desktop/auth'
+      path: '/desktop/auth'
+      fullPath: '/desktop/auth'
+      preLoaderRoute: typeof DesktopAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/book': {
-      id: '/book'
-      path: '/book'
-      fullPath: '/book'
-      preLoaderRoute: typeof BookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reader': {
-      id: '/reader'
-      path: '/reader'
-      fullPath: '/reader'
-      preLoaderRoute: typeof ReaderRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/safety': {
-      id: '/safety'
-      path: '/safety'
-      fullPath: '/safety'
-      preLoaderRoute: typeof SafetyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/': {
-      id: '/auth/'
-      path: '/'
-      fullPath: '/auth/'
-      preLoaderRoute: typeof AuthIndexRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/login': {
-      id: '/auth/login'
-      path: '/login'
-      fullPath: '/auth/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/register': {
-      id: '/auth/register'
-      path: '/register'
-      fullPath: '/auth/register'
-      preLoaderRoute: typeof AuthRegisterRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/book/': {
-      id: '/book/'
-      path: '/'
-      fullPath: '/book/'
-      preLoaderRoute: typeof BookIndexRouteImport
-      parentRoute: typeof BookRoute
-    }
-    '/book/desktop': {
-      id: '/book/desktop'
-      path: '/desktop'
-      fullPath: '/book/desktop'
-      preLoaderRoute: typeof BookDesktopRouteImport
-      parentRoute: typeof BookRoute
-    }
-    '/book/mobile': {
-      id: '/book/mobile'
+    '/mobile/': {
+      id: '/mobile/'
       path: '/mobile'
-      fullPath: '/book/mobile'
-      preLoaderRoute: typeof BookMobileRouteImport
-      parentRoute: typeof BookRoute
+      fullPath: '/mobile/'
+      preLoaderRoute: typeof MobileIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/reader/$path': {
-      id: '/reader/$path'
-      path: '/$path'
-      fullPath: '/reader/$path'
-      preLoaderRoute: typeof ReaderPathRouteImport
-      parentRoute: typeof ReaderRoute
+    '/mobile/auth': {
+      id: '/mobile/auth'
+      path: '/mobile/auth'
+      fullPath: '/mobile/auth'
+      preLoaderRoute: typeof MobileAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mobile/safety': {
+      id: '/mobile/safety'
+      path: '/mobile/safety'
+      fullPath: '/mobile/safety'
+      preLoaderRoute: typeof MobileSafetyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/desktop/auth/': {
+      id: '/desktop/auth/'
+      path: '/'
+      fullPath: '/desktop/auth/'
+      preLoaderRoute: typeof DesktopAuthIndexRouteImport
+      parentRoute: typeof DesktopAuthRoute
+    }
+    '/desktop/auth/login': {
+      id: '/desktop/auth/login'
+      path: '/login'
+      fullPath: '/desktop/auth/login'
+      preLoaderRoute: typeof DesktopAuthLoginRouteImport
+      parentRoute: typeof DesktopAuthRoute
+    }
+    '/desktop/auth/register': {
+      id: '/desktop/auth/register'
+      path: '/register'
+      fullPath: '/desktop/auth/register'
+      preLoaderRoute: typeof DesktopAuthRegisterRouteImport
+      parentRoute: typeof DesktopAuthRoute
+    }
+    '/desktop/reader/$path': {
+      id: '/desktop/reader/$path'
+      path: '/desktop/reader/$path'
+      fullPath: '/desktop/reader/$path'
+      preLoaderRoute: typeof DesktopReaderPathRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/desktop/shelf/': {
+      id: '/desktop/shelf/'
+      path: '/desktop/shelf'
+      fullPath: '/desktop/shelf/'
+      preLoaderRoute: typeof DesktopShelfIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mobile/auth/': {
+      id: '/mobile/auth/'
+      path: '/'
+      fullPath: '/mobile/auth/'
+      preLoaderRoute: typeof MobileAuthIndexRouteImport
+      parentRoute: typeof MobileAuthRoute
+    }
+    '/mobile/auth/login': {
+      id: '/mobile/auth/login'
+      path: '/login'
+      fullPath: '/mobile/auth/login'
+      preLoaderRoute: typeof MobileAuthLoginRouteImport
+      parentRoute: typeof MobileAuthRoute
+    }
+    '/mobile/auth/register': {
+      id: '/mobile/auth/register'
+      path: '/register'
+      fullPath: '/mobile/auth/register'
+      preLoaderRoute: typeof MobileAuthRegisterRouteImport
+      parentRoute: typeof MobileAuthRoute
+    }
+    '/mobile/reader/$path': {
+      id: '/mobile/reader/$path'
+      path: '/mobile/reader/$path'
+      fullPath: '/mobile/reader/$path'
+      preLoaderRoute: typeof MobileReaderPathRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mobile/shelf/': {
+      id: '/mobile/shelf/'
+      path: '/mobile/shelf'
+      fullPath: '/mobile/shelf/'
+      preLoaderRoute: typeof MobileShelfIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface AuthRouteChildren {
-  AuthLoginRoute: typeof AuthLoginRoute
-  AuthRegisterRoute: typeof AuthRegisterRoute
-  AuthIndexRoute: typeof AuthIndexRoute
+interface DesktopAuthRouteChildren {
+  DesktopAuthLoginRoute: typeof DesktopAuthLoginRoute
+  DesktopAuthRegisterRoute: typeof DesktopAuthRegisterRoute
+  DesktopAuthIndexRoute: typeof DesktopAuthIndexRoute
 }
 
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthLoginRoute: AuthLoginRoute,
-  AuthRegisterRoute: AuthRegisterRoute,
-  AuthIndexRoute: AuthIndexRoute,
+const DesktopAuthRouteChildren: DesktopAuthRouteChildren = {
+  DesktopAuthLoginRoute: DesktopAuthLoginRoute,
+  DesktopAuthRegisterRoute: DesktopAuthRegisterRoute,
+  DesktopAuthIndexRoute: DesktopAuthIndexRoute,
 }
 
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+const DesktopAuthRouteWithChildren = DesktopAuthRoute._addFileChildren(
+  DesktopAuthRouteChildren,
+)
 
-interface BookRouteChildren {
-  BookDesktopRoute: typeof BookDesktopRoute
-  BookMobileRoute: typeof BookMobileRoute
-  BookIndexRoute: typeof BookIndexRoute
+interface MobileAuthRouteChildren {
+  MobileAuthLoginRoute: typeof MobileAuthLoginRoute
+  MobileAuthRegisterRoute: typeof MobileAuthRegisterRoute
+  MobileAuthIndexRoute: typeof MobileAuthIndexRoute
 }
 
-const BookRouteChildren: BookRouteChildren = {
-  BookDesktopRoute: BookDesktopRoute,
-  BookMobileRoute: BookMobileRoute,
-  BookIndexRoute: BookIndexRoute,
+const MobileAuthRouteChildren: MobileAuthRouteChildren = {
+  MobileAuthLoginRoute: MobileAuthLoginRoute,
+  MobileAuthRegisterRoute: MobileAuthRegisterRoute,
+  MobileAuthIndexRoute: MobileAuthIndexRoute,
 }
 
-const BookRouteWithChildren = BookRoute._addFileChildren(BookRouteChildren)
-
-interface ReaderRouteChildren {
-  ReaderPathRoute: typeof ReaderPathRoute
-}
-
-const ReaderRouteChildren: ReaderRouteChildren = {
-  ReaderPathRoute: ReaderPathRoute,
-}
-
-const ReaderRouteWithChildren =
-  ReaderRoute._addFileChildren(ReaderRouteChildren)
+const MobileAuthRouteWithChildren = MobileAuthRoute._addFileChildren(
+  MobileAuthRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRouteWithChildren,
-  BookRoute: BookRouteWithChildren,
-  ReaderRoute: ReaderRouteWithChildren,
-  SafetyRoute: SafetyRoute,
+  DesktopAuthRoute: DesktopAuthRouteWithChildren,
+  MobileAuthRoute: MobileAuthRouteWithChildren,
+  MobileSafetyRoute: MobileSafetyRoute,
+  MobileIndexRoute: MobileIndexRoute,
+  DesktopReaderPathRoute: DesktopReaderPathRoute,
+  MobileReaderPathRoute: MobileReaderPathRoute,
+  DesktopShelfIndexRoute: DesktopShelfIndexRoute,
+  MobileShelfIndexRoute: MobileShelfIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

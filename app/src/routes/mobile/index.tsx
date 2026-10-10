@@ -1,0 +1,40 @@
+import { createFileRoute } from '@tanstack/solid-router'
+import { useNavigate } from '@tanstack/solid-router';
+import { createResource } from 'solid-js';
+import { hasSafetyConfig } from '@/hooks/useSafety';
+import { useSafety } from '@/hooks/useSafety';
+import { safetyCache } from '@/api/cache/safetyCache';
+
+
+export const Route = createFileRoute('/mobile/')({
+  component: RouteComponent,
+})
+
+function RouteComponent() {
+  const navigate = useNavigate()
+  const { setTop, setBottom } = useSafety()
+
+  createResource(async () => {
+    if (hasSafetyConfig()) {
+      return navigate({ to: "/book" });
+    }
+    try {
+      const data = await safetyCache.get();
+      if (data) {
+        setTop(data.top);
+        setBottom(data.bottom);
+        navigate({ to: "/book" });
+      }
+    } catch (err) {
+      console.error("加载安全配置失败", err);
+      navigate({ to: "/safety" });
+    }
+  })
+
+
+  return (
+    <div class="h-screen grid place-items-center">
+      <div class="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
+    </div>
+  )
+}

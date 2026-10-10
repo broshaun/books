@@ -13,6 +13,7 @@ export default defineConfig({
     pluginSolid(),
     pluginTailwindcss(),
   ],
+  html: { template: './public/index.html' },
 
   tools: {
     rspack: {
