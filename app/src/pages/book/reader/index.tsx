@@ -223,7 +223,7 @@ export function Reader(props: ReaderProps) {
   return (
     <Box height={height()}>
       <SplitLayout bg={backgroundColor()} height={height()}
-        onExit={() => { navigate({ to: "/book/shelf" }) }}
+        onExit={() => { navigate({ to: "/book/" }) }}
         onPrevPage={() => instance()?.prev()}
         onNextPage={() => instance()?.next()}
         epub={<EpubPaper ref={viewerRef} />}

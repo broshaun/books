@@ -1,9 +1,9 @@
 import { createSignal, onMount } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
-import { useLocalBooks } from "@/hooks/useLocalBooks";
 import { appBarStore } from "@/components/appBarStore";
 import BookShelf from "./ui/BookShelf";
+import { useLocalBooks } from "./hooks/useLocalBooks";
 import BookDirectoryDrawer from "./ui/BookDirectoryDrawer";
 import { IconMenu2 } from "@tabler/icons-solidjs";
 
@@ -11,7 +11,7 @@ import { IconMenu2 } from "@tabler/icons-solidjs";
 export function Shelf() {
     const navigate = useNavigate();
     const height = () => useStore2.height;
-    const { folders, books, selectFolder, setBaseFolder } = useLocalBooks();
+    const { folders, books, selectFolder, addFolder, delFolder } = useLocalBooks();
     const [left, setLeft] = createSignal(false);
 
     const handleOpen = async (name: string) => {
@@ -41,16 +41,19 @@ export function Shelf() {
 
     return (
         <div>
-       
+
 
             <BookDirectoryDrawer
                 opened={left()}
                 onClose={() => setLeft(false)}
                 folders={folders()}
-                onSetFolder={async (path) => {
+                onAddFolder={async (path) => {
                     console.log("设置文件夹", path);
-                    // await addFolder(fpath);
-                    await setBaseFolder(path)
+                    await addFolder(path);
+
+                }}
+                onDelFolder={async (path) => {
+                    await delFolder(path);
                 }}
                 onSelectFolder={({ id, name, path }) => {
                     console.log("id", id);

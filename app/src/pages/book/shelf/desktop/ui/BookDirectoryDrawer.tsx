@@ -1,16 +1,13 @@
-import { For, Show, createSignal, onMount } from "solid-js";
-import { readDir } from "@tauri-apps/plugin-fs";
-import { documentDir, homeDir, join, dirname } from "@tauri-apps/api/path";
+import { For, Show } from "solid-js";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { dirname } from "@tauri-apps/api/path"; // 用于获取父目录
 import {
   IconFolder,
-  IconFolderCog,
+  IconFolderPlus,
   IconUserCircle,
   IconInfoCircle,
-  IconArrowBackUp,
-  IconCheck,
-  IconX,
+  IconTrash,
 } from "@tabler/icons-solidjs";
-import Dialog from "corvu/dialog";
 
 export interface Folder {
   id: number;
@@ -23,13 +20,34 @@ export interface BookDirectoryDrawerProps {
   onClose?: () => void;
   folders?: Folder[];
   onSelectFolder?: (folder: Folder) => void;
-  onSetFolder?: (path: string) => void;
+  onAddFolder?: (path: string) => void;
+  onDelFolder?: (path: string) => void;
   onOpenProfile?: () => void;
   onOpenAbout?: () => void;
 }
 
 export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
-  const [selectorOpen, setSelectorOpen] = createSignal(false);
+  // 🌟 修改：通过选择某个 epub 文件来指定并导入其所在的整个文件夹
+  const handleOpenFolderDialog = async () => {
+    try {
+      const selected = await openDialog({
+        directory: false, // 设为 false 以选择文件
+        multiple: false,
+        filters: [{ name: "Epub Books", extensions: ["epub"] }],
+        title: "选择任意一本 epub 书籍以导入其所在文件夹",
+      });
+
+      if (typeof selected === "string") {
+        // 获取该文件所在的父目录路径
+        const parentDir = await dirname(selected);
+        if (parentDir) {
+          props.onAddFolder?.(parentDir);
+        }
+      }
+    } catch (error) {
+      console.error("获取文件或父目录失败:", error);
+    }
+  };
 
   const hasBottomActions = () => !!props.onOpenProfile || !!props.onOpenAbout;
 
@@ -37,7 +55,7 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
     <>
       {/* 1. 遮罩层 */}
       <div
-        class={`fixed inset-0 bg-black/50 backdrop-blur-2xs z-40 transition-opacity duration-300 ease-in-out ${
+        class={`fixed inset-0 bg-black/50 backdrop-blur-2xs z-40 transition-opacity duration-300 ${
           props.opened ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => props.onClose?.()}
@@ -45,14 +63,12 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
 
       {/* 2. 抽屉主体 */}
       <div
-        class={`fixed inset-y-0 left-0 z-50 w-full max-w-[240px] bg-zinc-900 text-zinc-100 shadow-xl flex flex-col p-3 transform transition-transform duration-300 ease-in-out ${
+        class={`fixed inset-y-0 left-0 z-50 w-full max-w-[240px] bg-zinc-900 text-zinc-100 shadow-xl flex flex-col p-3 transform transition-transform duration-300 ${
           props.opened ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* 标题 */}
-        <div class="flex items-center px-1 pt-2 pb-1">
-          <span class="font-semibold text-sm text-zinc-100 tracking-tight">我的书籍</span>
-        </div>
+        <div class="px-1 pt-2 pb-1 font-semibold text-sm text-zinc-100 tracking-tight">我的书籍</div>
 
         <hr class="border-zinc-800 my-2" />
 
@@ -60,38 +76,47 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         <div class="flex-1 overflow-auto space-y-0.5">
           <For
             each={props.folders || []}
-            fallback={
-              <div class="text-xs text-zinc-400 text-center py-10 select-none">
-                暂无文件夹
-              </div>
-            }
+            fallback={<div class="text-xs text-zinc-400 text-center py-10 select-none">暂无文件夹</div>}
           >
             {(folder) => (
-              <button
-                type="button"
-                onClick={() => {
-                  props.onSelectFolder?.(folder);
-                  props.onClose?.();
-                }}
-                class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-left cursor-pointer group"
-              >
-                <IconFolder size={16} class="text-zinc-400 shrink-0" />
-                <span class="text-xs font-medium truncate flex-1 text-zinc-200 group-hover:text-white transition-colors">
-                  {folder.name}
-                </span>
-              </button>
+              <div class="flex items-center group w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => {
+                    props.onSelectFolder?.(folder);
+                    props.onClose?.();
+                  }}
+                  class="flex items-center gap-2.5 flex-1 text-left cursor-pointer bg-transparent border-none p-0 overflow-hidden"
+                >
+                  <IconFolder size={16} class="text-zinc-400 shrink-0" />
+                  <span class="text-xs font-medium truncate text-zinc-200 group-hover:text-white transition-colors">
+                    {folder.name}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  title="移除此目录"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    props.onDelFolder?.(folder.path);
+                  }}
+                  class="text-zinc-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-all cursor-pointer bg-transparent border-none shrink-0"
+                >
+                  <IconTrash size={14} />
+                </button>
+              </div>
             )}
           </For>
         </div>
 
         <hr class="border-zinc-800 my-2" />
 
-        {/* 底部操作区：设置按钮 */}
+        {/* 底部操作区 */}
         <div class="space-y-1">
           <ActionButton
-            icon={<IconFolderCog size={16} class="text-zinc-400" />}
-            label="设置目录"
-            onClick={() => setSelectorOpen(true)}
+            icon={<IconFolderPlus size={16} class="text-zinc-400" />}
+            label="添加文件夹"
+            onClick={handleOpenFolderDialog}
           />
         </div>
 
@@ -122,138 +147,21 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
           </div>
         </Show>
       </div>
-
-      {/* 3. 桌面端文件夹选择弹窗 */}
-      <FolderSelector
-        opened={selectorOpen()}
-        onClose={() => setSelectorOpen(false)}
-        onConfirm={(path) => {
-          props.onSetFolder?.(path);
-          setSelectorOpen(false);
-        }}
-      />
     </>
   );
 }
 
-// 辅助子组件：抽屉菜单按钮
-function ActionButton(props: {
-  icon: any;
-  label: string;
-  disabled?: boolean;
-  onClick: () => void;
-}) {
+// 辅助菜单按钮组件
+function ActionButton(props: { icon: any; label: string; onClick: () => void }) {
   return (
     <button
       type="button"
-      disabled={props.disabled}
       onClick={props.onClick}
-      class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-200 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+      class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-200 hover:text-white cursor-pointer bg-transparent border-none"
     >
       {props.icon}
       <span class="text-xs font-medium">{props.label}</span>
     </button>
-  );
-}
-
-// 文件夹选择器弹窗组件 (PC 端专用)
-interface FolderSelectorProps {
-  opened: boolean;
-  onClose?: () => void;
-  onConfirm?: (path: string) => void;
-}
-
-function FolderSelector(props: FolderSelectorProps) {
-  const [path, setPath] = createSignal("");
-  const [entries, setEntries] = createSignal<{ name: string; isDirectory: boolean }[]>([]);
-
-  const loadDir = async (target: string) => {
-    if (!target) return;
-    try {
-      const res = (await readDir(target)) as { name: string; isDirectory: boolean }[];
-      setEntries(res.filter((e) => e.isDirectory && !e.name.startsWith(".")));
-      setPath(target);
-    } catch (e) {
-      console.error(`打开目录失败: ${target}`, e);
-    }
-  };
-
-  onMount(async () => {
-    try {
-      await loadDir((await documentDir()) || (await homeDir()));
-    } catch {}
-  });
-
-  const btnStyle =
-    "flex-1 py-2.5 px-3 flex items-center justify-center gap-1.5 rounded-lg cursor-pointer font-medium text-xs transition-colors";
-
-  const itemStyle =
-    "cursor-pointer px-3 py-2.5 flex items-center gap-2.5 border-b border-zinc-800 transition-colors";
-
-  return (
-    <Dialog open={props.opened} onOpenChange={(open) => !open && props.onClose?.()}>
-      <Dialog.Portal>
-        <Dialog.Overlay class="fixed inset-0 bg-black/50 backdrop-blur-2xs z-50" />
-
-        <Dialog.Content class="fixed bottom-0 left-0 right-0 max-h-[85vh] bg-zinc-900 text-zinc-100 border-t border-zinc-800 rounded-t-2xl p-4 flex flex-col gap-3 z-50 outline-none -webkit-tap-highlight-color:transparent shadow-2xl">
-          {/* 标题 */}
-          <div class="flex justify-between items-center px-1">
-            <span class="font-semibold text-sm text-zinc-100">选择文件夹</span>
-            <Dialog.Close class="bg-transparent border-none cursor-pointer text-zinc-400 hover:text-zinc-100 p-1">
-              <IconX size={18} />
-            </Dialog.Close>
-          </div>
-
-          {/* 路径栏 */}
-          <div class="text-xs text-zinc-400 bg-zinc-800/80 px-3 py-2 rounded-md overflow-hidden text-ellipsis whitespace-nowrap">
-            {path()}
-          </div>
-
-          {/* 列表 */}
-          <div class="flex-1 max-h-[300px] overflow-y-auto border border-zinc-800 rounded-lg -webkit-overflow-scrolling:touch bg-zinc-950/40">
-            <ul class="list-none p-0 m-0">
-              <li
-                class={`${itemStyle} text-zinc-400 bg-zinc-900 hover:bg-zinc-800`}
-                onClick={async () => loadDir(await dirname(path()))}
-              >
-                <IconArrowBackUp size={18} /> <span>..</span>
-              </li>
-              <For each={entries()}>
-                {(e) => (
-                  <li
-                    class={`${itemStyle} text-zinc-200 hover:bg-zinc-800/60`}
-                    onClick={async () => loadDir(await join(path(), e.name))}
-                  >
-                    <IconFolder size={18} class="text-zinc-400 shrink-0" />
-                    <span class="overflow-hidden text-ellipsis whitespace-nowrap flex-1 text-xs">
-                      {e.name}
-                    </span>
-                  </li>
-                )}
-              </For>
-            </ul>
-          </div>
-
-          {/* 底部按钮 */}
-          <div class="flex gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => props.onClose?.()}
-              class={`${btnStyle} bg-zinc-800 border border-zinc-700 text-zinc-200 hover:bg-zinc-700`}
-            >
-              <IconX size={16} /> 取消
-            </button>
-            <button
-              type="button"
-              onClick={() => props.onConfirm?.(path())}
-              class={`${btnStyle} bg-zinc-100 text-zinc-900 hover:bg-white`}
-            >
-              <IconCheck size={16} /> 确定
-            </button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog>
   );
 }
 

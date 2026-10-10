@@ -13,7 +13,7 @@ function RouteComponent() {
     onMount(() => {
 
         if (isMobile) {
-            return navigate({ to: "/book/shelf" });
+            return navigate({ to: "/book/mobile" });
         } else {
             return navigate({ to: "/book/desktop" });
         }
