@@ -1,6 +1,5 @@
 import { For, Show } from "solid-js";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { dirname } from "@tauri-apps/api/path"; // 用于获取父目录
 import {
   IconFolder,
   IconFolderPlus,
@@ -27,25 +26,20 @@ export interface BookDirectoryDrawerProps {
 }
 
 export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
-  // 🌟 修改：通过选择某个 epub 文件来指定并导入其所在的整个文件夹
+  // 🌟 修改：直接通过目录选择器选择子文件夹或任意文件夹
   const handleOpenFolderDialog = async () => {
     try {
       const selected = await openDialog({
-        directory: false, // 设为 false 以选择文件
+        directory: true, // 设为 true 以直接选择文件夹/子文件夹
         multiple: false,
-        filters: [{ name: "Epub Books", extensions: ["epub"] }],
-        title: "选择任意一本 epub 书籍以导入其所在文件夹",
+        title: "选择书籍子文件夹",
       });
 
       if (typeof selected === "string") {
-        // 获取该文件所在的父目录路径
-        const parentDir = await dirname(selected);
-        if (parentDir) {
-          props.onAddFolder?.(parentDir);
-        }
+        props.onAddFolder?.(selected);
       }
     } catch (error) {
-      console.error("获取文件或父目录失败:", error);
+      console.error("选择文件夹失败:", error);
     }
   };
 
@@ -115,7 +109,7 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         <div class="space-y-1">
           <ActionButton
             icon={<IconFolderPlus size={16} class="text-zinc-400" />}
-            label="添加文件夹"
+            label="添加子文件夹"
             onClick={handleOpenFolderDialog}
           />
         </div>

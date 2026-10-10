@@ -1,4 +1,11 @@
-import { createSignal, createEffect, For, Show } from 'solid-js';
+
+import {
+  createSignal,
+  createEffect,
+  For,
+  Show,
+} from "solid-js";
+
 import {
   IconCopy,
   IconCheck,
@@ -6,9 +13,8 @@ import {
   IconTag,
   IconPlus,
   IconX,
-} from '@tabler/icons-solidjs';
+} from "@tabler/icons-solidjs";
 
-// 同步更新接口，增加 tags 数组
 export interface NoteItem {
   bookId: string;
   bookName: string;
@@ -17,7 +23,7 @@ export interface NoteItem {
   text: string;
   title?: string;
   color?: string;
-  tags?: string[]; // 👈 增加标签字段
+  tags?: string[];
   content?: string;
   updatedAt?: number;
 }
@@ -26,30 +32,40 @@ interface EpubNotesEditProps {
   data?: NoteItem | null;
   notes?: NoteItem | null;
   onNoteChange: (data: NoteItem) => void;
-  onDelete?: (cfiRange: string) => void;
+  onDelete?: (cfiRange: string) => void | Promise<void>;
 }
 
 const HIGHLIGHT_COLORS = [
-  { id: 'yellow', name: '明黄', bg: '#facc15' },
-  { id: 'purple', name: '淡紫', bg: '#c084fc' },
-  { id: 'red', name: '浅红', bg: '#fb7185' },
-  { id: 'cyan', name: '青蓝', bg: '#2dd4bf' },
-  { id: 'green', name: '草绿', bg: '#a3e635' },
+  { id: "yellow", name: "明黄", bg: "#facc15" },
+  { id: "purple", name: "淡紫", bg: "#c084fc" },
+  { id: "red", name: "浅红", bg: "#fb7185" },
+  { id: "cyan", name: "青蓝", bg: "#2dd4bf" },
+  { id: "green", name: "草绿", bg: "#a3e635" },
 ];
 
-const getInitialNote = (data?: NoteItem | null, notes?: NoteItem | null): NoteItem => {
-  if (data) return data;
-  if (notes) return notes;
+const getInitialNote = (
+  data?: NoteItem | null,
+  notes?: NoteItem | null
+): NoteItem => {
+  const source = data || notes;
+
+  if (source) {
+    return {
+      ...source,
+      tags: [...(source.tags || [])],
+    };
+  }
+
   return {
-    bookId: '',
-    bookName: '',
-    index: Date.now(),
-    title: '读书笔记',
-    cfiRange: '',
-    text: '',
+    bookId: "",
+    bookName: "",
+    index: 0,
+    title: "读书笔记",
+    cfiRange: "",
+    text: "",
     color: HIGHLIGHT_COLORS[0].bg,
     tags: [],
-    content: '',
+    content: "",
   };
 };
 
@@ -57,101 +73,202 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
   const [currentNote, setCurrentNote] = createSignal<NoteItem>(
     getInitialNote(props.data, props.notes)
   );
+
   const [copied, setCopied] = createSignal(false);
   const [popoverOpened, setPopoverOpened] = createSignal(false);
-  
-  // 🌟 新增：正在输入的临时标签文本
-  const [tagInput, setTagInput] = createSignal('');
-  // 🌟 新增：是否正在输入标签的开关状态（控制输入框显隐）
+  const [tagInput, setTagInput] = createSignal("");
   const [isAddingTag, setIsAddingTag] = createSignal(false);
+  const [isDeleting, setIsDeleting] = createSignal(false);
 
+  // 外部切换笔记时同步数据
   createEffect(() => {
-    setCurrentNote(getInitialNote(props.data, props.notes));
+    const data = props.data;
+    const notes = props.notes;
+
+    setCurrentNote(getInitialNote(data, notes));
+    setTagInput("");
+    setIsAddingTag(false);
+    setPopoverOpened(false);
+    setIsDeleting(false);
   });
 
+  // 更新字段并通知父组件
   const handleFieldChange = (fields: Partial<NoteItem>) => {
-    const updated: NoteItem = { ...currentNote(), ...fields, updatedAt: Date.now() };
+    if (isDeleting()) return;
+
+    const updated: NoteItem = {
+      ...currentNote(),
+      ...fields,
+      updatedAt: Date.now(),
+    };
+
     setCurrentNote(updated);
     props.onNoteChange(updated);
   };
 
-  // 🌟 标签添加方法
+  // 添加标签
   const handleAddTag = () => {
     const val = tagInput().trim();
-    if (!val) return;
-    const currentTags = currentNote().tags || [];
-    if (currentTags.includes(val)) {
-      setTagInput('');
+
+    if (!val) {
+      setIsAddingTag(false);
       return;
     }
-    handleFieldChange({ tags: [...currentTags, val] });
-    setTagInput('');
+
+    const currentTags = currentNote().tags || [];
+
+    if (!currentTags.includes(val)) {
+      handleFieldChange({
+        tags: [...currentTags, val],
+      });
+    }
+
+    setTagInput("");
     setIsAddingTag(false);
   };
 
-  // 🌟 标签删除方法
+  // 删除标签
   const handleRemoveTag = (tagToRemove: string) => {
     const currentTags = currentNote().tags || [];
-    handleFieldChange({ tags: currentTags.filter((t) => t !== tagToRemove) });
+
+    handleFieldChange({
+      tags: currentTags.filter(
+        (tag) => tag !== tagToRemove
+      ),
+    });
   };
 
   const selectedColorObj = () =>
-    HIGHLIGHT_COLORS.find((c) => c.bg === (currentNote().color || HIGHLIGHT_COLORS[0].bg)) ||
-    HIGHLIGHT_COLORS[0];
+    HIGHLIGHT_COLORS.find(
+      (c) =>
+        c.bg ===
+        (currentNote().color || HIGHLIGHT_COLORS[0].bg)
+    ) || HIGHLIGHT_COLORS[0];
 
-  const handleCopy = async () => {
+  // 复制引用
+  const handleCopy = async (e: MouseEvent) => {
+    e.stopPropagation();
+
     const text = currentNote().text;
     if (!text) return;
+
     try {
       await navigator.clipboard.writeText(text);
+
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 1500);
     } catch (err) {
-      console.warn('Failed to copy text: ', err);
+      console.warn("复制引用失败:", err);
+    }
+  };
+
+  // 删除笔记
+  const handleDelete = async (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isDeleting()) return;
+
+    const cfiRange = currentNote().cfiRange;
+
+    console.log(
+      "[EpubNotesEdit] 删除按钮已点击:",
+      cfiRange
+    );
+
+    if (!cfiRange) {
+      console.warn(
+        "[EpubNotesEdit] 删除失败：缺少 cfiRange"
+      );
+      return;
+    }
+
+    if (!props.onDelete) {
+      console.warn(
+        "[EpubNotesEdit] 删除失败：未提供 onDelete 回调"
+      );
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await props.onDelete(cfiRange);
+
+      console.log(
+        "[EpubNotesEdit] 删除回调执行完成:",
+        cfiRange
+      );
+    } catch (error) {
+      console.error(
+        "[EpubNotesEdit] 删除笔记失败:",
+        error
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
-    <div class="h-full p-3 flex flex-col gap-2.5 box-border bg-transparent text-stone-900 overflow-y-auto">
-      {/* 顶部标题栏：居中对齐 */}
-      <div class="flex items-center justify-center gap-2 border-b border-stone-300/60 pb-2">
+    <div class="flex min-h-0 flex-col gap-2.5 box-border bg-transparent p-3 text-stone-900">
+
+      {/* 顶部标题栏 */}
+      <div class="flex shrink-0 items-center justify-center gap-2 border-b border-stone-300/60 pb-2">
         <input
           type="text"
           placeholder="输入标题..."
-          value={currentNote().title || ''}
-          onInput={(e) => handleFieldChange({ title: e.currentTarget.value })}
-          class="w-full font-semibold text-sm bg-transparent border-none outline-none text-stone-900 placeholder:text-stone-400 text-center"
+          value={currentNote().title || ""}
+          onInput={(e) =>
+            handleFieldChange({
+              title: e.currentTarget.value,
+            })
+          }
+          class="w-full bg-transparent text-center text-sm font-semibold text-stone-900 placeholder:text-stone-400 border-none outline-none"
         />
       </div>
 
-      {/* 🌟 标签管理栏 */}
-      <div class="flex items-center flex-wrap gap-1.5 min-h-[26px]">
-        <IconTag size={12} class="text-stone-400 shrink-0" />
-        
-        {/* 已有标签列表 */}
+      {/* 标签管理 */}
+      <div class="flex min-h-[26px] shrink-0 flex-wrap items-center gap-1.5">
+
+        <IconTag
+          size={12}
+          class="shrink-0 text-stone-400"
+        />
+
         <For each={currentNote().tags || []}>
           {(tag) => (
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] bg-stone-200/70 text-stone-700 font-medium group">
+            <span class="group inline-flex items-center gap-1 rounded-md bg-stone-200/70 px-2 py-0.5 text-[11px] font-medium text-stone-700">
+
               <span>{tag}</span>
+
               <button
                 type="button"
-                onClick={() => handleRemoveTag(tag)}
-                class="text-stone-400 hover:text-stone-700 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveTag(tag);
+                }}
+                class="cursor-pointer text-stone-400 hover:text-stone-700"
               >
                 <IconX size={10} />
               </button>
+
             </span>
           )}
         </For>
 
-        {/* 添加标签输入框或按钮 */}
         <Show
           when={isAddingTag()}
           fallback={
             <button
               type="button"
-              onClick={() => setIsAddingTag(true)}
-              class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[11px] border border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 cursor-pointer transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsAddingTag(true);
+              }}
+              class="inline-flex cursor-pointer items-center gap-0.5 rounded-md border border-dashed border-stone-300 px-2 py-0.5 text-[11px] text-stone-500 transition-colors hover:border-stone-400 hover:text-stone-800"
             >
               <IconPlus size={10} />
               <span>添加标签</span>
@@ -164,73 +281,112 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
               autofocus
               placeholder="回车确认..."
               value={tagInput()}
-              onInput={(e) => setTagInput(e.currentTarget.value)}
+              onInput={(e) =>
+                setTagInput(e.currentTarget.value)
+              }
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAddTag();
-                if (e.key === 'Escape') {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddTag();
+                }
+
+                if (e.key === "Escape") {
                   setIsAddingTag(false);
-                  setTagInput('');
+                  setTagInput("");
                 }
               }}
               onBlur={() => {
-                if (tagInput().trim()) handleAddTag();
-                else setIsAddingTag(false);
+                if (tagInput().trim()) {
+                  handleAddTag();
+                } else {
+                  setIsAddingTag(false);
+                }
               }}
-              class="w-20 px-1.5 py-0.5 rounded border border-stone-400 bg-white text-[11px] outline-none text-stone-800"
+              class="w-20 rounded border border-stone-400 bg-white px-1.5 py-0.5 text-[11px] text-stone-800 outline-none"
             />
           </div>
         </Show>
       </div>
 
-      {/* 引用内容卡片区域 */}
+      {/* 引用内容卡片 */}
       <Show when={currentNote().text}>
-        <div class="relative px-3 py-1.5 rounded-lg border border-stone-300/70 bg-stone-50/50 flex items-center justify-between gap-2 transition-all">
-          <div 
-            class="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full transition-colors duration-200"
-            style={{ background: currentNote().color || HIGHLIGHT_COLORS[0].bg }}
+        <div class="relative flex shrink-0 items-center justify-between gap-2 rounded-lg border border-stone-300/70 bg-stone-50/50 px-3 py-1.5">
+
+          <div
+            class="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full"
+            style={{
+              background:
+                currentNote().color ||
+                HIGHLIGHT_COLORS[0].bg,
+            }}
           />
 
-          <div class="flex items-center gap-2 flex-1 min-w-0 pl-1">
-            <IconQuote size={13} class="shrink-0 text-stone-400" />
-            <p class="text-xs text-stone-700 truncate whitespace-nowrap flex-1 font-medium">
+          <div class="flex min-w-0 flex-1 items-center gap-2 pl-1">
+
+            <IconQuote
+              size={13}
+              class="shrink-0 text-stone-400"
+            />
+
+            <p class="min-w-0 flex-1 truncate whitespace-nowrap text-xs font-medium text-stone-700">
               {currentNote().text}
             </p>
           </div>
 
-          <div class="flex items-center gap-1.5 shrink-0 relative">
+          <div class="relative flex shrink-0 items-center gap-1.5">
+
+            {/* 高亮颜色 */}
             <div class="relative">
               <button
                 type="button"
                 title="选择高亮颜色"
-                onClick={() => setPopoverOpened(!popoverOpened())}
-                class="p-1 rounded hover:bg-stone-200/60 transition-colors cursor-pointer flex items-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPopoverOpened(
+                    (opened) => !opened
+                  );
+                }}
+                class="flex cursor-pointer items-center rounded p-1 transition-colors hover:bg-stone-200/60"
               >
-                <div 
-                  class="w-3.5 h-3.5 rounded-full border border-stone-400 shadow-2xs"
-                  style={{ 'background-color': selectedColorObj().bg }}
+                <div
+                  class="h-3.5 w-3.5 rounded-full border border-stone-400"
+                  style={{
+                    "background-color":
+                      selectedColorObj().bg,
+                  }}
                 />
               </button>
 
               <Show when={popoverOpened()}>
-                <div class="absolute right-0 top-full mt-1.5 p-2 bg-white border border-stone-300 rounded-xl shadow-xl z-20 flex flex-col gap-1.5 min-w-[130px]">
-                  <span class="text-[10px] font-bold text-stone-500 uppercase tracking-wider px-1">
+                <div class="absolute right-0 top-full z-20 mt-1.5 flex min-w-[130px] flex-col gap-1.5 rounded-xl border border-stone-300 bg-white p-2 shadow-xl">
+
+                  <span class="px-1 text-[10px] font-bold uppercase tracking-wider text-stone-500">
                     标记高亮色彩
                   </span>
+
                   <div class="flex items-center gap-1.5 px-1">
                     <For each={HIGHLIGHT_COLORS}>
                       {(c) => (
                         <button
                           type="button"
                           title={c.name}
-                          onClick={() => {
-                            handleFieldChange({ color: c.bg });
+                          onClick={(e) => {
+                            e.stopPropagation();
+
+                            handleFieldChange({
+                              color: c.bg,
+                            });
+
                             setPopoverOpened(false);
                           }}
-                          class="w-4.5 h-4.5 rounded-full border border-stone-400/80 cursor-pointer transition-transform hover:scale-115"
+                          class="h-4.5 w-4.5 cursor-pointer rounded-full border border-stone-400/80 transition-transform hover:scale-110"
                           style={{
-                            'background-color': c.bg,
-                            outline: selectedColorObj().id === c.id ? '2px solid #57534e' : 'none',
-                            'outline-offset': '1px',
+                            "background-color": c.bg,
+                            outline:
+                              selectedColorObj().id === c.id
+                                ? "2px solid #57534e"
+                                : "none",
+                            "outline-offset": "1px",
                           }}
                         />
                       )}
@@ -240,37 +396,49 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
               </Show>
             </div>
 
+            {/* 复制引用 */}
             <button
               type="button"
-              title={copied() ? '已复制' : '复制引用'}
+              title={copied() ? "已复制" : "复制引用"}
               onClick={handleCopy}
-              class="p-1 rounded hover:bg-stone-200/60 transition-colors text-stone-400 hover:text-stone-700 cursor-pointer"
+              class="cursor-pointer rounded p-1 text-stone-400 transition-colors hover:bg-stone-200/60 hover:text-stone-700"
             >
-              <Show when={copied()} fallback={<IconCopy size={13} />}>
-                <IconCheck size={13} class="text-emerald-700" />
+              <Show
+                when={copied()}
+                fallback={<IconCopy size={13} />}
+              >
+                <IconCheck
+                  size={13}
+                  class="text-emerald-700"
+                />
               </Show>
             </button>
           </div>
         </div>
       </Show>
 
-      {/* 笔记心得输入文本域 */}
+      {/* 读书心得 */}
       <textarea
         placeholder="在此记录读书心得..."
-        value={currentNote().content || ''}
-        onInput={(e) => handleFieldChange({ content: e.currentTarget.value })}
-        class="flex-1 w-full p-3 rounded-xl border border-stone-300/70 bg-stone-50/60 shadow-2xs text-stone-900 placeholder:text-stone-400 text-xs leading-relaxed resize-none outline-none min-h-[120px]"
+        value={currentNote().content || ""}
+        onInput={(e) =>
+          handleFieldChange({
+            content: e.currentTarget.value,
+          })
+        }
+        class="min-h-[120px] w-full flex-1 resize-none rounded-xl border border-stone-300/70 bg-stone-50/60 p-3 text-xs leading-relaxed text-stone-900 shadow-2xs placeholder:text-stone-400 outline-none"
       />
 
-      {/* 底部删除按钮 */}
+      {/* 删除笔记 */}
       <Show when={props.onDelete}>
-        <div class="pt-1 shrink-0">
+        <div class="shrink-0 pt-2">
           <button
             type="button"
-            onClick={() => props.onDelete?.(currentNote().cfiRange)}
-            class="w-full py-1.5 px-3 rounded-lg border border-dashed border-stone-300 bg-transparent text-stone-600 text-xs font-medium flex items-center justify-center cursor-pointer"
+            disabled={isDeleting()}
+            onClick={handleDelete}
+            class="flex w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-stone-300 bg-transparent px-3 py-2 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            删除笔记
+            {isDeleting() ? "正在删除..." : "删除笔记"}
           </button>
         </div>
       </Show>
