@@ -23,7 +23,7 @@ export const Login = () => {
     setLoading(true);
     try {
       await loginCache.login(account, password);
-      navigate({ 'to': '/book/shelf' });
+      navigate({ 'to': '/desktop/shelf' });
     } catch {
       open({
         title: "登录提示",
@@ -39,7 +39,7 @@ export const Login = () => {
     <LoginUI
       loading={loading()}
       onSubmit={handleSubmit}
-      toRegister={() => { navigate({ 'to': '/auth/register' }) }}
+      toRegister={() => { navigate({ 'to': '/desktop/auth/register' }) }}
     />
   );
 };

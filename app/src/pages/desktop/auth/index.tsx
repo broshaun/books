@@ -6,7 +6,7 @@ import { clearStorageCache } from "@/store/storageCache";
 import { tokenStore } from "@/store/tokenStore";
 import { createEffect } from "solid-js";
 import { useStore2 } from "@/hooks/useStore2";
-import { useEpubNotesSync } from "../book/desktop/reader/hook/useEpubNotesSync";
+import { useEpubNotesSync } from "./hook/useEpubNotesSync";
 import { notesCache } from "@/api/cache/notesCache";
 
 
@@ -21,7 +21,7 @@ export function AuthIndex() {
 
     createEffect(() => {
         if (!token) {
-            navigate({ to: "/auth/login" });
+            navigate({ to: "/desktop/auth/login" });
         }
     })
 
@@ -46,7 +46,7 @@ export function AuthIndex() {
                         console.log("确认退出");
                         tokenStore.clear();
                         await clearStorageCache();
-                        navigate({ to: '/auth/login' });
+                        navigate({ to: '/desktop/auth/login' });
                     },
                     onCancel: () => { }
                 });

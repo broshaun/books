@@ -23,11 +23,11 @@ function Layout() {
 
   return (
     <AppShell>
-      <AppShell.Header />
+
       <AppShell.Main>
         <Reader path={params().path} />
       </AppShell.Main>
-      <AppShell.Footer />
+
     </AppShell>
   );
 }

@@ -64,7 +64,7 @@ export function Shelf() {
                     selectFolder(path);
                 }}
 
-                onOpenProfile={() => { navigate({ to: "/auth/" }) }}
+                onOpenProfile={() => { navigate({ to: "/desktop/auth/" }) }}
             />
 
 
