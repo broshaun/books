@@ -16,18 +16,18 @@ function RouteComponent() {
 
   createResource(async () => {
     if (hasSafetyConfig()) {
-      return navigate({ to: "/book" });
+      return navigate({ to: "/mobile/shelf" });
     }
     try {
       const data = await safetyCache.get();
       if (data) {
         setTop(data.top);
         setBottom(data.bottom);
-        navigate({ to: "/book" });
+        navigate({ to: "/mobile/shelf" });
       }
     } catch (err) {
       console.error("加载安全配置失败", err);
-      navigate({ to: "/safety" });
+      navigate({ to: "/mobile/safety" });
     }
   })
 

@@ -1,5 +1,10 @@
 import { createFileRoute } from '@tanstack/solid-router'
-import Reader from '@/pages/book/desktop/reader';
+import Reader from '@/pages/mobile/reader';
+import { winSize } from "@/lib/winSize";
+import { useSafety } from "@/hooks/useSafety";
+import { AppShell } from "@/components/AppShell";
+import { createEffect } from "solid-js";
+import { useStore2 } from "@/hooks/useStore2";
 
 
 export const Route = createFileRoute('/mobile/reader/$path')({
@@ -8,6 +13,26 @@ export const Route = createFileRoute('/mobile/reader/$path')({
 
 function RouteComponent() {
   const params = Route.useParams();
-  return <Reader path={params().path}  />
+  const safety = useSafety();
+  const { height } = winSize();
+
+  createEffect(() => {
+    useStore2.setHeight(height - safety.bottom() - safety.top());
+  });
+
+  return (
+    <AppShell
+      header={{ height: safety.top() }}
+      footer={{ height: safety.bottom() }}
+    >
+      <AppShell.Header pt={safety.top()} />
+
+      <AppShell.Main>
+        <Reader path={params().path} />
+      </AppShell.Main>
+      <AppShell.Footer pb={safety.bottom()} />
+    </AppShell>
+  )
+
 
 }

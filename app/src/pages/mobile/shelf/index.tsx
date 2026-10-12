@@ -16,7 +16,7 @@ export function Shelf() {
 
     const handleOpen = async (name: string) => {
         try {
-            navigate({ to: "/reader/$bookId", params: { bookId: name } });
+            navigate({ to: "/mobile/reader/$bookId", params: { bookId: name } });
         } catch (error) {
             console.error("打开 EPUB 失败:", error);
         }
@@ -68,7 +68,7 @@ export function Shelf() {
                     selectTag(name ?? undefined);
                 }}
 
-                onOpenProfile={() => { navigate({ to: "/auth/" }) }}
+                onOpenProfile={() => { navigate({ to: "/mobile/auth/" }) }}
             />
 
 
