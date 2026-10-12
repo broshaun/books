@@ -1,5 +1,5 @@
 import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus } from "@tabler/icons-solidjs";
-import { createSignal, onCleanup, createEffect, createResource, on, Show } from "solid-js";
+import { createSignal, onCleanup, createEffect, createResource, on, Show, Switch, Match } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
 import { useEpubViews } from "./hook/useEpubViews";
@@ -241,37 +241,43 @@ export function Reader(props: ReaderProps) {
         pinned={isPinned()}
         onPinChange={setIsPinned}
       >
-        <Show when={currentSet().has("select")}>
-          <div>创建笔记</div>
-          <EpubNotesCreate 
-            newNote={activeNote()} 
-            onSave={(v) => { console.log('new', v); newNode(v); opt("mark"); }} 
-            onCancel={() => { opt("click"); console.log('取消笔记'); }} 
-          />
-        </Show>
 
-        <Show when={currentSet().has("mark")}>
-          <div>修改笔记</div>
-          <EpubNotesEdit 
-            notes={currentNote()} 
-            onNoteChange={(v) => { newNode(v); }} 
-            onDelete={(cfiRange) => { remove(cfiRange); }} 
-            onBack={() => { opt("click"); }} 
-          />
-        </Show>
+        <Switch>
+          <Match when={currentSet().has("select")}>
+            <EpubNotesCreate
+              newNote={activeNote()}
+              onSave={(v) => { console.log('new', v); newNode(v); opt("mark"); }}
+              onCancel={() => { opt("click"); console.log('取消笔记'); }}
+            />
+          </Match>
 
-        <Show when={currentSet().has("click")}>
-          <div>笔记列表</div>
-          <EpubNotesTimeline
-            isSyncing={isSyncing()}
-            tags={indexTags()}
-            notes={currentIndexNotes()}
-            onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }}
-            onDelete={(cfiRange) => { remove(cfiRange); }}
-            onSelectTag={(tag) => { console.log("tag", tag); filter({ tag: tag }); }}
-            onContentClick={(cfiRange) => { handleMarkClicked(cfiRange); }}
-          />
-        </Show>
+          <Match when={currentSet().has("mark")}>
+            <div>修改笔记</div>
+            <EpubNotesEdit
+              notes={currentNote()}
+              onNoteChange={(v) => { newNode(v); }}
+              onDelete={(cfiRange) => { remove(cfiRange); }}
+              onBack={() => { opt("click"); }}
+            />
+          </Match>
+
+          <Match when={currentSet().has("click")}>
+            <div>笔记列表</div>
+            <EpubNotesTimeline
+              isSyncing={isSyncing()}
+              tags={indexTags()}
+              notes={currentIndexNotes()}
+              onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }}
+              onDelete={(cfiRange) => { remove(cfiRange); }}
+              onSelectTag={(tag) => { console.log("tag", tag); filter({ tag: tag }); }}
+              onContentClick={(cfiRange) => { handleMarkClicked(cfiRange); }}
+            />
+          </Match>
+        </Switch>
+
+
+
+
       </EpubDrawer>
 
       <EpubTocDrawer
