@@ -4,7 +4,7 @@ import Accordion from 'corvu/accordion';
 
 export interface NewNote {
   bookId: string;
-  bookName: string;
+  bookName?: string;
   index: number;
   cfiRange: string;
   text: string;
@@ -17,12 +17,13 @@ export interface NewNote {
 }
 
 interface EpubNotesTimelineProps {
-  tags: Record<string, number>; // 接收来自 useEpubNotes 的 indexTags
-  notes: NewNote[];             // 接收来自 useEpubNotes 的 currentIndexNotes
-  isSyncing?: boolean;          // 🌟 新增：外部传入的同步状态
+  tags: Record<string, number>;
+  notes: NewNote[];
+  isSyncing?: boolean;
   onSelectNote?: (cfiRange: string) => void;
   onDelete?: (cfiRange: string) => void;
   onSelectTag?: (tag: string | null) => void;
+  onContentClick?: (cfiRange: string, e: MouseEvent) => void;
 }
 
 const parseCfi = (cfi: string): number[] => {
@@ -36,9 +37,9 @@ const formatTime = (ts?: number) => {
   return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
-const getTagBtnClass = (isSelected: boolean) => 
+const getTagBtnClass = (isSelected: boolean) =>
   `px-2.5 py-1 rounded-md text-xs font-medium shrink-0 transition-colors cursor-pointer flex items-center gap-1 ${
-    isSelected ? 'bg-stone-200 text-stone-900 shadow-2xs font-semibold' : 'bg-stone-100/60 hover:bg-stone-200/60 text-stone-600'
+    isSelected ? 'bg-stone-200 text-stone-900 shadow-2xs font-semibold' : 'bg-stone-100/65 hover:bg-stone-200/60 text-stone-600'
   }`;
 
 export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
@@ -49,24 +50,23 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
     props.onSelectTag?.(tag === 'all' ? null : tag);
   };
 
-  const sortedNotes = () => [...(props.notes || [])].sort((a, b) => {
-    const posA = parseCfi(a.cfiRange);
-    const posB = parseCfi(b.cfiRange);
-    for (let i = 0; i < Math.max(posA.length, posB.length); i++) {
-      const diff = (posA[i] || 0) - (posB[i] || 0);
-      if (diff !== 0) return diff;
-    }
-    return a.cfiRange.localeCompare(b.cfiRange);
-  });
+  const sortedNotes = () =>
+    [...(props.notes || [])].sort((a, b) => {
+      const posA = parseCfi(a.cfiRange);
+      const posB = parseCfi(b.cfiRange);
+      for (let i = 0; i < Math.max(posA.length, posB.length); i++) {
+        const diff = (posA[i] || 0) - (posB[i] || 0);
+        if (diff !== 0) return diff;
+      }
+      return a.cfiRange.localeCompare(b.cfiRange);
+    });
 
   return (
     <div class="w-full h-full p-2 bg-transparent overflow-y-auto overflow-x-hidden text-stone-900 flex flex-col [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-stone-300/80 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-stone-400">
       
-      {/* 🌟 最上方标题栏：【笔记】及右侧同步图标 */}
+      {/* 顶部标题栏 */}
       <div class="flex items-center justify-between px-1 pb-2 mb-2 border-b border-stone-200/60 shrink-0">
         <span class="text-xs font-bold text-stone-800 tracking-wider">笔记</span>
-        
-        {/* 同步状态图标：当 isSyncing 为 true 时旋转，也可以根据需要调整隐藏逻辑 */}
         <Show when={props.isSyncing}>
           <div class="flex items-center gap-1 text-[10px] text-stone-400">
             <IconLoader2 size={14} class="animate-spin text-blue-500" />
@@ -78,21 +78,12 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
       {/* 顶部标签栏 */}
       <Show when={props.tags && Object.keys(props.tags).length > 0}>
         <div class="flex items-center flex-wrap gap-1.5 pb-2.5 mb-2 border-b border-stone-200/60 shrink-0">
-          <button 
-            type="button" 
-            onClick={() => handleTagClick('all')} 
-            class={getTagBtnClass(activeTag() === 'all')}
-          >
+          <button type="button" onClick={() => handleTagClick('all')} class={getTagBtnClass(activeTag() === 'all')}>
             全部 ({props.tags['all'] ?? 0})
           </button>
-
           <For each={Object.entries(props.tags || {}).filter(([tag]) => tag !== 'all')}>
             {([tag, count]) => (
-              <button 
-                type="button" 
-                onClick={() => handleTagClick(tag)} 
-                class={getTagBtnClass(activeTag() === tag)}
-              >
+              <button type="button" onClick={() => handleTagClick(tag)} class={getTagBtnClass(activeTag() === tag)}>
                 <span>{tag}</span>
                 <span class="text-[10px] opacity-70">({count})</span>
               </button>
@@ -176,11 +167,17 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
                             style={{ height: item.expanded ? 'var(--corvu-accordion-content-height)' : '0px' }}
                           >
                             <div class="pt-1.5 pb-1">
-                              <Show when={note.content} fallback={<p class="text-[10px] text-stone-400 italic">暂无补充心得...</p>}>
-                                <div class="p-2 rounded-lg bg-stone-100/70 border border-stone-200/60 text-[11px] text-stone-700 leading-relaxed whitespace-pre-wrap break-all">
-                                  {note.content}
-                                </div>
-                              </Show>
+                              {/* 心得框区域，直接回调 cfiRange */}
+                              <div
+                                onClick={(e) => props.onContentClick?.(note.cfiRange, e)}
+                                class="w-full px-2.5 py-2 rounded-lg border border-stone-300/70 bg-stone-50/60 shadow-2xs text-left cursor-pointer transition-colors hover:border-stone-400"
+                              >
+                                <Show when={note.content} fallback={<span class="text-xs text-stone-400">暂无补充心得...</span>}>
+                                  <p class="text-[11px] leading-relaxed whitespace-pre-wrap break-all text-stone-700">
+                                    {note.content}
+                                  </p>
+                                </Show>
+                              </div>
                             </div>
                           </Accordion.Content>
                         </div>

@@ -13,6 +13,7 @@
     pnpm add @tanstack/solid-router @tanstack/solid-router-devtools @tanstack/router-plugin -D
     pnpm add corvu
     pnpm add localforage @tabler/icons-solidjs clsx tailwind-merge
+    pnpm add @solid-primitives/scheduled
 
 ## 业务库
     pnpm add epubjs

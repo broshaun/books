@@ -21,6 +21,18 @@ import { EpubDrawer } from "./ui/EpubDrawer";
 import { EpubNotesCreate } from "./ui/EpubNotesCreate";
 import { EpubNotesEdit } from "./ui/EpubNotesEdit";
 import { EpubNotesTimeline } from "./ui/EpubNotesTimeline";
+import { debounce } from "@solid-primitives/scheduled";
+import { type Rendition } from "epubjs"
+
+
+const savePositionDebounced = debounce((cfi: string) => {
+  localStorage.setItem("READ_POSITION_KEY", cfi);
+}, 3000);
+
+
+const removeHighlightDebounced = debounce((inst: Rendition, cfi: string) => {
+  inst.annotations.remove(cfi, "highlight");
+}, 3000);
 
 interface ReaderProps {
   path: string;
@@ -55,9 +67,12 @@ export function Reader(props: ReaderProps) {
     }
   );
 
+
+
+
   const { bookmarks, toggleBookmark, isBookmarked, removeBookmark } = useBookmarks(() => currentBook());
 
-  const handleToggleBookmark = () => {
+  function handleToggleBookmark() {
     const cfi = currentCfi();
     if (cfi) {
       toggleBookmark(cfi);
@@ -94,29 +109,27 @@ export function Reader(props: ReaderProps) {
     },
   });
 
-  const handleJump = (cfiOrHref: string) => {
+  function handleJump(cfiOrHref: string) {
     instance()?.display(cfiOrHref);
   };
 
-  const handleMouseUp = () => {
+  function handleMouseUp() {
     const hasSelection = currentSet().has("select");
     if (!hasSelection) {
       opt("click");
     }
   };
 
-  const handleMarkClicked = (cfiRange: string) => {
+  function handleMarkClicked(cfiRange: string) {
     opt("mark");
-    setNotesOpened(true); // 点击高亮时自动呼出面板
     console.log('选中文字', cfiRange);
   };
 
-  const handleSelected = (cfiRange: string, contents: any) => {
+  function handleSelected(cfiRange: string, contents: any) {
     const index = contents?.sectionIndex;
     const text = instance()?.getRange(cfiRange)?.toString() || "";
     if (!text.trim()) return;
     opt("select");
-    setNotesOpened(true); // 选中文本时自动呼出面板
     const newNoteItem: NewNote = {
       book: props.path,
       index: index,
@@ -127,7 +140,7 @@ export function Reader(props: ReaderProps) {
     setActiveNote(newNoteItem);
   };
 
-  const handleFontSizeChange = (size: number) => {
+  function handleFontSizeChange(size: number) {
     const inst = instance();
     if (!inst) return;
     try {
@@ -139,81 +152,80 @@ export function Reader(props: ReaderProps) {
     }
   };
 
-  let debounceTimer: number | NodeJS.Timeout;
-  const handleRelocated = (location: any) => {
+
+
+  function handleRelocated(location: any) {
     const cfi = location?.start?.cfi;
     if (!cfi) return;
     setCfi(cfi);
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      localStorage.setItem("READ_POSITION_KEY", cfi);
-    }, 3000);
+    savePositionDebounced(cfi);
   };
-  onCleanup(() => {
-    clearTimeout(debounceTimer);
-  });
 
-  const handleJumpCfiRange = async (cfiRange: string) => {
+
+  async function handleJumpCfiRange(cfiRange: string) {
     const inst = instance();
     if (!inst) return;
     return await inst.display(cfiRange);
   };
 
+
   createEffect(
-    on(instance, async (inst) => {
-      if (!inst) return;
-      let hasInitialized = false;
-      if (hasInitialized) return;
-      const contentHandler = (contents: any) => {
-        const doc = contents.document;
-        doc.addEventListener("mouseup", handleMouseUp);
-      };
+    on(
+      () => instance(),
+      async (inst) => {
 
-      inst.hooks.content.register(contentHandler);
-      inst.on("markClicked", handleMarkClicked);
-      inst.on("selected", handleSelected);
-      inst.on("relocated", handleRelocated);
-      hasInitialized = true;
+        // 1. 如果没有实例，直接返回
+        if (!inst) return;
 
-      const savedFontSize = useStore2.fontSize;
-      if (savedFontSize) {
-        inst.themes.fontSize(`${savedFontSize}px`);
-      }
+        // 2. 定义事件处理函数
+        const contentHandler = (contents: any) => {
+          const doc = contents.document;
+          doc.addEventListener("mouseup", handleMouseUp);
+        };
 
-      const savedCfi = localStorage.getItem("READ_POSITION_KEY");
-      try {
-        await inst.display(savedCfi || undefined);
-      } catch (error) {
-        console.warn("恢复进度失败，打开首页", error);
-        await inst.display();
-      }
+        // 3. 注册钩子和事件监听
+        inst.hooks.content.register(contentHandler);
+        inst.on("markClicked", handleMarkClicked);
+        inst.on("selected", handleSelected);
+        inst.on("relocated", handleRelocated);
 
-      onCleanup(() => {
-        hasInitialized = false;
-        inst.destroy();
-      });
-    })
+        // 4. 应用初始配置
+        const savedFontSize = useStore2.fontSize;
+        if (savedFontSize) {
+          inst.themes.fontSize(`${savedFontSize}px`);
+        }
+
+        const savedCfi = localStorage.getItem("READ_POSITION_KEY");
+        try {
+          await inst.display(savedCfi || undefined);
+        } catch (error) {
+          console.warn("恢复进度失败，打开首页", error);
+          await inst.display();
+        }
+
+        onCleanup(() => {
+          inst.destroy();
+        });
+
+      },
+      // { defer: true }
+    )
   );
 
-  let highlightTimer: number | undefined;
-  const HIGHLIGHT_DURATION = 3000;
-  const handleSelectResult = (cfi: string, keyword: string) => {
+  // 搜索结果
+  function handleSearchResult(cfi: string, keyword: string) {
     handleJump(cfi);
     console.log("keyword:", keyword);
     const inst = instance();
     if (!inst || !cfi) return;
     try {
       inst.annotations.add("highlight", cfi, {}, () => { }, "search-highlight-class", { fill: "#fef08a", "fill-opacity": "0.5" });
+      removeHighlightDebounced(inst, cfi);
     } catch (err) {
       console.error("添加高亮失败:", err);
     }
-    if (highlightTimer) clearTimeout(highlightTimer);
-    highlightTimer = window.setTimeout(() => {
-      try {
-        inst.annotations.remove(cfi, "highlight");
-      } catch (e) { }
-    }, HIGHLIGHT_DURATION);
-  };
+  }
+
 
   const [notesOpened, setNotesOpened] = createSignal(false);
   const [controlsOpened, setControlsOpened] = createSignal(false);
@@ -293,7 +305,7 @@ export function Reader(props: ReaderProps) {
         opened={searchOpened()}
         onClose={() => setSearchOpened(false)}
         book={currentBook()}
-        onSelectResult={handleSelectResult}
+        onSelectResult={handleSearchResult}
       />
 
       <EpubStyleDrawer

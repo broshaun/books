@@ -20,7 +20,7 @@ function RouteComponent() {
   console.log('apiAvatar: ', apiConfig.apiAvatar);
 
   onMount(() => {
-    if (!isMobile) {
+    if (isMobile) {
       return navigate({ to: "/mobile/" });
     } else {
       return navigate({ to: "/desktop/shelf" });

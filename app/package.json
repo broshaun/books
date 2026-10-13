@@ -11,6 +11,7 @@
     "preview": "rsbuild preview"
   },
   "dependencies": {
+    "@solid-primitives/scheduled": "^1.5.3",
     "@tabler/icons-solidjs": "^3.46.0",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "~2.7.3",
