@@ -82,8 +82,6 @@ export function Reader(props: ReaderProps) {
   const { hideNotes, toggleNotes } = useEpubViews(instance);
   const [activeNote, setActiveNote] = createSignal<NewNote>();
 
-
-
   useEpubNotesSync({
     interval: 3000,
     onSyncSet: async (localNotes) => {
@@ -102,7 +100,7 @@ export function Reader(props: ReaderProps) {
     setMarkCfiRange(cfiRange);
   };
 
-  // 🌟 修复：精准捕获选词事件，赋予 "select" 状态并弹出笔记创建框
+  // 🌟 精准捕获选词事件
   function handleSelected(cfiRange: string, contents: any) {
     const index = contents?.sectionIndex;
     const text = instance()?.getRange(cfiRange)?.toString() || "";
@@ -156,35 +154,44 @@ export function Reader(props: ReaderProps) {
       async (inst) => {
         if (!inst) return;
 
-        // 注册内容钩子捕获手势（左滑/右滑/顶部下滑）
+        // 🌟 核心修改：在 iframe 内容中精准优化手势与离开时选词判断
         inst.hooks.content.register((contents: any) => {
           const doc = contents.document;
           const win = contents.window;
 
           let startX = 0;
           let startY = 0;
+          let startTime = 0;
 
           doc.addEventListener("touchstart", (e: TouchEvent) => {
             const touch = e.touches[0];
             startX = touch.clientX;
             startY = touch.clientY;
+            startTime = Date.now();
           }, { passive: true });
 
           doc.addEventListener("touchend", (e: TouchEvent) => {
-            // 如果用户正在划线选中文字，直接放行，不干扰原生划词
-            if (win?.getSelection()?.toString().trim()) return;
+            // 1. 优先检查用户是否在释放时选中了文本（划词划线逻辑）
+            const selectionText = win?.getSelection()?.toString().trim();
+            if (selectionText) {
+              return; // 如果有选中文字，直接终止手势翻页，交给 epub.js 原生 select 事件处理
+            }
 
             const touch = e.changedTouches[0];
             const deltaX = touch.clientX - startX;
             const deltaY = touch.clientY - startY;
+            const deltaTime = Date.now() - startTime;
 
             const absX = Math.abs(deltaX);
             const absY = Math.abs(deltaY);
-            const minThreshold = 60;
+            
+            // 限制手势必须在一瞬间完成（例如 400ms 以内），且位移大于 50px
+            const isQuickSwipe = deltaTime < 400;
+            const minThreshold = 50;
             const edgeWidth = 50;
             const screenWidth = win?.innerWidth || doc.documentElement.clientWidth;
 
-            if (absX > absY) {
+            if (absX > absY && isQuickSwipe) {
               if (absX > minThreshold) {
                 if (deltaX > 0 && startX <= edgeWidth) {
                   inst.prev(); // 右滑 -> 上一页
@@ -192,8 +199,8 @@ export function Reader(props: ReaderProps) {
                   inst.next(); // 左滑 -> 下一页
                 }
               }
-            } else {
-              // 🌟 顶部 50px 下滑唤醒退出
+            } else if (absY > absX && isQuickSwipe) {
+              // 🌟 顶部 50px 瞬间下滑唤醒退出
               if (absY > minThreshold && deltaY > 0 && startY <= 50) {
                 doc.dispatchEvent(new CustomEvent("epub-pull-down", { bubbles: true }));
               }
