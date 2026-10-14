@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/solid-router'
-import { Register } from '@/pages/auth/register'
+import { Register } from '@/pages/mobile/auth/register'
 
 
 export const Route = createFileRoute('/mobile/auth/register')({

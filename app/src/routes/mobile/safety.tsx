@@ -25,7 +25,7 @@ function Layout() {
                     safety.setBottom(bottom);
                     safety.setTop(top);
                     await safetyCache.set({ top, bottom })
-                    navigate({ to: "/book/shelf" })
+                    navigate({ to: "/mobile/shelf" })
                 }} />
             </AppShell.Main>
             <AppShell.Footer pb={safety.bottom()} />

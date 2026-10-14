@@ -4,8 +4,7 @@ import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
 import { useEpubViews } from "./hook/useEpubViews";
 import { useEpubNotes } from "./hook/useEpubNotes";
-import { useEpubLoader } from "./hook/useEpubLoader";
-import { useCurrentOperation } from "./hook/useCurrentOperation";
+import { useCaptured } from "./hook/useCaptured";
 
 import { EpubSearchDrawer } from "./ui/EpubSearchDrawer";
 import { EpubTocDrawer } from "./ui/EpubTocDrawer";
@@ -53,7 +52,7 @@ export function Reader(props: ReaderProps) {
   const backgroundColor = () => useStore2.backgroundColor;
   const setBackgroundColor = useStore2.setBackgroundColor;
 
-  const [currentCfi, setCfi] = createSignal<string>();
+  const [currentCfi, setCfi] = createSignal<string>(); // 当前位置
 
   // const { openBook } = useEpubLoader();
 
@@ -82,17 +81,18 @@ export function Reader(props: ReaderProps) {
   });
 
   // 获取图书元数据、底部 book 实例以及自动计算好的 bookId
-  const { book: currentBook} = useBookMeta(() => props.path);
+  const { book: currentBook,meta:bookMeta } = useBookMeta(() => props.path);
   const { put, del, filter, get, getTags } = useEpubNotes(() => instance());
+
   const [tag, setTag] = createSignal<string | null>(null)
 
-  const { currentSet, opt } = useCurrentOperation<string>([]);
+  
   const [tocOpened, setTocOpened] = createSignal(false);
   const [searchOpened, setSearchOpened] = createSignal(false);
   const [styleOpened, setStyleOpened] = createSignal(false);
   const { hideNotes, toggleNotes } = useEpubViews(instance);
-
   const [activeNote, setActiveNote] = createSignal<NewNote>();
+  const { capturedSet, capture } = useCaptured<string>([]);
 
 
 
@@ -109,16 +109,16 @@ export function Reader(props: ReaderProps) {
   };
 
   function handleMouseUp() {
-    const hasSelection = currentSet().has("select");
+    const hasSelection = capturedSet().has("select");
     if (!hasSelection) {
-      opt("click");
+      capture("click");
     }
   };
 
 
   const [markCfiRange, setMarkCfiRange] = createSignal<string | null>(null);
   function handleMarkClicked(cfiRange: string) {
-    opt("mark");
+    capture("mark");
     console.log('选中文字', cfiRange);
     setMarkCfiRange(cfiRange)
   };
@@ -127,7 +127,7 @@ export function Reader(props: ReaderProps) {
     const index = contents?.sectionIndex;
     const text = instance()?.getRange(cfiRange)?.toString() || "";
     if (!text.trim()) return;
-    opt("select");
+    capture("select");
     const newNoteItem: NewNote = {
       book: props.path,
       index: index,
@@ -249,24 +249,24 @@ export function Reader(props: ReaderProps) {
         epub={<EpubPaper ref={viewerRef} />}
         notesTitle={'笔记'}
         notes={
-          <Switch fallback={<BookInfoPanel book={currentBook()} />}>
+          <Switch fallback={<BookInfoPanel meta={bookMeta()} />}>
 
-            <Match when={currentSet().has("select")}>
-              <EpubNotesCreate newNote={activeNote()} onSave={(v) => { put(v); opt("mark") }} onCancel={() => { opt("click"); }} />
+            <Match when={capturedSet().has("select")}>
+              <EpubNotesCreate newNote={activeNote()} onSave={(v) => { put(v); capture("mark") }} onCancel={() => { capture("click"); }} />
             </Match>
 
-            <Match when={currentSet().has("mark")}>
-              <EpubNotesEdit notes={get(markCfiRange())} onNoteChange={(v) => { put(v); }} onDelete={(cfiRange) => { del(cfiRange); }} />
+            <Match when={capturedSet().has("mark")}>
+              <EpubNotesEdit notes={get(markCfiRange())} onBack={()=>{capture("click")}} onNoteChange={(v) => { put(v); }} onDelete={(cfiRange) => { del(cfiRange); }} />
             </Match>
 
-            <Match when={currentSet().has("click")}>
+            <Match when={capturedSet().has("click")}>
               <EpubNotesTimeline
                 isSyncing={false}
                 tags={getTags({ index: index() })}
                 notes={filter({ index: index(), tags: tag() })}
                 onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }}
                 onDelete={(cfiRange) => { del(cfiRange); }}
-                onSelectTag={(tag) => { console.log("tag", tag); setTag(tag) }}
+                onSelectTag={(tag) => { setTag(tag) }}
                 onContentClick={(cfiRange) => { handleMarkClicked(cfiRange); }}
               />
             </Match>

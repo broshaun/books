@@ -21,7 +21,7 @@ export function Register() {
         setLoading(true);
         try {
             await loginCache.register(account, password);
-            navigate({ 'to': '/auth/login' });
+            navigate({ 'to': '/mobile/auth/login' });
             open({
                 title: "注册提示",
                 message: "账号注册成功！",
@@ -42,7 +42,7 @@ export function Register() {
         <RegisterUI
             loading={loading()}
             onSubmit={handleSubmit}
-            toLogin={() => { navigate({ 'to': '/auth/login' }) }}
+            toLogin={() => { navigate({ 'to': '/mobile/auth/login' }) }}
         />
     );
 }

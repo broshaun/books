@@ -1,11 +1,5 @@
 import { createSignal, createEffect, For, Show } from 'solid-js';
-import {
-  IconCopy,
-  IconCheck,
-  IconQuote,
-  IconTag,
-  IconX,
-} from '@tabler/icons-solidjs';
+import { IconCopy, IconCheck, IconQuote, IconTag, IconX } from '@tabler/icons-solidjs';
 
 export interface NewNote {
   book?: string;
@@ -35,7 +29,6 @@ const HIGHLIGHT_COLORS = [
 ];
 
 const PREF_COLOR_KEY = 'epub_pref_color';
-
 const getInitialDraft = (n?: NewNote): NewNote => ({
   index: 0,
   cfiRange: '',
@@ -79,26 +72,12 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
   const addTag = (tagText: string) => {
     const val = tagText.trim();
     if (!val) return false;
-    const currentTags = draft().tags || [];
-    if (!currentTags.includes(val)) {
-      setDraft((prev) => ({ ...prev, tags: [...currentTags, val] }));
+    const tags = draft().tags || [];
+    if (!tags.includes(val)) {
+      setDraft((prev) => ({ ...prev, tags: [...tags, val] }));
       return true;
     }
     return false;
-  };
-
-  const handleAddTag = (e: KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (addTag(tagInput())) setTagInput('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setDraft((prev) => ({
-      ...prev,
-      tags: (prev.tags || []).filter((t) => t !== tagToRemove),
-    }));
   };
 
   const handleSave = () => {
@@ -109,7 +88,7 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
   return (
     <div class="h-full p-3 flex flex-col gap-2.5 box-border bg-transparent text-stone-900">
       {/* 顶部标题栏 */}
-      <div class="flex items-center justify-center gap-2 border-b border-stone-300/60 pb-2">
+      <div class="border-b border-stone-300/60 pb-2">
         <input
           type="text"
           placeholder="输入笔记标题..."
@@ -121,14 +100,12 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
 
       <Show when={draft().text}>
         {/* 引用内容卡片 */}
-        <div class="relative px-3 py-1.5 rounded-lg border border-stone-300/70 bg-stone-50/50 flex items-center justify-between gap-2 transition-all">
-          <div class="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full transition-colors duration-200" style={{ background: currentColor() }} />
+        <div class="relative px-3 py-1.5 rounded-lg border border-stone-300/70 bg-stone-50/50 flex items-center justify-between gap-2">
+          <div class="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full" style={{ background: currentColor() }} />
 
           <div class="flex items-center gap-2 flex-1 min-w-0 pl-1">
             <IconQuote size={13} class="shrink-0 text-stone-400" />
-            <p class="text-xs text-stone-700 truncate whitespace-nowrap flex-1 font-medium">
-              {draft().text}
-            </p>
+            <p class="text-xs text-stone-700 truncate whitespace-nowrap flex-1 font-medium">{draft().text}</p>
           </div>
 
           <div class="flex items-center gap-1.5 shrink-0 relative">
@@ -137,9 +114,9 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
                 type="button"
                 title="选择高亮颜色"
                 onClick={() => setPopoverOpened(!popoverOpened())}
-                class="p-1 rounded hover:bg-stone-200/60 transition-colors cursor-pointer flex items-center"
+                class="p-1 rounded hover:bg-stone-200/60 cursor-pointer flex items-center"
               >
-                <div class="w-3.5 h-3.5 rounded-full border border-stone-400 shadow-2xs" style={{ 'background-color': selectedColorObj().bg }} />
+                <div class="w-3.5 h-3.5 rounded-full border border-stone-400" style={{ 'background-color': selectedColorObj().bg }} />
               </button>
 
               <Show when={popoverOpened()}>
@@ -170,7 +147,7 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
               type="button"
               title={copied() ? '已复制' : '复制引用'}
               onClick={handleCopy}
-              class="p-1 rounded hover:bg-stone-200/60 transition-colors text-stone-400 hover:text-stone-700 cursor-pointer"
+              class="p-1 rounded hover:bg-stone-200/60 text-stone-400 hover:text-stone-700 cursor-pointer"
             >
               <Show when={copied()} fallback={<IconCopy size={13} />}>
                 <IconCheck size={13} class="text-emerald-700" />
@@ -192,7 +169,11 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
             {(tag) => (
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] bg-stone-200/70 dark:bg-zinc-800 text-stone-700 dark:text-stone-300">
                 {tag}
-                <button type="button" onClick={() => handleRemoveTag(tag)} class="hover:text-red-500 cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => setDraft((prev) => ({ ...prev, tags: (prev.tags || []).filter((t) => t !== tag) }))}
+                  class="hover:text-red-500 cursor-pointer"
+                >
                   <IconX size={12} />
                 </button>
               </span>
@@ -205,28 +186,33 @@ export function EpubNotesCreate(props: EpubNotesCreateProps) {
           placeholder="添加标签（如：灵感、核心、待办）..."
           value={tagInput()}
           onInput={(e) => setTagInput(e.currentTarget.value)}
-          onKeyDown={handleAddTag}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (addTag(tagInput())) setTagInput('');
+            }
+          }}
           class="w-full text-xs px-2.5 py-1.5 rounded-md border border-stone-300/70 bg-stone-50/30 outline-none focus:border-stone-400 text-stone-800 placeholder:text-stone-400"
         />
       </div>
 
-      {/* 底部操作按钮区 */}
-      <div class="flex items-center gap-2 pt-1 shrink-0 mt-auto">
+      {/* 操作按钮区 */}
+      <div class="flex items-center gap-2 pt-1 shrink-0">
         <Show when={props.onCancel}>
           <button
             type="button"
             onClick={props.onCancel}
-            class="flex-1 py-1.5 px-3 rounded-lg border border-stone-300/80 hover:bg-stone-100 text-stone-700 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            class="flex-1 py-1.5 px-3 rounded-lg border border-stone-300/80 hover:bg-stone-100 text-stone-700 text-xs font-medium flex items-center justify-center transition-colors cursor-pointer"
           >
-            <span>取消</span>
+            取消
           </button>
         </Show>
         <button
           type="button"
           onClick={handleSave}
-          class="flex-1 py-1.5 px-3 rounded-lg border border-stone-300 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+          class="flex-1 py-1.5 px-3 rounded-lg border border-stone-300 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-medium flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
         >
-          <span>保存</span>
+          保存
         </button>
       </div>
     </div>

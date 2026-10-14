@@ -1,9 +1,4 @@
-import {
-  createSignal,
-  createEffect,
-  For,
-  Show,
-} from "solid-js";
+import { createSignal, createEffect, For, Show } from 'solid-js';
 import {
   IconCopy,
   IconCheck,
@@ -11,8 +6,9 @@ import {
   IconTag,
   IconPlus,
   IconX,
-  IconArrowLeft,
-} from "@tabler/icons-solidjs";
+  IconArrowBackUp,
+  IconTrash,
+} from '@tabler/icons-solidjs';
 
 export interface NoteItem {
   bookId: string;
@@ -31,172 +27,126 @@ interface EpubNotesEditProps {
   data?: NoteItem | null;
   notes?: NoteItem | null;
   onNoteChange: (data: NoteItem) => void;
-  onDelete?: (cfiRange: string) => void | Promise<void>;
+  onDelete?: (cfiRange: string) => void;
   onBack?: () => void;
 }
 
 const HIGHLIGHT_COLORS = [
-  { id: "yellow", name: "明黄", bg: "#facc15" },
-  { id: "purple", name: "淡紫", bg: "#c084fc" },
-  { id: "red", name: "浅红", bg: "#fb7185" },
-  { id: "cyan", name: "青蓝", bg: "#2dd4bf" },
-  { id: "green", name: "草绿", bg: "#a3e635" },
+  { id: 'yellow', name: '明黄', bg: '#facc15' },
+  { id: 'purple', name: '淡紫', bg: '#c084fc' },
+  { id: 'red', name: '浅红', bg: '#fb7185' },
+  { id: 'cyan', name: '青蓝', bg: '#2dd4bf' },
+  { id: 'green', name: '草绿', bg: '#a3e635' },
 ];
 
-const getInitialNote = (data?: NoteItem | null, notes?: NoteItem | null): NoteItem => {
-  const source = data || notes;
-  return source
-    ? { ...source, tags: [...(source.tags || [])] }
-    : {
-        bookId: "",
-        bookName: "",
-        index: 0,
-        title: "读书笔记",
-        cfiRange: "",
-        text: "",
-        color: HIGHLIGHT_COLORS[0].bg,
-        tags: [],
-        content: "",
-      };
-};
+const getInitialNote = (data?: NoteItem | null, notes?: NoteItem | null): NoteItem =>
+  data || notes || {
+    bookId: '',
+    bookName: '',
+    index: Date.now(),
+    title: '读书笔记',
+    cfiRange: '',
+    text: '',
+    color: HIGHLIGHT_COLORS[0].bg,
+    tags: [],
+    content: '',
+  };
 
 export function EpubNotesEdit(props: EpubNotesEditProps) {
   const [currentNote, setCurrentNote] = createSignal<NoteItem>(
     getInitialNote(props.data, props.notes)
   );
-
   const [copied, setCopied] = createSignal(false);
   const [popoverOpened, setPopoverOpened] = createSignal(false);
-  const [tagInput, setTagInput] = createSignal("");
+  const [tagInput, setTagInput] = createSignal('');
   const [isAddingTag, setIsAddingTag] = createSignal(false);
-  const [isDeleting, setIsDeleting] = createSignal(false);
+
+  let textareaRef: HTMLTextAreaElement | undefined;
+
+  // 自动调整 textarea 高度函数
+  const adjustTextareaHeight = () => {
+    if (!textareaRef) return;
+    textareaRef.style.height = 'auto';
+    textareaRef.style.height = `${textareaRef.scrollHeight}px`;
+  };
 
   createEffect(() => {
     setCurrentNote(getInitialNote(props.data, props.notes));
-    setTagInput("");
-    setIsAddingTag(false);
-    setPopoverOpened(false);
-    setIsDeleting(false);
+    // 当外部数据重置/切换时，同步调整输入框高度
+    setTimeout(adjustTextareaHeight, 0);
   });
 
-  const handleFieldChange = (fields: Partial<NoteItem>) => {
-    if (isDeleting()) return;
-    const updated: NoteItem = {
-      ...currentNote(),
-      ...fields,
-      updatedAt: Date.now(),
-    };
+  const updateNote = (fields: Partial<NoteItem>) => {
+    const updated = { ...currentNote(), ...fields, updatedAt: Date.now() };
     setCurrentNote(updated);
     props.onNoteChange(updated);
   };
 
   const handleAddTag = () => {
     const val = tagInput().trim();
-    if (!val) {
-      setIsAddingTag(false);
-      return;
+    if (!val) return;
+    const tags = currentNote().tags || [];
+    if (!tags.includes(val)) {
+      updateNote({ tags: [...tags, val] });
     }
-    const currentTags = currentNote().tags || [];
-    if (!currentTags.includes(val)) {
-      handleFieldChange({ tags: [...currentTags, val] });
-    }
-    setTagInput("");
+    setTagInput('');
     setIsAddingTag(false);
   };
 
-  const selectedColorObj = () =>
-    HIGHLIGHT_COLORS.find((c) => c.bg === (currentNote().color || HIGHLIGHT_COLORS[0].bg)) ||
-    HIGHLIGHT_COLORS[0];
-
-  const handleCopy = async (e: MouseEvent) => {
-    e.stopPropagation();
-    const text = currentNote().text;
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch (err) {
-      console.warn("复制引用失败:", err);
-    }
-  };
-
-  const handleDelete = async (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isDeleting() || !props.onDelete) return;
-
-    const cfiRange = currentNote().cfiRange;
-    if (!cfiRange) return;
-
-    setIsDeleting(true);
-    try {
-      await props.onDelete(cfiRange);
-    } catch (error) {
-      console.error("删除笔记失败:", error);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  const currentColor = () => currentNote().color || HIGHLIGHT_COLORS[0].bg;
+  const selectedColorObj = () => HIGHLIGHT_COLORS.find((c) => c.bg === currentColor()) || HIGHLIGHT_COLORS[0];
 
   return (
-    <div class="flex min-h-0 flex-col gap-2.5 box-border bg-transparent p-3 text-stone-900">
-      {/* 顶部标题栏 */}
-      <div class="relative flex shrink-0 items-center border-b border-stone-300/60 pb-2 px-1">
+    <div class="h-full p-3 flex flex-col gap-2.5 bg-stone-50/40 text-stone-900 overflow-y-auto">
+      {/* 顶部导航与标题栏 */}
+      <div class="flex items-start gap-2">
         <Show when={props.onBack}>
           <button
             type="button"
             onClick={props.onBack}
-            class="absolute left-0 z-10 cursor-pointer rounded-lg p-1.5 text-stone-500 transition-colors hover:bg-stone-200/60 hover:text-stone-800"
+            class="p-1.5 rounded-lg hover:bg-stone-200/70 text-stone-600 transition-colors cursor-pointer shrink-0"
             title="返回"
           >
-            <IconArrowLeft size={16} />
+            <IconArrowBackUp size={18} />
           </button>
         </Show>
-        <input
-          type="text"
-          placeholder="输入标题..."
-          value={currentNote().title || ""}
-          onInput={(e) => handleFieldChange({ title: e.currentTarget.value })}
-          class="w-full border-none bg-transparent px-8 text-center text-sm font-semibold text-stone-900 outline-none placeholder:text-stone-400"
-        />
+        <div class="flex-1 pb-2 border-b border-stone-200">
+          <input
+            type="text"
+            placeholder="输入笔记标题..."
+            value={currentNote().title || ''}
+            onInput={(e) => updateNote({ title: e.currentTarget.value })}
+            class="w-full font-semibold text-sm bg-transparent border-none outline-none text-stone-800 placeholder:text-stone-400 text-center px-1"
+          />
+        </div>
       </div>
 
-      {/* 标签管理 */}
-      <div class="flex min-h-[26px] shrink-0 flex-wrap items-center gap-1.5">
-        <IconTag size={12} class="shrink-0 text-stone-400" />
+      {/* 标签管理区 */}
+      <div class="flex items-center flex-wrap gap-1.5">
+        <IconTag size={13} class="text-stone-400 shrink-0" />
         <For each={currentNote().tags || []}>
           {(tag) => (
-            <span class="group inline-flex items-center gap-1 rounded-md bg-stone-200/70 px-2 py-0.5 text-[11px] font-medium text-stone-700">
-              <span>{tag}</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] bg-stone-200/70 text-stone-700 font-medium">
+              {tag}
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleFieldChange({
-                    tags: (currentNote().tags || []).filter((t) => t !== tag),
-                  });
-                }}
-                class="cursor-pointer text-stone-400 hover:text-stone-700"
+                onClick={() => updateNote({ tags: (currentNote().tags || []).filter((t) => t !== tag) })}
+                class="hover:text-red-500 cursor-pointer"
               >
-                <IconX size={10} />
+                <IconX size={11} />
               </button>
             </span>
           )}
         </For>
-
         <Show
           when={isAddingTag()}
           fallback={
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsAddingTag(true);
-              }}
-              class="inline-flex cursor-pointer items-center gap-0.5 rounded-md border border-dashed border-stone-300 px-2 py-0.5 text-[11px] text-stone-500 transition-colors hover:border-stone-400 hover:text-stone-800"
+              onClick={() => setIsAddingTag(true)}
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] border border-dashed border-stone-300 text-stone-500 hover:text-stone-700 hover:border-stone-400 cursor-pointer transition-colors"
             >
-              <IconPlus size={10} />
+              <IconPlus size={11} />
               <span>添加标签</span>
             </button>
           }
@@ -208,118 +158,96 @@ export function EpubNotesEdit(props: EpubNotesEditProps) {
             value={tagInput()}
             onInput={(e) => setTagInput(e.currentTarget.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAddTag();
-              }
-              if (e.key === "Escape") {
-                setIsAddingTag(false);
-                setTagInput("");
-              }
+              if (e.key === 'Enter') handleAddTag();
+              if (e.key === 'Escape') { setIsAddingTag(false); setTagInput(''); }
             }}
-            onBlur={() => (tagInput().trim() ? handleAddTag() : setIsAddingTag(false))}
-            class="w-20 rounded border border-stone-400 bg-white px-1.5 py-0.5 text-[11px] text-stone-800 outline-none"
+            onBlur={handleAddTag}
+            class="w-24 px-2 py-0.5 rounded-md border border-stone-300 bg-white text-[11px] outline-none text-stone-800"
           />
         </Show>
       </div>
 
       {/* 引用内容卡片 */}
       <Show when={currentNote().text}>
-        <div class="relative flex shrink-0 items-center justify-between gap-2 rounded-lg border border-stone-300/70 bg-stone-50/50 px-3 py-1.5">
-          <div
-            class="absolute bottom-1.5 left-0 top-1.5 w-1 rounded-r-full"
-            style={{ background: currentNote().color || HIGHLIGHT_COLORS[0].bg }}
-          />
-
-          <div class="flex min-w-0 flex-1 items-center gap-2 pl-1">
+        <div class="relative px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white shadow-2xs flex items-center justify-between gap-2.5">
+          <div class="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full" style={{ background: currentColor() }} />
+          <div class="flex items-center gap-2 flex-1 min-w-0 pl-1">
             <IconQuote size={13} class="shrink-0 text-stone-400" />
-            <p class="min-w-0 flex-1 truncate whitespace-nowrap text-xs font-medium text-stone-700">
-              {currentNote().text}
-            </p>
+            <p class="text-xs text-stone-700 truncate font-medium">{currentNote().text}</p>
           </div>
-
-          <div class="relative flex shrink-0 items-center gap-1.5">
-            {/* 高亮颜色选择 */}
-            <div class="relative">
-              <button
-                type="button"
-                title="选择高亮颜色"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsAddingTag(false);
-                  setPopoverOpened((o) => !o);
-                }}
-                class="flex cursor-pointer items-center rounded p-1 transition-colors hover:bg-stone-200/60"
-              >
-                <div
-                  class="h-3.5 w-3.5 rounded-full border border-stone-400"
-                  style={{ "background-color": selectedColorObj().bg }}
-                />
-              </button>
-
-              <Show when={popoverOpened()}>
-                <div class="absolute right-0 top-full z-20 mt-1.5 flex min-w-[130px] flex-col gap-1.5 rounded-xl border border-stone-300 bg-white p-2 shadow-xl">
-                  <span class="px-1 text-[10px] font-bold uppercase tracking-wider text-stone-500">
-                    标记高亮色彩
-                  </span>
-                  <div class="flex items-center gap-1.5 px-1">
-                    <For each={HIGHLIGHT_COLORS}>
-                      {(c) => (
-                        <button
-                          type="button"
-                          title={c.name}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleFieldChange({ color: c.bg });
-                            setPopoverOpened(false);
-                          }}
-                          class="h-4.5 w-4.5 cursor-pointer rounded-full border border-stone-400/80 transition-transform hover:scale-110"
-                          style={{
-                            "background-color": c.bg,
-                            outline: selectedColorObj().id === c.id ? "2px solid #57534e" : "none",
-                            "outline-offset": "1px",
-                          }}
-                        />
-                      )}
-                    </For>
-                  </div>
-                </div>
-              </Show>
-            </div>
-
-            {/* 复制引用 */}
+          <div class="flex items-center gap-1.5 shrink-0 relative">
             <button
               type="button"
-              title={copied() ? "已复制" : "复制引用"}
-              onClick={handleCopy}
-              class="cursor-pointer rounded p-1 text-stone-400 transition-colors hover:bg-stone-200/60 hover:text-stone-700"
+              onClick={() => setPopoverOpened(!popoverOpened())}
+              class="p-1 rounded hover:bg-stone-100 transition-colors cursor-pointer"
+              title="选择高亮颜色"
+            >
+              <div class="w-3.5 h-3.5 rounded-full border border-stone-300 shadow-2xs" style={{ 'background-color': selectedColorObj().bg }} />
+            </button>
+            <Show when={popoverOpened()}>
+              <div class="absolute right-0 top-full mt-1.5 p-2 bg-white border border-stone-200 rounded-xl shadow-lg z-20 flex flex-col gap-2 min-w-[130px]">
+                <span class="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-0.5">高亮色彩</span>
+                <div class="flex items-center gap-1.5 px-0.5">
+                  <For each={HIGHLIGHT_COLORS}>
+                    {(c) => (
+                      <button
+                        type="button"
+                        title={c.name}
+                        onClick={() => { updateNote({ color: c.bg }); setPopoverOpened(false); }}
+                        class="w-4.5 h-4.5 rounded-full border border-stone-300 cursor-pointer hover:scale-110 transition-transform"
+                        style={{
+                          'background-color': c.bg,
+                          outline: selectedColorObj().id === c.id ? '2px solid #57534e' : 'none',
+                          'outline-offset': '1px',
+                        }}
+                      />
+                    )}
+                  </For>
+                </div>
+              </div>
+            </Show>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!currentNote().text) return;
+                await navigator.clipboard.writeText(currentNote().text);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              }}
+              class="p-1 rounded hover:bg-stone-100 transition-colors text-stone-400 hover:text-stone-700 cursor-pointer"
+              title="复制引用"
             >
               <Show when={copied()} fallback={<IconCopy size={13} />}>
-                <IconCheck size={13} class="text-emerald-700" />
+                <IconCheck size={13} class="text-emerald-600" />
               </Show>
             </button>
           </div>
         </div>
       </Show>
 
-      {/* 读书心得 */}
+      {/* 最小为 5 行、多于 5 行自适应拓展高度的心得输入框 */}
       <textarea
-        placeholder="暂无补充心得..."
-        value={currentNote().content || ""}
-        onInput={(e) => handleFieldChange({ content: e.currentTarget.value })}
-        class="min-h-[120px] w-full flex-1 resize-none rounded-xl border border-stone-300/70 bg-stone-50/60 p-3 text-xs leading-relaxed text-stone-900 shadow-2xs outline-none placeholder:text-stone-400"
+        ref={textareaRef}
+        rows={5}
+        placeholder="记录读书心得与思考..."
+        value={currentNote().content || ''}
+        onInput={(e) => {
+          updateNote({ content: e.currentTarget.value });
+          adjustTextareaHeight();
+        }}
+        class="w-full p-2.5 rounded-xl border border-stone-200 bg-white shadow-2xs text-stone-900 placeholder:text-stone-400 text-xs leading-relaxed resize-none outline-none focus:border-stone-400 transition-colors overflow-hidden"
       />
 
-      {/* 删除笔记 */}
+      {/* 底部删除按钮 */}
       <Show when={props.onDelete}>
-        <div class="shrink-0 pt-2">
+        <div class="pt-0.5">
           <button
             type="button"
-            disabled={isDeleting()}
-            onClick={handleDelete}
-            class="flex w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-stone-300 bg-transparent px-3 py-2 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={() => props.onDelete?.(currentNote().cfiRange)}
+            class="w-full py-1.5 px-3 rounded-xl border border-red-200 bg-red-50/50 hover:bg-red-100/60 text-red-600 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
-            {isDeleting() ? "正在删除..." : "删除笔记"}
+            <IconTrash size={13} />
+            <span>删除笔记</span>
           </button>
         </div>
       </Show>

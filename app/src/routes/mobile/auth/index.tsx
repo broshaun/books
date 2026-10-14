@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/solid-router'
-import { AuthIndex } from '@/pages/auth'
+import { AuthIndex } from '@/pages/mobile/auth'
 
 export const Route = createFileRoute('/mobile/auth/')({
   component: RouteComponent,
