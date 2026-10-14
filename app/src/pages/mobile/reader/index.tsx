@@ -1,5 +1,5 @@
 import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus } from "@tabler/icons-solidjs";
-import { createSignal, onCleanup, createEffect, createResource, on, Show, Switch, Match } from "solid-js";
+import { createSignal, onCleanup, createEffect, on, Show, Switch, Match, onMount } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
 import { useStore2 } from "@/hooks/useStore2";
 import { useEpubViews } from "./hook/useEpubViews";
@@ -15,19 +15,16 @@ import { useEpubNotesSync } from "./hook/useEpubNotesSync";
 import { notesCache } from "@/api/cache/notesCache";
 import EpubView from "./ui/EpubView";
 import BookInfoPanel from "./ui/BookInfoPanel";
-// 笔记与抽屉组件
 import { EpubDrawer } from "./ui/EpubDrawer";
 import { EpubNotesCreate } from "./ui/EpubNotesCreate";
 import { EpubNotesEdit } from "./ui/EpubNotesEdit";
 import { EpubNotesTimeline } from "./ui/EpubNotesTimeline";
 import { debounce } from "@solid-primitives/scheduled";
-import { type Rendition } from "epubjs"
-
+import { type Rendition } from "epubjs";
 
 const savePositionDebounced = debounce((cfi: string) => {
   localStorage.setItem("READ_POSITION_KEY", cfi);
 }, 3000);
-
 
 const removeHighlightDebounced = debounce((inst: Rendition, cfi: string) => {
   inst.annotations.remove(cfi, "highlight");
@@ -52,11 +49,9 @@ export function Reader(props: ReaderProps) {
   const setBackgroundColor = useStore2.setBackgroundColor;
   const [currentCfi, setCfi] = createSignal<string>();
 
-
-  // 获取图书元数据、底部 book 实例以及自动计算好的 bookId
   const { book: currentBook, meta: bookMata } = useBookMeta(() => props.path);
   const { put, del, filter, get, getTags } = useEpubNotes(() => instance());
-  const [tag, setTag] = createSignal<string | null>(null)
+  const [tag, setTag] = createSignal<string | null>(null);
   const { bookmarks, toggleBookmark, isBookmarked, removeBookmark } = useBookmarks(() => currentBook());
 
   function handleToggleBookmark() {
@@ -87,10 +82,11 @@ export function Reader(props: ReaderProps) {
   const { hideNotes, toggleNotes } = useEpubViews(instance);
   const [activeNote, setActiveNote] = createSignal<NewNote>();
 
+
+
   useEpubNotesSync({
     interval: 3000,
     onSyncSet: async (localNotes) => {
-      console.log('同步数据localNotes', localNotes);
       await notesCache.set(localNotes);
     },
   });
@@ -99,25 +95,19 @@ export function Reader(props: ReaderProps) {
     instance()?.display(cfiOrHref);
   };
 
-  function handleMouseUp() {
-    const hasSelection = capturedSet().has("select");
-    if (!hasSelection) {
-      capture("click");
-    }
-  };
-
   const [markCfiRange, setMarkCfiRange] = createSignal<string | null>(null);
   function handleMarkClicked(cfiRange: string) {
     capture("mark");
-    console.log('选中文字', cfiRange);
-    setNotesOpened(true)
-    setMarkCfiRange(cfiRange)
+    setNotesOpened(true);
+    setMarkCfiRange(cfiRange);
   };
 
+  // 🌟 修复：精准捕获选词事件，赋予 "select" 状态并弹出笔记创建框
   function handleSelected(cfiRange: string, contents: any) {
     const index = contents?.sectionIndex;
     const text = instance()?.getRange(cfiRange)?.toString() || "";
     if (!text.trim()) return;
+
     capture("select");
     const newNoteItem: NewNote = {
       book: props.path,
@@ -127,7 +117,7 @@ export function Reader(props: ReaderProps) {
       updatedAt: Date.now(),
     };
     setActiveNote(newNoteItem);
-    setNotesOpened(true)
+    setNotesOpened(true);
   };
 
   function handleFontSizeChange(size: number) {
@@ -142,9 +132,6 @@ export function Reader(props: ReaderProps) {
     }
   };
 
-
-
-
   const [index, setIndex] = createSignal<number>(0);
   function handleRelocated(location: any) {
     const cfi = location?.start?.cfi;
@@ -157,36 +144,67 @@ export function Reader(props: ReaderProps) {
     }
   };
 
-
-
   async function handleJumpCfiRange(cfiRange: string) {
     const inst = instance();
     if (!inst) return;
     return await inst.display(cfiRange);
   };
 
-
   createEffect(
     on(
       () => instance(),
       async (inst) => {
-
-        // 1. 如果没有实例，直接返回
         if (!inst) return;
 
-        // 2. 定义事件处理函数
-        const contentHandler = (contents: any) => {
+        // 注册内容钩子捕获手势（左滑/右滑/顶部下滑）
+        inst.hooks.content.register((contents: any) => {
           const doc = contents.document;
-          doc.addEventListener("mouseup", handleMouseUp);
-        };
+          const win = contents.window;
 
-        // 3. 注册钩子和事件监听
-        inst.hooks.content.register(contentHandler);
+          let startX = 0;
+          let startY = 0;
+
+          doc.addEventListener("touchstart", (e: TouchEvent) => {
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+          }, { passive: true });
+
+          doc.addEventListener("touchend", (e: TouchEvent) => {
+            // 如果用户正在划线选中文字，直接放行，不干扰原生划词
+            if (win?.getSelection()?.toString().trim()) return;
+
+            const touch = e.changedTouches[0];
+            const deltaX = touch.clientX - startX;
+            const deltaY = touch.clientY - startY;
+
+            const absX = Math.abs(deltaX);
+            const absY = Math.abs(deltaY);
+            const minThreshold = 60;
+            const edgeWidth = 50;
+            const screenWidth = win?.innerWidth || doc.documentElement.clientWidth;
+
+            if (absX > absY) {
+              if (absX > minThreshold) {
+                if (deltaX > 0 && startX <= edgeWidth) {
+                  inst.prev(); // 右滑 -> 上一页
+                } else if (deltaX < 0 && startX >= screenWidth - edgeWidth) {
+                  inst.next(); // 左滑 -> 下一页
+                }
+              }
+            } else {
+              // 🌟 顶部 50px 下滑唤醒退出
+              if (absY > minThreshold && deltaY > 0 && startY <= 50) {
+                doc.dispatchEvent(new CustomEvent("epub-pull-down", { bubbles: true }));
+              }
+            }
+          }, { passive: true });
+        });
+
         inst.on("markClicked", handleMarkClicked);
         inst.on("selected", handleSelected);
         inst.on("relocated", handleRelocated);
 
-        // 4. 应用初始配置
         const savedFontSize = useStore2.fontSize;
         if (savedFontSize) {
           inst.themes.fontSize(`${savedFontSize}px`);
@@ -203,15 +221,12 @@ export function Reader(props: ReaderProps) {
         onCleanup(() => {
           inst.destroy();
         });
-
       },
     )
   );
 
-  // 搜索结果
   function handleSearchResult(cfi: string, keyword: string) {
     handleJump(cfi);
-    console.log("keyword:", keyword);
     const inst = instance();
     if (!inst || !cfi) return;
     try {
@@ -221,7 +236,6 @@ export function Reader(props: ReaderProps) {
       console.error("添加高亮失败:", err);
     }
   }
-
 
   const [notesOpened, setNotesOpened] = createSignal(false);
   const [isPinned, setIsPinned] = createSignal(false);
@@ -233,14 +247,11 @@ export function Reader(props: ReaderProps) {
         bg={backgroundColor()}
         height={height()}
         onExit={() => { navigate({ to: "/mobile/shelf/" }); }}
-        onPrevPage={() => { instance()?.prev(); }}
-        onNextPage={() => { instance()?.next(); }}
         controlsEnabled={true}
         notesEnabled={true}
         onOpenNotes={() => setNotesOpened(true)}
       />
 
-      {/* 🌟 抽屉面板（支持固定 Pin 状态） */}
       <EpubDrawer
         open={notesOpened()}
         onOpenChange={setNotesOpened}
@@ -248,13 +259,12 @@ export function Reader(props: ReaderProps) {
         pinned={isPinned()}
         onPinChange={setIsPinned}
       >
-
         <Switch fallback={<BookInfoPanel meta={bookMata()} />}>
           <Match when={capturedSet().has("select")}>
             <EpubNotesCreate
               newNote={activeNote()}
               onSave={(v) => { put(v); capture("mark"); }}
-              onCancel={() => { capture("click"); console.log('取消笔记'); }}
+              onCancel={() => { capture("click"); }}
             />
           </Match>
 
@@ -273,15 +283,11 @@ export function Reader(props: ReaderProps) {
               notes={filter({ index: index(), tags: tag() })}
               onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }}
               onDelete={(cfiRange) => { del(cfiRange); }}
-              onSelectTag={(tag) => { setTag(tag) }}
+              onSelectTag={(tag) => { setTag(tag); }}
               onContentClick={(cfiRange) => { handleMarkClicked(cfiRange); }}
             />
           </Match>
         </Switch>
-
-
-
-
       </EpubDrawer>
 
       <EpubTocDrawer
