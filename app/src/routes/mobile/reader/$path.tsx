@@ -17,20 +17,22 @@ function RouteComponent() {
   const { height } = winSize();
 
   createEffect(() => {
-    useStore2.setHeight(height - safety.top());
+    useStore2.setHeight(height - 50);
   });
 
   return (
     <AppShell
-      header={{ height: safety.top() }}
-      // footer={{ height: safety.bottom() }}
+      header={{ padding: 50 }}
+      navbar={{ padding: safety.top() }}
+      aside={{ padding: safety.bottom() }}
+      footer={{ height: 0 }}
     >
-      <AppShell.Header pt={safety.top()} />
+      <AppShell.Header />
 
       <AppShell.Main>
         <Reader path={params().path} />
       </AppShell.Main>
-      {/* <AppShell.Footer pb={safety.bottom()} /> */}
+      {/* <AppShell.Footer /> */}
     </AppShell>
   )
 

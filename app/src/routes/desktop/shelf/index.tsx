@@ -25,7 +25,7 @@ function Layout() {
 
     return (
         <AppShell header={{ height: 50 }}>
-            <AppShell.Header pt={50}>
+            <AppShell.Header>
                 <AppBar
                     title={appBarStore.title}
                     left={appBarStore.left}

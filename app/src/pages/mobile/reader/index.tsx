@@ -252,7 +252,7 @@ export function Reader(props: ReaderProps) {
       <EpubView
         ref={viewerRef}
         bg={backgroundColor()}
-        height={height()}
+        // height={height()}
         onExit={() => { navigate({ to: "/mobile/shelf/" }); }}
         controlsEnabled={true}
         notesEnabled={true}

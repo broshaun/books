@@ -1,100 +1,158 @@
-import { type JSX, splitProps } from "solid-js";
 
-export interface AppShellHeaderProps extends JSX.HTMLAttributes<HTMLElement> {
-  height?: number;
-  pt?: number; // 顶部安全区计算高度/内边距
+import type { JSX } from "solid-js";
+
+interface SectionProps {
   children?: JSX.Element;
 }
 
-export interface AppShellMainProps extends JSX.HTMLAttributes<HTMLElement> {
-  children?: JSX.Element;
+interface LayoutConfig {
+  padding?: number;
+  margin?: number;
 }
 
-export interface AppShellFooterProps extends JSX.HTMLAttributes<HTMLElement> {
-  height?: number;
-  pb?: number; // 底部安全区计算高度/内边距
-  children?: JSX.Element;
+export interface AppShellProps extends SectionProps {
+  header?: LayoutConfig & { height?: number };
+  navbar?: LayoutConfig & { width?: number };
+  aside?: LayoutConfig & { width?: number };
+  footer?: LayoutConfig & { height?: number };
 }
 
-export interface AppShellProps extends JSX.HTMLAttributes<HTMLDivElement> {
-  header?: { height: number };
-  footer?: { height: number };
-  children?: JSX.Element;
-}
-
-function AppShellHeader(props: AppShellHeaderProps) {
-  const [local, others] = splitProps(props as Record<string, any>, ["height", "pt", "children", "style"]);
-  
-  const totalHeight = local.pt !== undefined ? local.pt : (local.height ?? 50);
-  const paddingTop = local.pt !== undefined ? Math.max(0, local.pt - 50) : 0;
-
+function Header(props: SectionProps) {
   return (
     <header
-      class="fixed top-0 left-0 right-0 z-30 flex items-center"
+      class="fixed left-0 right-0 z-30 flex items-center box-border"
       style={{
-        height: `${totalHeight}px`,
-        "padding-top": `${paddingTop}px`,
-        ...local.style,
+        top: "var(--header-margin)",
+        height: "var(--header-size)",
+        "padding-top": "var(--header-padding)",
       }}
-      {...others}
     >
-      <div class="w-full">{local.children}</div>
+      <div class="w-full min-w-0">{props.children}</div>
     </header>
   );
 }
 
-function AppShellMain(props: AppShellMainProps) {
-  const [local, others] = splitProps(props as Record<string, any>, ["children"]);
-
+function Navbar(props: SectionProps) {
   return (
-    <main class="flex-1 flex flex-col w-full" {...others}>
-      {local.children}
+    <nav
+      class="fixed z-20 box-border overflow-hidden"
+      style={{
+        top: "var(--header-total)",
+        bottom: "var(--footer-total)",
+        left: "var(--navbar-margin)",
+        width: "var(--navbar-size)",
+        "padding-left": "var(--navbar-padding)",
+      }}
+    >
+      {props.children}
+    </nav>
+  );
+}
+
+function Aside(props: SectionProps) {
+  return (
+    <aside
+      class="fixed z-20 box-border overflow-hidden"
+      style={{
+        top: "var(--header-total)",
+        bottom: "var(--footer-total)",
+        right: "var(--aside-margin)",
+        width: "var(--aside-size)",
+        "padding-right": "var(--aside-padding)",
+      }}
+    >
+      {props.children}
+    </aside>
+  );
+}
+
+function Main(props: SectionProps) {
+  return (
+    <main
+      class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden"
+      style={{
+        "margin-left": "var(--navbar-total)",
+        "margin-right": "var(--aside-total)",
+      }}
+    >
+      {props.children}
     </main>
   );
 }
 
-function AppShellFooter(props: AppShellFooterProps) {
-  const [local, others] = splitProps(props as Record<string, any>, ["height", "pb", "children", "style"]);
-  
-  const totalHeight = local.pb !== undefined ? local.pb : (local.height ?? 50);
-  const paddingBottom = local.pb !== undefined ? Math.max(0, local.pb - 50) : 0;
-
+function Footer(props: SectionProps) {
   return (
     <footer
-      class="fixed bottom-0 left-0 right-0 z-30 flex items-center"
+      class="fixed left-0 right-0 z-30 flex items-center box-border"
       style={{
-        height: `${totalHeight}px`,
-        "padding-bottom": `${paddingBottom}px`,
-        ...local.style,
+        bottom: "var(--footer-margin)",
+        height: "var(--footer-size)",
+        "padding-bottom": "var(--footer-padding)",
       }}
-      {...others}
     >
-      <div class="w-full">{local.children}</div>
+      <div class="w-full min-w-0">{props.children}</div>
     </footer>
   );
 }
 
 export function AppShell(props: AppShellProps) {
-  const [local, others] = splitProps(props as Record<string, any>, ["header", "footer", "children", "style"]);
-  
-  const headerHeight = local.header?.height ?? 0;
-  const footerHeight = local.footer?.height ?? 0;
-
   return (
     <div
-      class="min-h-screen flex flex-col w-full"
+      class="h-dvh w-full flex flex-col overflow-hidden box-border"
       style={{
-        "padding-top": `${headerHeight}px`,
-        "padding-bottom": `${footerHeight}px`,
-        ...local.style,
-      }}
-      {...others}
+        "--header-margin": `${props.header?.margin ?? 0}px`,
+        "--navbar-margin": `${props.navbar?.margin ?? 0}px`,
+        "--aside-margin": `${props.aside?.margin ?? 0}px`,
+        "--footer-margin": `${props.footer?.margin ?? 0}px`,
+
+        "--header-padding": `${props.header?.padding ?? 0}px`,
+        "--navbar-padding": `${props.navbar?.padding ?? 0}px`,
+        "--aside-padding": `${props.aside?.padding ?? 0}px`,
+        "--footer-padding": `${props.footer?.padding ?? 0}px`,
+
+        "--header-size": `${
+          (props.header?.height ?? 0) +
+          (props.header?.padding ?? 0)
+        }px`,
+
+        "--navbar-size": `${
+          (props.navbar?.width ?? 0) +
+          (props.navbar?.padding ?? 0)
+        }px`,
+
+        "--aside-size": `${
+          (props.aside?.width ?? 0) +
+          (props.aside?.padding ?? 0)
+        }px`,
+
+        "--footer-size": `${
+          (props.footer?.height ?? 0) +
+          (props.footer?.padding ?? 0)
+        }px`,
+
+        "--header-total":
+          "calc(var(--header-size) + var(--header-margin))",
+
+        "--navbar-total":
+          "calc(var(--navbar-size) + var(--navbar-margin))",
+
+        "--aside-total":
+          "calc(var(--aside-size) + var(--aside-margin))",
+
+        "--footer-total":
+          "calc(var(--footer-size) + var(--footer-margin))",
+
+        "padding-top": "var(--header-total)",
+        "padding-bottom": "var(--footer-total)",
+      } as JSX.CSSProperties}
     >
-      {local.children}
+      {props.children}
     </div>
   );
 }
 
-AppShell.Header = AppShellHeader;
-AppShell.Main = AppShellMain;
-AppShell.Footer = AppShellFooter;
+AppShell.Header = Header;
+AppShell.Navbar = Navbar;
+AppShell.Aside = Aside;
+AppShell.Main = Main;
+AppShell.Footer = Footer;
