@@ -18,4 +18,19 @@
 ### 运行并绑定虚拟机
 - cargo tauri ios dev 
 - pnpm tauri ios dev 
-- pnpm tauri ios dev --open
+
+
+### 1. 查看所有可用模拟器
+- xcrun simctl list devices available
+
+### 2. 指定启动设备：
+- xcrun simctl boot 2D7C0C5C-DB35-4EC0-9812-9B7A3F77834C
+
+### 打开默认模拟器
+- open -a Simulator
+
+### 指定打开模拟器
+- open -a Simulator --args -CurrentDeviceUDID 2D7C0C5C-DB35-4EC0-9812-9B7A3F77834C
+
+
+

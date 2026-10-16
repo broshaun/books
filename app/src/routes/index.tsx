@@ -2,7 +2,12 @@ import { createFileRoute } from '@tanstack/solid-router'
 import { useNavigate } from '@tanstack/solid-router';
 import { apiConfig } from '@/config';
 import { onMount } from 'solid-js';
+import VConsole from 'vconsole';
 
+// 仅在开发环境或按需开启
+if (import.meta.env.DEV) {
+  new VConsole();
+}
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
@@ -24,7 +29,7 @@ function RouteComponent() {
   console.log('apiAvatar: ', apiConfig.apiAvatar);
 
   onMount(() => {
-    if (isMobile) {
+    if (!isMobile) {
       return navigate({ to: "/mobile/" });
     } else {
       return navigate({ to: "/desktop/shelf" });

@@ -14,7 +14,7 @@
     pnpm add corvu
     pnpm add localforage @tabler/icons-solidjs clsx tailwind-merge
     pnpm add @solid-primitives/scheduled
-
+    pnpm add vconsole
 ## 业务库
     pnpm add epubjs
 ```

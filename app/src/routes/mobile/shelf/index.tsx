@@ -1,10 +1,10 @@
 import Shelf from '@/pages/mobile/shelf'
-import { createEffect } from "solid-js";
+// import { createEffect } from "solid-js";
 import { createFileRoute } from "@tanstack/solid-router";
 import { appBarStore } from "@/components/appBarStore";
 import { AppBar } from "@/components/AppBar";
 import { useStore2 } from "@/hooks/useStore2";
-import { winSize } from "@/lib/winSize";
+// import { winSize } from "@/lib/winSize";
 import { useSafety } from "@/hooks/useSafety";
 import { AppShell } from "@/components/AppShell";
 
@@ -14,18 +14,18 @@ export const Route = createFileRoute('/mobile/shelf/')({
 
 function RouteComponent() {
   const safety = useSafety();
-  const { height } = winSize();
+  // const { height } = winSize();
 
-  createEffect(() => {
-    useStore2.setHeight(height - 100);
-  });
+  // createEffect(() => {
+  //   useStore2.setHeight(height - 30);
+  // });
 
   return (
     <AppShell
-      header={{ padding: 50, height: 50 }}
+      header={{ padding: 30, height: 50 }}
       navbar={{ padding: safety.top() }}
       aside={{ padding: safety.bottom() }}
-      footer={{}}
+      footer={{ height: 0 }}
     >
       <AppShell.Header>
         <AppBar
@@ -37,8 +37,13 @@ function RouteComponent() {
       </AppShell.Header>
       {/* <AppShell.Navbar /> */}
       {/* <AppShell.Aside /> */}
-      <AppShell.Main>
+      <AppShell.Main
+        ref={(el) => {
+          requestAnimationFrame(() => { useStore2.setHeight(el.clientHeight) });
+        }}
+      >
         <Shelf />
+
       </AppShell.Main>
       {/* <AppShell.Footer /> */}
     </AppShell>

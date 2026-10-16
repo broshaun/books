@@ -5,6 +5,10 @@ interface SectionProps {
   children?: JSX.Element;
 }
 
+interface AppShellMainProps extends SectionProps {
+  ref?: (el: HTMLElement) => void;
+}
+
 interface LayoutConfig {
   padding?: number;
   margin?: number;
@@ -20,14 +24,16 @@ export interface AppShellProps extends SectionProps {
 function Header(props: SectionProps) {
   return (
     <header
-      class="fixed left-0 right-0 z-30 flex items-center box-border"
+      class="absolute left-0 right-0 z-30 flex items-center box-border"
       style={{
         top: "var(--header-margin)",
         height: "var(--header-size)",
         "padding-top": "var(--header-padding)",
       }}
     >
-      <div class="w-full min-w-0">{props.children}</div>
+      <div class="w-full min-w-0">
+        {props.children}
+      </div>
     </header>
   );
 }
@@ -35,7 +41,7 @@ function Header(props: SectionProps) {
 function Navbar(props: SectionProps) {
   return (
     <nav
-      class="fixed z-20 box-border overflow-hidden"
+      class="absolute z-20 box-border overflow-hidden"
       style={{
         top: "var(--header-total)",
         bottom: "var(--footer-total)",
@@ -52,7 +58,7 @@ function Navbar(props: SectionProps) {
 function Aside(props: SectionProps) {
   return (
     <aside
-      class="fixed z-20 box-border overflow-hidden"
+      class="absolute z-20 box-border overflow-hidden"
       style={{
         top: "var(--header-total)",
         bottom: "var(--footer-total)",
@@ -66,9 +72,10 @@ function Aside(props: SectionProps) {
   );
 }
 
-function Main(props: SectionProps) {
+function Main(props: AppShellMainProps) {
   return (
     <main
+      ref={props.ref}
       class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden"
       style={{
         "margin-left": "var(--navbar-total)",
@@ -83,14 +90,16 @@ function Main(props: SectionProps) {
 function Footer(props: SectionProps) {
   return (
     <footer
-      class="fixed left-0 right-0 z-30 flex items-center box-border"
+      class="absolute left-0 right-0 z-30 flex items-center box-border"
       style={{
         bottom: "var(--footer-margin)",
         height: "var(--footer-size)",
         "padding-bottom": "var(--footer-padding)",
       }}
     >
-      <div class="w-full min-w-0">{props.children}</div>
+      <div class="w-full min-w-0">
+        {props.children}
+      </div>
     </footer>
   );
 }
@@ -98,7 +107,7 @@ function Footer(props: SectionProps) {
 export function AppShell(props: AppShellProps) {
   return (
     <div
-      class="h-dvh w-full flex flex-col overflow-hidden box-border"
+      class="relative h-dvh w-full flex flex-col overflow-hidden box-border"
       style={{
         "--header-margin": `${props.header?.margin ?? 0}px`,
         "--navbar-margin": `${props.navbar?.margin ?? 0}px`,

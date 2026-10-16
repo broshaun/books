@@ -236,7 +236,9 @@ export function Reader(props: ReaderProps) {
 
 
 
-
+createEffect(() => {
+  console.log("capturedSet() 实时内容:", Array.from(capturedSet()));
+})
 
   return (
     <Box height={height()}>

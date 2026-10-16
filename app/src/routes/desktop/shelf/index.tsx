@@ -1,11 +1,11 @@
 
 import Shelf from '@/pages/desktop/shelf'
-import { createEffect } from "solid-js";
+// import { createEffect } from "solid-js";
 import { createFileRoute } from "@tanstack/solid-router";
 import { appBarStore } from "@/components/appBarStore";
 import { AppBar } from "@/components/AppBar";
 import { useStore2 } from "@/hooks/useStore2";
-import { winSize } from "@/lib/winSize";
+// import { winSize } from "@/lib/winSize";
 import { AppShell } from "@/components/AppShell";
 
 
@@ -17,11 +17,11 @@ export const Route = createFileRoute('/desktop/shelf/')({
 
 function Layout() {
 
-    const { height } = winSize();
+    // const { height } = winSize();
 
-    createEffect(() => {
-        useStore2.setHeight(height - 50);
-    });
+    // createEffect(() => {
+    //     useStore2.setHeight(height - 50);
+    // });
 
     return (
         <AppShell header={{ height: 50 }}>
@@ -33,7 +33,11 @@ function Layout() {
                     theme="zinc"
                 />
             </AppShell.Header>
-            <AppShell.Main>
+            <AppShell.Main
+                ref={(el) => {
+                    requestAnimationFrame(() => { useStore2.setHeight(el.clientHeight) });
+                }}
+            >
                 <Shelf />
             </AppShell.Main>
         </AppShell>

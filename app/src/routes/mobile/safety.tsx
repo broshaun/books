@@ -16,10 +16,10 @@ function Layout() {
 
     return (
         <AppShell
-            header={{ height: safety.top() }}
-            footer={{ height: safety.bottom() }}
+            header={{ padding: 50 }}
+            navbar={{ padding: safety.top() }}
+            aside={{ padding: safety.bottom() }}
         >
-            <AppShell.Header pt={safety.top()} />
             <AppShell.Main>
                 <Safety onConfirm={async ({ top, bottom }) => {
                     safety.setBottom(bottom);
@@ -28,7 +28,7 @@ function Layout() {
                     navigate({ to: "/mobile/shelf" })
                 }} />
             </AppShell.Main>
-            <AppShell.Footer pb={safety.bottom()} />
+            <AppShell.Footer/>
         </AppShell>
     );
 }

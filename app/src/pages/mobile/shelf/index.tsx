@@ -45,7 +45,7 @@ export function Shelf() {
 
 
     return (
-        <div>
+        <>
 
             <BookDirectoryDrawer
                 opened={left()}
@@ -97,7 +97,7 @@ export function Shelf() {
 
                 }}
             />
-        </div>
+        </>
     );
 }
 

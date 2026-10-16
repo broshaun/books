@@ -205,3 +205,8 @@ function Chart(props: { id: number }) {
 
 
 
+
+
+
+
+我现在就是希望能够一次性捕获当前的操作。且只有一次回响
