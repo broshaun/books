@@ -1,5 +1,13 @@
 @import 'tailwindcss';
 
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #000; /* 在根节点统一设置黑色背景 */
+}
 
 .epub-view {
   width: 100% !important;
@@ -10,6 +18,5 @@ body, html {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
   -webkit-font-smoothing: antialiased;
-
   touch-action: manipulation;
 }

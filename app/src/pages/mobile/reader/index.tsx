@@ -1,4 +1,4 @@
-import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus } from "@tabler/icons-solidjs";
+import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus, IconDoorExit } from "@tabler/icons-solidjs";
 import { createSignal, onCleanup, createEffect, on, Show, Switch, Match, createMemo } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { useNavigate } from "@tanstack/solid-router";
@@ -21,6 +21,7 @@ import { EpubNotesCreate } from "./ui/EpubNotesCreate";
 import { EpubNotesEdit } from "./ui/EpubNotesEdit";
 import { EpubNotesTimeline } from "./ui/EpubNotesTimeline";
 import { type Rendition } from "epubjs";
+import { FloatingButton } from "@/components/FloatingButton";
 
 
 
@@ -102,7 +103,12 @@ export function Reader(props: ReaderProps) {
   });
 
 
-  const viewerWidth = createMemo(() => { return isPinned() ? 0.65 * width() : width(); });
+  // const viewerWidth = createMemo(() => { return isPinned() ? 0.65 * width() : width(); });
+
+  const viewerWidth = createMemo(() => {
+    const currentWidth = width() > 0 ? width() : window.innerWidth;
+    return isPinned() ? 0.65 * currentWidth : currentWidth;
+  });
 
   useEpubNotesSync({
     interval: 3000,
@@ -311,12 +317,20 @@ export function Reader(props: ReaderProps) {
         当前宽度: {width()}
       </div>
 
+
+      <FloatingButton
+        initialX={16}
+        initialY={32}
+        icon={<IconDoorExit size={16} />}
+        label="退出"
+        onClick={() => navigate({ to: "/mobile/shelf/" })}
+      />
+
       <EpubView
         ref={viewerRef}
         bg={backgroundColor()}
-        height={height()}
-        width={0.6 * width()}
-        onExit={() => { navigate({ to: "/mobile/shelf/" }); }}
+        // height={height()}
+        width={viewerWidth()}
         controlsEnabled={true}
       />
 
@@ -335,10 +349,7 @@ export function Reader(props: ReaderProps) {
           <Match when={current() == "CREATE_NOTE"}>
             <EpubNotesCreate
               newNote={activeNote()}
-              onSave={(v) => {
-                put(v);
-                push("Mark");
-              }}
+              onSave={(v) => { put(v); push("Mark"); }}
               onCancel={() => { push("PointerDown"); push("PointerUp"); }}
             />
           </Match>
@@ -347,8 +358,8 @@ export function Reader(props: ReaderProps) {
             <EpubNotesEdit
               notes={get(markCfiRange())}
               onNoteChange={(v) => { put(v); }}
-              onDelete={(cfiRange) => { del(cfiRange); }}
-              onBack={() => { push("PointerDown"); push("PointerUp") }}
+              onDelete={(cfiRange) => { del(cfiRange); push("PointerDown"); push("PointerUp"); }}
+              onBack={() => { push("PointerDown"); push("PointerUp"); }}
             />
           </Match>
 
@@ -364,6 +375,7 @@ export function Reader(props: ReaderProps) {
           </Match>
         </Switch>
       </EpubDrawer>
+
 
       <EpubTocDrawer
         opened={tocOpened()}

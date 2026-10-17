@@ -64,16 +64,15 @@ export function EpubNotesTimeline(props: EpubNotesTimelineProps) {
   return (
     <div class="w-full h-full p-2 bg-transparent overflow-y-auto overflow-x-hidden text-stone-900 flex flex-col [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-stone-300/80 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-stone-400">
       
-      {/* 顶部标题栏 */}
-      <div class="flex items-center justify-between px-1 pb-2 mb-2 border-b border-stone-200/60 shrink-0">
-        <span class="text-xs font-bold text-stone-800 tracking-wider">笔记</span>
-        <Show when={props.isSyncing}>
+      {/* 顶部标题栏（如果 isSyncing 为空时它不显示内容，若连同外层间距也不想要可以按需调整，此处去掉了 border-b 分隔线） */}
+      <Show when={props.isSyncing}>
+        <div class="flex items-center justify-between px-1 pb-2 mb-2 shrink-0">
           <div class="flex items-center gap-1 text-[10px] text-stone-400">
             <IconLoader2 size={14} class="animate-spin text-blue-500" />
             <span>同步中...</span>
           </div>
-        </Show>
-      </div>
+        </div>
+      </Show>
 
       {/* 顶部标签栏 */}
       <Show when={props.tags && Object.keys(props.tags).length > 0}>

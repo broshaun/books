@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DesktopAuthRouteImport } from './routes/desktop/auth'
-import { Route as MobileIndexRouteImport } from './routes/mobile/index'
 import { Route as MobileAuthRouteImport } from './routes/mobile/auth'
 import { Route as MobileSafetyRouteImport } from './routes/mobile/safety'
 import { Route as DesktopAuthIndexRouteImport } from './routes/desktop/auth/index'
@@ -33,11 +32,6 @@ const IndexRoute = IndexRouteImport.update({
 const DesktopAuthRoute = DesktopAuthRouteImport.update({
   id: '/desktop/auth',
   path: '/desktop/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MobileIndexRoute = MobileIndexRouteImport.update({
-  id: '/mobile/',
-  path: '/mobile/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MobileAuthRoute = MobileAuthRouteImport.update({
@@ -106,7 +100,6 @@ export interface FileRoutesByFullPath {
   '/desktop/auth': typeof DesktopAuthRouteWithChildren
   '/mobile/auth': typeof MobileAuthRouteWithChildren
   '/mobile/safety': typeof MobileSafetyRoute
-  '/mobile/': typeof MobileIndexRoute
   '/desktop/auth/login': typeof DesktopAuthLoginRoute
   '/desktop/auth/register': typeof DesktopAuthRegisterRoute
   '/desktop/reader/$path': typeof DesktopReaderPathRoute
@@ -121,7 +114,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/mobile/safety': typeof MobileSafetyRoute
-  '/mobile': typeof MobileIndexRoute
   '/desktop/auth/login': typeof DesktopAuthLoginRoute
   '/desktop/auth/register': typeof DesktopAuthRegisterRoute
   '/desktop/reader/$path': typeof DesktopReaderPathRoute
@@ -139,7 +131,6 @@ export interface FileRoutesById {
   '/desktop/auth': typeof DesktopAuthRouteWithChildren
   '/mobile/auth': typeof MobileAuthRouteWithChildren
   '/mobile/safety': typeof MobileSafetyRoute
-  '/mobile/': typeof MobileIndexRoute
   '/desktop/auth/login': typeof DesktopAuthLoginRoute
   '/desktop/auth/register': typeof DesktopAuthRegisterRoute
   '/desktop/reader/$path': typeof DesktopReaderPathRoute
@@ -158,7 +149,6 @@ export interface FileRouteTypes {
     | '/desktop/auth'
     | '/mobile/auth'
     | '/mobile/safety'
-    | '/mobile/'
     | '/desktop/auth/login'
     | '/desktop/auth/register'
     | '/desktop/reader/$path'
@@ -173,7 +163,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/mobile/safety'
-    | '/mobile'
     | '/desktop/auth/login'
     | '/desktop/auth/register'
     | '/desktop/reader/$path'
@@ -190,7 +179,6 @@ export interface FileRouteTypes {
     | '/desktop/auth'
     | '/mobile/auth'
     | '/mobile/safety'
-    | '/mobile/'
     | '/desktop/auth/login'
     | '/desktop/auth/register'
     | '/desktop/reader/$path'
@@ -208,7 +196,6 @@ export interface RootRouteChildren {
   DesktopAuthRoute: typeof DesktopAuthRouteWithChildren
   MobileAuthRoute: typeof MobileAuthRouteWithChildren
   MobileSafetyRoute: typeof MobileSafetyRoute
-  MobileIndexRoute: typeof MobileIndexRoute
   DesktopReaderPathRoute: typeof DesktopReaderPathRoute
   MobileReaderPathRoute: typeof MobileReaderPathRoute
   DesktopShelfIndexRoute: typeof DesktopShelfIndexRoute
@@ -229,13 +216,6 @@ declare module '@tanstack/solid-router' {
       path: '/desktop/auth'
       fullPath: '/desktop/auth'
       preLoaderRoute: typeof DesktopAuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mobile/': {
-      id: '/mobile/'
-      path: '/mobile'
-      fullPath: '/mobile/'
-      preLoaderRoute: typeof MobileIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mobile/auth': {
@@ -362,7 +342,6 @@ const rootRouteChildren: RootRouteChildren = {
   DesktopAuthRoute: DesktopAuthRouteWithChildren,
   MobileAuthRoute: MobileAuthRouteWithChildren,
   MobileSafetyRoute: MobileSafetyRoute,
-  MobileIndexRoute: MobileIndexRoute,
   DesktopReaderPathRoute: DesktopReaderPathRoute,
   MobileReaderPathRoute: MobileReaderPathRoute,
   DesktopShelfIndexRoute: DesktopShelfIndexRoute,
