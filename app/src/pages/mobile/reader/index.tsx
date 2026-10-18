@@ -407,7 +407,7 @@ export function Reader(props: ReaderProps) {
           <IconSearch size={20} />
         </button>
 
-        <button type="button" onClick={() => styleOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
+        <button type="button" onClick={() => setStyleOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconLetterCase size={20} />
         </button>
 
