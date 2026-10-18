@@ -22,7 +22,7 @@ import { EpubNotesEdit } from "./ui/EpubNotesEdit";
 import { EpubNotesTimeline } from "./ui/EpubNotesTimeline";
 import { type Rendition } from "epubjs";
 import { FloatingButton } from "@/components/FloatingButton";
-
+import { onMount } from "solid-js";
 
 
 const savePositionDebounced = debounce((cfi: string) => {
@@ -103,12 +103,9 @@ export function Reader(props: ReaderProps) {
   });
 
 
-  // const viewerWidth = createMemo(() => { return isPinned() ? 0.65 * width() : width(); });
+  const viewerWidth = createMemo(() => { return isPinned() ? "65%" : "100%" });
 
-  const viewerWidth = createMemo(() => {
-    const currentWidth = width() > 0 ? width() : window.innerWidth;
-    return isPinned() ? 0.65 * currentWidth : currentWidth;
-  });
+
 
   useEpubNotesSync({
     interval: 3000,
@@ -117,21 +114,30 @@ export function Reader(props: ReaderProps) {
     },
   });
 
-  createEffect(
-    on(
-      viewerWidth,
-      (w) => {
-        const h = height();
-        const inst = instance();
-        if (inst) {
-          setTimeout(() => {
-            inst.resize(w, h);
-          }, 300);
-        }
-      },
-      { defer: true }
-    )
-  );
+  onMount(() => {
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+
+      const inst = instance();
+      if (!inst) return;
+
+      const { width, height } = entry.contentRect;
+
+      if (width <= 0 || height <= 0) return;
+
+      inst.resize(
+        Math.round(width),
+        Math.round(height)
+      );
+    });
+
+    observer.observe(viewerRef);
+
+    onCleanup(() => {
+      observer.disconnect();
+    });
+  });
 
 
   createEffect(() => {
@@ -151,11 +157,21 @@ export function Reader(props: ReaderProps) {
     ints.on("relocated", handleRelocated);
     ints.on("click", handleClick);
 
+    // 仅注入防止 iOS 文本大小自动调整的样式，保持原汁原味
     ints.hooks.content.register((contents: any) => {
       const doc = contents.document;
       if (doc) {
         doc.addEventListener("pointerdown", handlePointerDown);
         doc.addEventListener("pointerup", handlePointerUp);
+
+        const styleEl = doc.createElement("style");
+        styleEl.innerHTML = `
+          * {
+            -webkit-text-size-adjust: 100% !important;
+            text-size-adjust: 100% !important;
+          }
+        `;
+        doc.head.appendChild(styleEl);
       }
     });
 
@@ -182,38 +198,16 @@ export function Reader(props: ReaderProps) {
   });
 
 
-
-  // let containerRef!: HTMLDivElement;
-  // createEffect(() => {
-  //   const el = containerRef;
-  //   if (!el) return;
-
-  //   el.addEventListener("pointerdown", handlePointerDown);
-  //   el.addEventListener("pointerup", handlePointerUp);
-
-  //   onCleanup(() => {
-  //     el.removeEventListener("pointerdown", handlePointerDown);
-  //     el.removeEventListener("pointerup", handlePointerUp);
-  //   });
-  // });
-
-
-
   // 处理正文点击事件
   function handleClick(e: any) {
     // console.log("点击事件：", e);
-    // capture('Click')
   }
 
   // 全局鼠标/触控抬起处理
   function handlePointerUp(e: PointerEvent) {
     console.log("【全局】Pointer Up 坐标:", e.clientX, e.clientY);
     console.log('PointerUp+++++++')
-
     push('PointerUp')
-    // submit()
-
-
   }
 
   // 全局鼠标/触控按下处理
@@ -273,14 +267,14 @@ export function Reader(props: ReaderProps) {
     instance()?.display(cfiOrHref);
   };
 
-  // 修改阅读器正文字体大小
+  // 修改阅读器正文字体大小（回归旧版，只保留 themes.fontSize）
   function handleFontSizeChange(size: number) {
     const inst = instance();
     if (!inst) return;
     try {
       const sizeStr = typeof size === "number" ? `${size}px` : size;
       inst.themes.fontSize(sizeStr);
-      useStore2.setFontSize(size, inst);
+      useStore2.setFontSize(size);
     } catch (e) {
       console.error("设置字体大小失败:", e);
     }
@@ -307,12 +301,8 @@ export function Reader(props: ReaderProps) {
   }
 
 
-
-
-
   return (
-    // <div ref={containerRef} class="relative w-screen h-screen overflow-hidden">
-    <div class="relative w-screen h-screen overflow-hidden">
+    <div class="relative h-dvh w-full min-h-0 min-w-0 overflow-hidden">
       <div class="absolute top-20 left-4 z-50 bg-black text-white px-2 py-1 text-sm pointer-events-none">
         当前宽度: {width()}
       </div>
@@ -320,7 +310,7 @@ export function Reader(props: ReaderProps) {
 
       <FloatingButton
         initialX={16}
-        initialY={32}
+        initialY={16}
         icon={<IconDoorExit size={16} />}
         label="退出"
         onClick={() => navigate({ to: "/mobile/shelf/" })}
@@ -329,15 +319,14 @@ export function Reader(props: ReaderProps) {
       <EpubView
         ref={viewerRef}
         bg={backgroundColor()}
-        // height={height()}
+        height="100%"
         width={viewerWidth()}
-        controlsEnabled={true}
       />
 
 
 
       <EpubDrawer
-        width={0.35 * width()}
+        width={"35%"}
         open={notesOpened()}
         onOpenChange={(opend) => { setNotesOpened(opend) }}
         bg={backgroundColor()}
@@ -418,7 +407,7 @@ export function Reader(props: ReaderProps) {
           <IconSearch size={20} />
         </button>
 
-        <button type="button" onClick={() => setStyleOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
+        <button type="button" onClick={() => styleOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconLetterCase size={20} />
         </button>
 

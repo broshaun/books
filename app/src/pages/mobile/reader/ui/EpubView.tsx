@@ -1,11 +1,15 @@
-import { type JSX, type ParentProps, splitProps, Show } from "solid-js";
+
+import {
+  type JSX,
+  type ParentProps,
+  splitProps,
+} from "solid-js";
 
 export interface EpubViewProps extends ParentProps {
   ref?: JSX.IntrinsicElements["div"]["ref"];
   bg?: string;
   width?: number | string;
   height?: number | string;
-  controlsEnabled?: boolean;
 }
 
 export function EpubView(props: EpubViewProps) {
@@ -15,15 +19,18 @@ export function EpubView(props: EpubViewProps) {
     "bg",
     "width",
     "height",
-    "controlsEnabled",
   ]);
 
-  const toSize = (v?: number | string) => (typeof v === "number" ? `${v}px` : v ?? "100%");
-  const currentBg = () => local.bg || "#ffffff";
+  const toSize = (value?: number | string) =>
+    typeof value === "number"
+      ? `${value}px`
+      : value ?? "100%";
+
+  const currentBg = () => local.bg ?? "#ffffff";
 
   return (
     <div
-      class="relative isolate overflow-hidden shrink-0"
+      class="relative isolate box-border min-w-0 min-h-0 shrink-0 overflow-hidden"
       style={{
         width: toSize(local.width),
         height: toSize(local.height),
@@ -33,8 +40,10 @@ export function EpubView(props: EpubViewProps) {
       <div
         {...rest}
         ref={local.ref}
-        class="h-full w-full overflow-y-auto"
-        style={{ background: currentBg() }}
+        class="h-full w-full min-w-0 min-h-0 overflow-hidden"
+        style={{
+          background: currentBg(),
+        }}
       >
         {local.children}
       </div>

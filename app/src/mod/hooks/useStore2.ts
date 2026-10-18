@@ -93,15 +93,13 @@ export const useStore2 = {
     setState("currentCfi", currentCfi);
   },
 
-  setFontSize: (size: number, instance?: any) => {
-    try {
-      localStorage.setItem(FONT_SIZE_STORAGE_KEY, size.toString());
-    } catch {}
+ setFontSize: (size: number) => {
+  const nextSize = Math.max(12, Math.min(32, size));
 
-    setState("fontSize", size);
+  try {
+    localStorage.setItem(FONT_SIZE_STORAGE_KEY, String(nextSize));
+  } catch {}
 
-    if (instance) {
-      instance.themes.fontSize(`${size}px`);
-    }
-  },
+  setState("fontSize", nextSize);
+},
 };
