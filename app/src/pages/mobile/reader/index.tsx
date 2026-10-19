@@ -78,15 +78,34 @@ export function Reader(props: ReaderProps) {
 
       // 单独包含 "Mark"
       if (document.has("Mark")) {
+        setNotesOpened(true);
         return "EDIT_NOTE";
       }
 
       // 快速点击
       if (document.has("PointerDown") && document.has("PointerUp")) {
-        const downTime = document.get("PointerDown")!;
-        const upTime = document.get("PointerUp")!;
+        const downTime = document.get("PointerDown")!.time;
+        const upTime = document.get("PointerUp")!.time;
         const duration = upTime - downTime;
         if (duration < 300) {
+          if (!viewerRef) return;
+          const width = viewerRef.clientWidth;
+
+          if (document.get("PointerDown")!.x < (0.2 * width) && document.get("PointerUp")!.x > document.get("PointerDown")!.x) {
+            console.log('右滑起点。。。')
+            instance()?.prev();
+            return "RIGHT"
+          }
+
+
+          if (document.get("PointerDown")!.x > (0.8 * width) && document.get("PointerUp")!.x < document.get("PointerDown")!.x) {
+            console.log('右滑起点。。。')
+            instance()?.next();
+            return "LEFT"
+          }
+
+        } else {
+
           return "TIMELINE";
         }
       }
@@ -94,6 +113,7 @@ export function Reader(props: ReaderProps) {
       // 同时包含 "Select" 和 "PointerUp"
       if (document.has("Select")) {
         if (document.has("PointerUp")) {
+          setNotesOpened(true);
           return "CREATE_NOTE";
         }
         return
@@ -105,6 +125,10 @@ export function Reader(props: ReaderProps) {
 
   const viewerWidth = createMemo(() => { return isPinned() ? "65%" : "100%" });
 
+
+  createEffect(() => {
+    console.log('current', current())
+  })
 
 
   useEpubNotesSync({
@@ -203,24 +227,19 @@ export function Reader(props: ReaderProps) {
     // console.log("点击事件：", e);
   }
 
-  // 全局鼠标/触控抬起处理
-  function handlePointerUp(e: PointerEvent) {
-    console.log("【全局】Pointer Up 坐标:", e.clientX, e.clientY);
-    console.log('PointerUp+++++++')
-    push('PointerUp')
-  }
-
   // 全局鼠标/触控按下处理
   function handlePointerDown(e: PointerEvent) {
-    console.log("【全局】Pointer Down 坐标:", e.clientX, e.clientY);
-    push('PointerDown')
+    push('PointerDown', { 'x': e.offsetX, "y": e.offsetX })
+  }
+
+  // 全局鼠标/触控抬起处理
+  function handlePointerUp(e: PointerEvent) {
+    push('PointerUp', { 'x': e.offsetX, "y": e.offsetX })
   }
 
   // 选择高亮笔记
   function handleMarkClicked(cfiRange: string) {
     push("Mark");
-    console.log('Mark+++++++++++++++++++++')
-    setNotesOpened(true);
     setMarkCfiRange(cfiRange);
   };
 
@@ -230,7 +249,6 @@ export function Reader(props: ReaderProps) {
     const text = instance()?.getRange(cfiRange)?.toString() || "";
     if (!text.trim()) return;
     push("Select");
-    console.log('select++++++++++++++')
     const newNoteItem: NewNote = {
       book: props.path,
       index: index,
@@ -239,7 +257,6 @@ export function Reader(props: ReaderProps) {
       updatedAt: Date.now(),
     };
     setActiveNote(newNoteItem);
-    setNotesOpened(true);
   };
 
   // 实时同步读书位置与防抖存储进度
@@ -303,9 +320,6 @@ export function Reader(props: ReaderProps) {
 
   return (
     <div class="relative h-dvh w-full min-h-0 min-w-0 overflow-hidden">
-      <div class="absolute top-20 left-4 z-50 bg-black text-white px-2 py-1 text-sm pointer-events-none">
-        当前宽度: {width()}
-      </div>
 
 
       <FloatingButton
