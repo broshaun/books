@@ -1,4 +1,3 @@
-
 import {
   type Component,
   type JSX,
@@ -18,6 +17,12 @@ export interface EpubDrawerProps {
   open?: boolean;
   initialOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  
+  /** 点击图书按钮时的专属回调 */
+  onToggleOpen?: (open: boolean) => void;
+
+  /** 点击“笔记面板”标题时的回调 */
+  onTitleClick?: () => void;
 
   pinned?: boolean;
   initialPinned?: boolean;
@@ -33,6 +38,8 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
     "open",
     "initialOpen",
     "onOpenChange",
+    "onToggleOpen",
+    "onTitleClick",
     "pinned",
     "initialPinned",
     "onPinChange",
@@ -67,10 +74,17 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
     local.onPinChange?.(value);
   };
 
+  // 点击图书按钮展开
+  const handleOpenDrawer = () => {
+    setOpen(true);
+    local.onToggleOpen?.(true);
+  };
+
   // 关闭时自动取消固定
   const closeDrawer = () => {
     if (isPinned()) setPinned(false);
     setOpen(false);
+    local.onToggleOpen?.(false);
   };
 
   const togglePin = () => {
@@ -92,16 +106,16 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
 
   return (
     <>
-      {/* 展开按钮 */}
+      {/* 展开图书按钮 */}
       <Show when={!isOpen()}>
         <button
           type="button"
           title="展开笔记"
           aria-label="展开笔记"
-          onClick={() => setOpen(true)}
-          class="absolute right-4 top-4 z-30 flex items-center gap-1.5 rounded-lg border border-stone-200/80 bg-white/90 p-2 text-xs text-stone-700 shadow-md backdrop-blur-md cursor-pointer select-none transition-all duration-300 hover:bg-white active:scale-95 dark:border-zinc-700/80 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          onClick={handleOpenDrawer}
+          class="absolute right-4 top-4 z-30 flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white/95 p-2.5 text-stone-800 shadow-lg backdrop-blur-md cursor-pointer select-none transition-all duration-300 hover:bg-stone-50 hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800/95 dark:text-zinc-100 dark:hover:bg-zinc-800"
         >
-          <IconNotebook size={17} />
+          <IconNotebook size={19} class="text-amber-600 dark:text-amber-500" />
         </button>
       </Show>
 
@@ -132,45 +146,54 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
         }`}
       >
         {/* 顶部操作栏 */}
-        <div class="flex shrink-0 items-center justify-between border-b border-stone-100 px-4 py-3 dark:border-zinc-800">
+        <div class="flex shrink-0 items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-zinc-800">
           <div class="flex items-center gap-2">
+            {/* 固定按钮 */}
             <button
               type="button"
               onClick={togglePin}
               title={isPinned() ? "取消固定" : "固定面板"}
               aria-label={isPinned() ? "取消固定" : "固定面板"}
               aria-pressed={isPinned()}
-              class={`rounded-lg p-1.5 cursor-pointer transition-colors ${
+              class={`rounded-lg p-2 cursor-pointer transition-all border shadow-sm ${
                 isPinned()
-                  ? "bg-stone-100 text-stone-900 dark:bg-zinc-800 dark:text-zinc-100"
-                  : "text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                  ? "bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950/40 dark:border-amber-700/60 dark:text-amber-400"
+                  : "bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:bg-zinc-800/80 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
               }`}
             >
               <Show
                 when={isPinned()}
-                fallback={<IconPin size={15} />}
+                fallback={<IconPin size={17} stroke="2.2" />}
               >
                 <IconPinned
-                  size={15}
-                  class="text-amber-600"
+                  size={17}
+                  stroke="2.4"
+                  class="text-amber-600 dark:text-amber-400"
                 />
               </Show>
             </button>
 
-            <span class="text-xs font-medium text-stone-500 dark:text-zinc-400">
-              📖 笔记
-            </span>
+            {/* 带下划线与回调的笔记面板标题 */}
+            <button
+              type="button"
+              onClick={() => local.onTitleClick?.()}
+              class="group flex items-center cursor-pointer select-none border-none bg-transparent p-0 text-xs font-semibold text-stone-600 transition-colors hover:text-stone-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+            >
+              <span class="underline underline-offset-4 decoration-stone-300 transition-colors group-hover:decoration-stone-600 dark:decoration-zinc-600 dark:group-hover:decoration-zinc-300">
+                📖 笔记面板
+              </span>
+            </button>
           </div>
 
-          {/* 关闭按钮：同时取消 pinned */}
+          {/* 关闭按钮 */}
           <button
             type="button"
             onClick={closeDrawer}
             title="关闭面板"
             aria-label="关闭面板"
-            class="rounded-lg p-1 text-stone-400 cursor-pointer hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            class="rounded-lg p-1.5 border border-transparent text-stone-400 cursor-pointer hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
           >
-            <IconX size={16} />
+            <IconX size={17} stroke="2.2" />
           </button>
         </div>
 

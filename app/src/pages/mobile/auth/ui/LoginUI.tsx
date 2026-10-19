@@ -9,6 +9,7 @@ interface TextFieldProps {
   obscureText?: boolean;
   disabled?: boolean;
   autocomplete?: string;
+  onKeyDown?: (e: KeyboardEvent) => void;
 }
 
 function TextField(props: TextFieldProps) {
@@ -31,6 +32,7 @@ function TextField(props: TextFieldProps) {
         placeholder={props.hintText}
         disabled={props.disabled}
         onInput={(e) => props.onChanged?.(e.currentTarget.value)}
+        onKeyDown={(e) => props.onKeyDown?.(e)}
         autocomplete={props.autocomplete}
         class="flex-1 px-3 h-10 text-sm bg-transparent border-none outline-none disabled:cursor-not-allowed text-stone-900 placeholder:text-stone-400"
       />
@@ -46,7 +48,7 @@ interface LoginSubmitData {
 interface LoginUIProps {
   loading?: boolean;
   onSubmit: (data: LoginSubmitData) => void;
-  toRegister?: () => void; // 统一规范：跳转注册回调
+  toRegister?: () => void;
 }
 
 export function LoginUI(props: LoginUIProps) {
@@ -64,11 +66,11 @@ export function LoginUI(props: LoginUIProps) {
   };
 
   return (
-    <div class="flex flex-col items-center gap-4 w-full text-stone-900">
+    <div class="flex flex-col items-center justify-center gap-4 w-full h-full min-h-fit bg-stone-100 p-6 text-stone-900 box-border">
       <h3 class="text-lg font-bold text-stone-900">登录界面</h3>
 
       {/* 分割线 */}
-      <div class="w-full h-[1px] bg-gradient-to-r from-transparent via-stone-300 to-transparent my-1" />
+      <div class="w-full max-w-[250px] h-[1px] bg-gradient-to-r from-transparent via-stone-300 to-transparent my-1" />
 
       {/* 账号输入框 */}
       <TextField
@@ -77,6 +79,7 @@ export function LoginUI(props: LoginUIProps) {
         value={account()}
         disabled={props.loading}
         onChanged={setAccount}
+        onKeyDown={handleKeyDown}
         autocomplete="username"
       />
 
@@ -88,6 +91,7 @@ export function LoginUI(props: LoginUIProps) {
         value={password()}
         disabled={props.loading}
         onChanged={setPassword}
+        onKeyDown={handleKeyDown}
         autocomplete="current-password"
       />
 

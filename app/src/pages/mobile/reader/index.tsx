@@ -1,4 +1,4 @@
-import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus, IconDoorExit } from "@tabler/icons-solidjs";
+import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus, IconDoorExit, IconChevronLeft,IconChevronRight } from "@tabler/icons-solidjs";
 import { createSignal, onCleanup, createEffect, on, Show, Switch, Match, createMemo } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { useNavigate } from "@tanstack/solid-router";
@@ -48,6 +48,7 @@ interface NewNote {
 export function Reader(props: ReaderProps) {
   let viewerRef!: HTMLDivElement;
 
+
   const navigate = useNavigate();
   const height = () => useStore2.height;
   const width = () => useStore2.width;
@@ -65,6 +66,8 @@ export function Reader(props: ReaderProps) {
   const [tocOpened, setTocOpened] = createSignal(false);
   const [searchOpened, setSearchOpened] = createSignal(false);
   const [styleOpened, setStyleOpened] = createSignal(false);
+  const [isLoading, setIsLoading] = createSignal(true);
+  const [floatingShow, setFloatingShow] = createSignal(true);
 
   const { book: currentBook, meta: bookMata } = useBookMeta(() => props.path);
   const { put, del, filter, get, getTags } = useEpubNotes(() => instance());
@@ -76,7 +79,12 @@ export function Reader(props: ReaderProps) {
     resolve: (document) => {
       console.log("document实时内容:", document);
 
-      // 单独包含 "Mark"
+      // 返回笔记列表
+      if (document.has("Notes")) {
+        return "TIMELINE";
+      }
+
+      // 点击高亮笔记
       if (document.has("Mark")) {
         setNotesOpened(true);
         return "EDIT_NOTE";
@@ -87,30 +95,19 @@ export function Reader(props: ReaderProps) {
         const downTime = document.get("PointerDown")!.time;
         const upTime = document.get("PointerUp")!.time;
         const duration = upTime - downTime;
-        if (duration < 300) {
-          if (!viewerRef) return;
-          const width = viewerRef.clientWidth;
-
-          if (document.get("PointerDown")!.x < (0.2 * width) && document.get("PointerUp")!.x > document.get("PointerDown")!.x) {
-            console.log('右滑起点。。。')
-            instance()?.prev();
-            return "RIGHT"
+        if (duration <= 300) {
+          const PointerDownX = document.get("PointerDown")!.x
+          const PointerDownY = document.get("PointerDown")!.y
+          const PointerUpX = document.get("PointerUp")!.x
+          const PointerUpY = document.get("PointerUp")!.y
+          if (PointerDownX === PointerUpX && PointerDownY === PointerUpY) {
+            setFloatingShow(p => !p)
+            return "TIMELINE";
           }
-
-
-          if (document.get("PointerDown")!.x > (0.8 * width) && document.get("PointerUp")!.x < document.get("PointerDown")!.x) {
-            console.log('右滑起点。。。')
-            instance()?.next();
-            return "LEFT"
-          }
-
-        } else {
-
-          return "TIMELINE";
         }
       }
 
-      // 同时包含 "Select" 和 "PointerUp"
+      // 选择文字，同时包含 "Select" 和 "PointerUp"
       if (document.has("Select")) {
         if (document.has("PointerUp")) {
           setNotesOpened(true);
@@ -139,6 +136,12 @@ export function Reader(props: ReaderProps) {
   });
 
   onMount(() => {
+    // viewerRef.addEventListener("pointerdown", handlePointerDown);
+    // viewerRef.addEventListener("pointerup", handlePointerUp);
+
+    let lastWidth = 0;
+    let lastHeight = 0;
+
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
@@ -147,18 +150,28 @@ export function Reader(props: ReaderProps) {
       if (!inst) return;
 
       const { width, height } = entry.contentRect;
+      const roundedWidth = Math.round(width);
+      const roundedHeight = Math.round(height);
 
-      if (width <= 0 || height <= 0) return;
+      if (roundedWidth <= 0 || roundedHeight <= 0) return;
 
-      inst.resize(
-        Math.round(width),
-        Math.round(height)
-      );
+      // 只有当尺寸真正发生变化时才调用 resize，防止死循环卡死
+      if (roundedWidth !== lastWidth || roundedHeight !== lastHeight) {
+        lastWidth = roundedWidth;
+        lastHeight = roundedHeight;
+
+        // 稍微延后或者直接安全调用
+        requestAnimationFrame(() => {
+          inst.resize(roundedWidth, roundedHeight);
+        });
+      }
     });
 
     observer.observe(viewerRef);
 
     onCleanup(() => {
+      // viewerRef.removeEventListener("pointerdown", handlePointerDown);
+      // viewerRef.removeEventListener("pointerup", handlePointerUp);
       observer.disconnect();
     });
   });
@@ -187,14 +200,11 @@ export function Reader(props: ReaderProps) {
       if (doc) {
         doc.addEventListener("pointerdown", handlePointerDown);
         doc.addEventListener("pointerup", handlePointerUp);
-
         const styleEl = doc.createElement("style");
-        styleEl.innerHTML = `
-          * {
+        styleEl.innerHTML = `* {
             -webkit-text-size-adjust: 100% !important;
             text-size-adjust: 100% !important;
-          }
-        `;
+          }`;
         doc.head.appendChild(styleEl);
       }
     });
@@ -208,10 +218,13 @@ export function Reader(props: ReaderProps) {
     const savedCfi = localStorage.getItem("READ_POSITION_KEY");
     (async () => {
       try {
+        setIsLoading(true);
         await ints.display(savedCfi || undefined);
       } catch (error) {
         console.warn("恢复进度失败，打开首页", error);
         await ints.display();
+      } finally {
+        setIsLoading(false);
       }
     })();
 
@@ -280,8 +293,17 @@ export function Reader(props: ReaderProps) {
   };
 
   // 跳转到指定的章节链接或 CFI 位置
-  function handleJump(cfiOrHref: string) {
-    instance()?.display(cfiOrHref);
+  async function handleJump(cfiOrHref: string) {
+    const inst = instance();
+    if (!inst) return;
+    try {
+      setIsLoading(true);
+      await inst.display(cfiOrHref);
+    } catch (error) {
+      console.error("跳转失败:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // 修改阅读器正文字体大小（回归旧版，只保留 themes.fontSize）
@@ -321,21 +343,45 @@ export function Reader(props: ReaderProps) {
   return (
     <div class="relative h-dvh w-full min-h-0 min-w-0 overflow-hidden">
 
-
-      <FloatingButton
-        initialX={16}
-        initialY={16}
-        icon={<IconDoorExit size={16} />}
-        label="退出"
-        onClick={() => navigate({ to: "/mobile/shelf/" })}
-      />
-
       <EpubView
+        loading={isLoading()}
         ref={viewerRef}
         bg={backgroundColor()}
         height="100%"
         width={viewerWidth()}
-      />
+      >
+
+        <FloatingButton
+          show={floatingShow()}
+          initialX={16}
+          initialY={16}
+          icon={<IconDoorExit size={16} />}
+          iconPosition="left"
+          label="退出"
+          onClick={() => navigate({ to: "/mobile/shelf/" })}
+        />
+
+        <FloatingButton
+          show={floatingShow()}
+          initialX={16}
+          initialY={- 16}
+          icon={<IconChevronLeft size={16} />}
+          iconPosition="left"
+          label="上一页"
+          onClick={() => instance().prev()}
+        />
+
+        <FloatingButton
+          show={floatingShow()}
+          initialX={- 16}
+          initialY={- 16}
+          icon={<IconChevronRight size={16} />}
+          iconPosition="right"
+          label="下一页"
+          onClick={() => instance().next()}
+        />
+
+      </EpubView>
 
 
 
@@ -346,14 +392,15 @@ export function Reader(props: ReaderProps) {
         bg={backgroundColor()}
         pinned={isPinned()}
         onPinChange={setIsPinned}
+        onTitleClick={() => { push('Notes') }}
       >
-        <Switch fallback={<BookInfoPanel meta={bookMata()} />}>
+        <Switch fallback={<BookInfoPanel meta={bookMata()} /> }>
 
           <Match when={current() == "CREATE_NOTE"}>
             <EpubNotesCreate
               newNote={activeNote()}
               onSave={(v) => { put(v); push("Mark"); }}
-              onCancel={() => { push("PointerDown"); push("PointerUp"); }}
+              onCancel={() => { push("Notes"); }}
             />
           </Match>
 
@@ -361,8 +408,7 @@ export function Reader(props: ReaderProps) {
             <EpubNotesEdit
               notes={get(markCfiRange())}
               onNoteChange={(v) => { put(v); }}
-              onDelete={(cfiRange) => { del(cfiRange); push("PointerDown"); push("PointerUp"); }}
-              onBack={() => { push("PointerDown"); push("PointerUp"); }}
+              // onDelete={(cfiRange) => { del(cfiRange); push("Notes"); }}
             />
           </Match>
 
@@ -403,7 +449,7 @@ export function Reader(props: ReaderProps) {
         onBackgroundColorChange={setBackgroundColor}
       />
 
-      <QuickActionMenu position={{ bottom: 30, right: 30 }} >
+      <QuickActionMenu position={{ bottom: 30, right: 30 }} direction='left'>
         <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconList size={20} />
         </button>

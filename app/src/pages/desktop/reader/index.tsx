@@ -144,7 +144,7 @@ export function Reader(props: ReaderProps) {
     try {
       const sizeStr = typeof size === "number" ? `${size}px` : size;
       inst.themes.fontSize(sizeStr);
-      useStore2.setFontSize(size, inst);
+      useStore2.setFontSize(size);
     } catch (e) {
       console.error("设置字体大小失败:", e);
     }

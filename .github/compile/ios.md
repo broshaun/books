@@ -20,19 +20,23 @@
 - pnpm tauri ios dev 
 
 
-### 1. 查看所有可用模拟器
-- xcrun simctl list devices available
 
-### 2. 指定启动设备： ipd
-- xcrun simctl boot 2D7C0C5C-DB35-4EC0-9812-9B7A3F77834C
-### iPhone
-- xcrun simctl boot 5A8BF96B-03EB-4CAF-9C22-E7189D6AAF76
+### 指定启动设备： 
+```sh
+# 查看所有可用模拟器
+    xcrun simctl list devices available
 
-### 打开默认模拟器
-- open -a Simulator
+# 指定默认打开设备
+## iPad
+    xcrun simctl boot 2D7C0C5C-DB35-4EC0-9812-9B7A3F77834C  
+## iPhone
+    xcrun simctl boot 5A8BF96B-03EB-4CAF-9C22-E7189D6AAF76
 
-### 指定打开模拟器
-- open -a Simulator --args -CurrentDeviceUDID 2D7C0C5C-DB35-4EC0-9812-9B7A3F77834C
+## 打开虚拟机
+    open -a Simulator
+    open -a Simulator --args -CurrentDeviceUDID 2D7C0C5C-DB35-4EC0-9812-9B7A3F77834C
+```
+
 
 
 
