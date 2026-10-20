@@ -10,8 +10,7 @@ type BaseEntry<P> = { time: number } & P;
 interface UseIntentBufferOptions<K = string, P = Record<string, any>, V = any> {
   resolve: (keyMap: Map<K, IntentEntry<P>>) => V | null | undefined;
   waitMs?: number;
-  /** 记录 last 的最大层数，默认为 1。设为 0 表示不记录 last */
-  historyDepth?: number;
+  historyDepth?: number;   /** 记录 last 的最大层数，默认为 1。设为 0 表示不记录 last */
 }
 
 export function useIntentBuffer<K = string, P = Record<string, any>, V = any>(
