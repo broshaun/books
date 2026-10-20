@@ -6,8 +6,6 @@ import { createEffect } from "solid-js";
 import { useStore2 } from "@/hooks/useStore2";
 
 
-const isAndroid = typeof window !== "undefined" && /Android/i.test(navigator.userAgent);
-
 
 export const Route = createFileRoute('/mobile/reader/$path')({
   component: RouteComponent,
@@ -24,17 +22,14 @@ function RouteComponent() {
 
   return (
     <AppShell
-      safeArea={isAndroid}
       header={{ padding: 0 }}
       footer={{ height: 0 }}
     >
-
       <AppShell.Header />
-
       <AppShell.Main  >
         <Reader path={params().path} />
       </AppShell.Main>
-      {/* <AppShell.Footer /> */}
+
     </AppShell>
   )
 

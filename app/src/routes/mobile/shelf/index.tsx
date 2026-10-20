@@ -1,5 +1,5 @@
 import Shelf from '@/pages/mobile/shelf'
-import { createEffect, Show } from "solid-js";
+import { createEffect } from "solid-js";
 import { createFileRoute } from "@tanstack/solid-router";
 import { appBarStore } from "@/components/appBarStore";
 import { AppBar } from "@/components/AppBar";
@@ -7,9 +7,6 @@ import { useStore2 } from "@/hooks/useStore2";
 import { winSize } from "@/lib/winSize";
 import { AppShell } from "@/components/AppShell";
 
-
-
-const isAndroid = typeof window !== "undefined" && /Android/i.test(navigator.userAgent);
 
 export const Route = createFileRoute('/mobile/shelf/')({
   component: RouteComponent,
@@ -26,7 +23,6 @@ function RouteComponent() {
   // return <div style={{ width: `${width}px`, height: `${height}px` }} class="bg-black"></div>
   return (
     <AppShell
-      safeArea={isAndroid}
       header={{ height: 50 }}
       footer={{ height: 0 }}
     >
