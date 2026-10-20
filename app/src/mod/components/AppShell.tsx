@@ -124,10 +124,8 @@ export function AppShell(props: AppShellProps) {
         "--aside-total": "calc(var(--aside-size) + var(--aside-margin))",
         "--footer-total": "calc(var(--footer-size) + var(--footer-margin))",
 
-        // "padding-top": "var(--header-total)",
-        "padding-top": "calc(var(--header-total) + env(safe-area-inset-top, 0px))", // 自动避开顶部状态栏
+        "padding-top": "var(--header-total)",
         "padding-bottom": "var(--footer-total)",
-        
       } as JSX.CSSProperties}
     >
       {props.children}

@@ -14,17 +14,14 @@ export const Route = createFileRoute('/desktop/shelf/')({
 })
 
 
-
 function Layout() {
-
     // const { height } = winSize();
-
     // createEffect(() => {
     //     useStore2.setHeight(height - 50);
     // });
 
     return (
-        <AppShell header={{ height: 50 }}>
+        <AppShell header={{ height: 50 ,padding: 0}}>
             <AppShell.Header>
                 <AppBar
                     title={appBarStore.title}

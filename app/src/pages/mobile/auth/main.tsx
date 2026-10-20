@@ -6,6 +6,10 @@ import { AppShell } from "@/components/AppShell";
 import { IconChevronLeft } from "@tabler/icons-solidjs";
 import GlobalModal from "@/components/GlobalModal";
 import { FloatingButton } from "@/components/FloatingButton";
+import { getSafeAreaTop } from '@/lib/getSafeAreaTop';
+
+
+const safeTopHeight = getSafeAreaTop();
 
 
 
@@ -21,7 +25,7 @@ export function Layout() {
     return (
         <div>
             <GlobalModal />
-            <AppShell>
+            <AppShell header={{ padding: safeTopHeight }}>
                 <AppShell.Header />
                 <AppShell.Main >
                     <FloatingButton icon={<IconChevronLeft color="gray" size={25} />} initialX={16} initialY={16} onClick={() => { navigate({ to: "/mobile/shelf" }) }} />

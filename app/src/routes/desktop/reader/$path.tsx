@@ -6,24 +6,19 @@ import { useStore2 } from "@/hooks/useStore2";
 import { AppShell } from "@/components/AppShell";
 
 
-
 export const Route = createFileRoute("/desktop/reader/$path")({
   component: Layout,
 });
 
 function Layout() {
   // const { height } = winSize();
-
-
-
   // createEffect(() => {
   //   useStore2.setHeight(height);
   // });
   const params = Route.useParams();
 
   return (
-    <AppShell>
-
+    <AppShell header={{ padding: 0 }}>
       <AppShell.Main
         ref={(el) => {
           requestAnimationFrame(() => {
