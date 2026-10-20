@@ -34,7 +34,6 @@
 
 ## 打开虚拟机
     open -a Simulator
-    open -a Simulator --args -CurrentDeviceUDID 2D7C0C5C-DB35-4EC0-9812-9B7A3F77834C
 ```
 
 

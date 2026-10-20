@@ -2,9 +2,9 @@ import { createFileRoute } from '@tanstack/solid-router'
 import Reader from '@/pages/mobile/reader';
 import { winSize } from "@/lib/winSize";
 import { AppShell } from "@/components/AppShell";
-import { createEffect, Show } from "solid-js";
+import { createEffect } from "solid-js";
 import { useStore2 } from "@/hooks/useStore2";
-import { TopBarOccluder } from '@/components/TopBarOccluder';
+
 
 const isAndroid = typeof window !== "undefined" && /Android/i.test(navigator.userAgent);
 
@@ -24,12 +24,11 @@ function RouteComponent() {
 
   return (
     <AppShell
+      safeArea={isAndroid}
       header={{ padding: 0 }}
       footer={{ height: 0 }}
     >
-      <Show when={isAndroid}>
-        <TopBarOccluder />
-      </Show>
+
       <AppShell.Header />
 
       <AppShell.Main  >

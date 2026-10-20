@@ -18,6 +18,8 @@ export interface AppShellProps extends SectionProps {
   navbar?: LayoutConfig & { width?: number };
   aside?: LayoutConfig & { width?: number };
   footer?: LayoutConfig & { height?: number };
+  /** 是否启用系统安全区避让，默认 false */
+  safeArea?: boolean;
 }
 
 function Header(props: SectionProps) {
@@ -100,10 +102,17 @@ function Footer(props: SectionProps) {
 }
 
 export function AppShell(props: AppShellProps) {
+  // 💡 对外参数控制：是否启用安全区，默认 false
+  const enableSafeArea = props.safeArea ?? false;
+
   return (
     <div
       class="relative h-dvh w-full flex flex-col overflow-hidden box-border"
       style={{
+        // 如果开启，则读取系统的安全区高度；否则为 0px
+        "--safe-top": enableSafeArea ? "env(safe-area-inset-top, 0px)" : "0px",
+        "--safe-bottom": enableSafeArea ? "env(safe-area-inset-bottom, 0px)" : "0px",
+
         "--header-margin": `${props.header?.margin ?? 0}px`,
         "--navbar-margin": `${props.navbar?.margin ?? 0}px`,
         "--aside-margin": `${props.aside?.margin ?? 0}px`,
@@ -119,10 +128,11 @@ export function AppShell(props: AppShellProps) {
         "--aside-size": `${(props.aside?.width ?? 0) + (props.aside?.padding ?? 0)}px`,
         "--footer-size": `${(props.footer?.height ?? 0) + (props.footer?.padding ?? 0)}px`,
 
-        "--header-total": "calc(var(--header-size) + var(--header-margin))",
+        // 总高度中按需叠加安全区
+        "--header-total": "calc(var(--header-size) + var(--header-margin) + var(--safe-top))",
         "--navbar-total": "calc(var(--navbar-size) + var(--navbar-margin))",
         "--aside-total": "calc(var(--aside-size) + var(--aside-margin))",
-        "--footer-total": "calc(var(--footer-size) + var(--footer-margin))",
+        "--footer-total": "calc(var(--footer-size) + var(--footer-margin) + var(--safe-bottom))",
 
         "padding-top": "var(--header-total)",
         "padding-bottom": "var(--footer-total)",

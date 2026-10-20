@@ -6,7 +6,6 @@ import { AppBar } from "@/components/AppBar";
 import { useStore2 } from "@/hooks/useStore2";
 import { winSize } from "@/lib/winSize";
 import { AppShell } from "@/components/AppShell";
-import { TopBarOccluder } from '@/components/TopBarOccluder';
 
 
 
@@ -27,12 +26,10 @@ function RouteComponent() {
   // return <div style={{ width: `${width}px`, height: `${height}px` }} class="bg-black"></div>
   return (
     <AppShell
+      safeArea={isAndroid}
       header={{ height: 50 }}
       footer={{ height: 0 }}
     >
-      <Show when={isAndroid}>
-        <TopBarOccluder />
-      </Show>
       <AppShell.Header>
         <AppBar
           title={appBarStore.title}
