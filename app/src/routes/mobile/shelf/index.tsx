@@ -6,10 +6,7 @@ import { AppBar } from "@/components/AppBar";
 import { useStore2 } from "@/hooks/useStore2";
 import { winSize } from "@/lib/winSize";
 import { AppShell } from "@/components/AppShell";
-import { getSafeAreaTop } from '@/lib/getSafeAreaTop';
-
-
-const safeTopHeight = getSafeAreaTop();
+import { useSafeArea } from '@/hooks/useSafeArea';
 
 
 export const Route = createFileRoute('/mobile/shelf/')({
@@ -18,6 +15,7 @@ export const Route = createFileRoute('/mobile/shelf/')({
 
 function RouteComponent() {
   const { height, width } = winSize();
+  const safely = useSafeArea();
 
   createEffect(() => {
     useStore2.setHeight(height);
@@ -27,7 +25,7 @@ function RouteComponent() {
   // return <div style={{ width: `${width}px`, height: `${height}px` }} class="bg-black"></div>
   return (
     <AppShell
-      header={{ height: 50, padding: safeTopHeight }}
+      header={{ height: 50, padding: safely().top }}
       footer={{ height: 0 }}
       navbar={{ padding: 0 }}
       aside={{ padding: 0 }}

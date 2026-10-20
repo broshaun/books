@@ -24,6 +24,8 @@ import { type Rendition } from "epubjs";
 import { FloatingButton } from "@/components/FloatingButton";
 import { onMount } from "solid-js";
 import { ScrollContainer } from "@/components/ScrollContainer";
+import { useSafeArea } from '@/hooks/useSafeArea';
+
 
 const savePositionDebounced = debounce((cfi: string) => {
   localStorage.setItem("READ_POSITION_KEY", cfi);
@@ -50,8 +52,6 @@ export function Reader(props: ReaderProps) {
 
 
   const navigate = useNavigate();
-  const height = () => useStore2.height;
-  const width = () => useStore2.width;
   const backgroundColor = () => useStore2.backgroundColor;
   const setBackgroundColor = useStore2.setBackgroundColor;
 
@@ -69,6 +69,8 @@ export function Reader(props: ReaderProps) {
   const [isLoading, setIsLoading] = createSignal(true);
   const [floatingShow, setFloatingShow] = createSignal(true);
 
+
+  const safely = useSafeArea()
   const { book: currentBook, meta: bookMata } = useBookMeta(() => props.path);
   const { put, del, filter, get, getTags } = useEpubNotes(() => instance());
   const { bookmarks, toggleBookmark, isBookmarked, removeBookmark } = useBookmarks(() => currentBook());
@@ -356,7 +358,7 @@ export function Reader(props: ReaderProps) {
         <FloatingButton
           show={floatingShow()}
           initialX={16}
-          initialY={16}
+          initialY={16 + safely().top}
           icon={<IconDoorExit size={16} />}
           iconPosition="left"
           label="退出"
@@ -389,7 +391,7 @@ export function Reader(props: ReaderProps) {
 
       <EpubDrawer
         initialX={-16}
-        initialY={16}
+        initialY={16 + safely().top}
         width={"35%"}
         open={notesOpened()}
         onOpenChange={(opend) => { setNotesOpened(opend) }}
