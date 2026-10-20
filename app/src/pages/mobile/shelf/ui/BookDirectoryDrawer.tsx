@@ -66,29 +66,39 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
 
   return (
     <>
+      {/* 💡 优化后的遮罩层：柔和半透明黑 + 景深模糊，消除生硬的方形阴影感 */}
       <div
-        class={`absolute inset-0 bg-black/50 backdrop-blur-2xs z-40 transition-opacity duration-300 ${
+        class={`absolute inset-0 bg-black/40 z-40 transition-opacity duration-300 ${
           props.opened ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
+        style={{
+          "backdrop-filter": "blur(4px)",
+          "-webkit-backdrop-filter": "blur(4px)",
+        }}
         onClick={() => { props.onClose?.(); setActiveMenuFolder(null); }}
       />
 
-      {/* 抽屉主体：保持 absolute，并增加 pt-12（或按需调整高度）以保留外部顶部安全空间 */}
+      {/* 抽屉主体：自动关联全局主题背景色与文字颜色 */}
       <div
         ref={drawerRef}
-        class={`absolute inset-y-0 left-0 z-50 w-full max-w-[240px] bg-zinc-900 text-zinc-100 shadow-xl flex flex-col p-3 pt-12 overflow-hidden transform transition-transform duration-300 ${
+        class={`absolute inset-y-0 left-0 z-50 w-full max-w-[240px] shadow-xl flex flex-col p-3 pt-12 overflow-hidden transform transition-transform duration-300 border-r ${
           props.opened ? "translate-x-0" : "-translate-x-full"
         }`}
+        style={{
+          "background-color": "var(--bg-header)",
+          "color": "var(--text-color)",
+          "border-color": "var(--border-color)",
+        }}
       >
-        <div class="px-1 pb-1 font-semibold text-sm tracking-tight">我的书籍</div>
-        <hr class="border-zinc-800 my-2" />
+        <div class="px-1 pb-1 font-semibold text-sm tracking-tight" style={{ color: "inherit" }}>我的书籍</div>
+        <hr class="my-2 border-0 h-[1px]" style={{ "background-color": "var(--border-color)" }} />
 
         <div class="flex-1 overflow-auto space-y-1">
-          <For each={props.folders || []} fallback={<div class="text-xs text-zinc-500 text-center py-6 select-none">暂无文件夹，请先添加</div>}>
+          <For each={props.folders || []} fallback={<div class="text-xs opacity-50 text-center py-6 select-none">暂无文件夹，请先添加</div>}>
             {(folder) => {
               const isMenuOpen = () => activeMenuFolder() === folder.name;
               return (
-                <div class="relative flex items-center w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors group/folder">
+                <div class="relative flex items-center w-full px-2.5 py-2 rounded-md transition-colors group/folder hover:opacity-100" style={{ "background-color": isMenuOpen() ? "var(--bg-main)" : "transparent" }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -97,9 +107,10 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
                       setTimeout(() => props.onSelectFolder?.(folder), 150);
                     }}
                     class="flex items-center gap-2.5 flex-1 text-left cursor-pointer bg-transparent border-none outline-none p-0 overflow-hidden select-none"
+                    style={{ color: "inherit" }}
                   >
-                    <IconFolder size={16} class="text-zinc-400 shrink-0" />
-                    <span class="text-xs font-medium truncate text-zinc-200 group-hover/folder:text-white">{folder.name}</span>
+                    <IconFolder size={16} class="opacity-70 shrink-0" />
+                    <span class="text-xs font-medium truncate opacity-90 group-hover/folder:opacity-100" style={{ color: "inherit" }}>{folder.name}</span>
                   </button>
 
                   <div class="relative folder-menu-container">
@@ -110,15 +121,23 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
                         e.stopPropagation();
                         setActiveMenuFolder(isMenuOpen() ? null : folder.name);
                       }}
-                      class="text-zinc-400 hover:text-zinc-100 p-1 bg-transparent border-none cursor-pointer outline-none transition-colors"
+                      class="opacity-60 hover:opacity-100 p-1 bg-transparent border-none cursor-pointer outline-none transition-opacity"
+                      style={{ color: "inherit" }}
                     >
                       <IconDotsVertical size={14} />
                     </button>
 
                     <Show when={isMenuOpen()}>
-                      <div class="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl z-50 p-1 flex flex-col gap-0.5 select-none">
-                        <MenuBtn icon={<IconBook size={13} class="text-zinc-400" />} label="添加书籍" onClick={() => { setActiveMenuFolder(null); handleAddEpub(folder.name); }} />
-                        <MenuBtn icon={<IconEdit size={13} class="text-zinc-400" />} label="修改名称" onClick={() => { setActiveMenuFolder(null); setEditFolderNameInput(folder.name); setEditingFolder(folder.name); }} />
+                      <div 
+                        class="absolute right-0 top-full mt-1 w-32 rounded-lg shadow-2xl z-50 p-1 flex flex-col gap-0.5 select-none border"
+                        style={{
+                          "background-color": "var(--bg-header)",
+                          "color": "var(--text-color)",
+                          "border-color": "var(--border-color)",
+                        }}
+                      >
+                        <MenuBtn icon={<IconBook size={13} class="opacity-70" />} label="添加书籍" onClick={() => { setActiveMenuFolder(null); handleAddEpub(folder.name); }} />
+                        <MenuBtn icon={<IconEdit size={13} class="opacity-70" />} label="修改名称" onClick={() => { setActiveMenuFolder(null); setEditFolderNameInput(folder.name); setEditingFolder(folder.name); }} />
                         <MenuBtn icon={<IconTrash size={13} class="text-red-400" />} label="删除文件夹" danger onClick={() => { setActiveMenuFolder(null); setConfirmDelFolder(folder.name); }} />
                       </div>
                     </Show>
@@ -129,20 +148,20 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
           </For>
         </div>
 
-        <hr class="border-zinc-800 my-2" />
+        <hr class="my-2 border-0 h-[1px]" style={{ "background-color": "var(--border-color)" }} />
 
         <div class="space-y-1">
-          <Btn icon={<IconFolderPlus size={16} class="text-zinc-400" />} label="新建文件夹" onClick={() => setFolderInputOpen(true)} />
+          <Btn icon={<IconFolderPlus size={16} class="opacity-70" />} label="新建文件夹" onClick={() => setFolderInputOpen(true)} />
         </div>
 
         <Show when={hasBottom()}>
-          <hr class="border-zinc-800 my-2" />
+          <hr class="my-2 border-0 h-[1px]" style={{ "background-color": "var(--border-color)" }} />
           <div class="space-y-0.5 shrink-0">
             <Show when={props.onOpenProfile}>
-              <Btn icon={<IconUserCircle size={16} class="text-zinc-400" />} label="个人" onClick={() => { props.onClose?.(); setTimeout(() => props.onOpenProfile?.(), 150); }} />
+              <Btn icon={<IconUserCircle size={16} class="opacity-70" />} label="个人" onClick={() => { props.onClose?.(); setTimeout(() => props.onOpenProfile?.(), 150); }} />
             </Show>
             <Show when={props.onOpenAbout}>
-              <Btn icon={<IconInfoCircle size={16} class="text-zinc-400" />} label="关于" onClick={() => { props.onClose?.(); setTimeout(() => props.onOpenAbout?.(), 150); }} />
+              <Btn icon={<IconInfoCircle size={16} class="opacity-70" />} label="关于" onClick={() => { props.onClose?.(); setTimeout(() => props.onOpenAbout?.(), 150); }} />
             </Show>
           </div>
         </Show>
@@ -153,7 +172,12 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         <input
           type="text" placeholder="请输入文件夹名称..." value={folderNameInput()}
           onInput={(e) => setFolderNameInput(e.currentTarget.value)}
-          class="bg-zinc-800 text-zinc-100 text-xs px-3 py-2.5 rounded-lg border border-zinc-700 outline-none focus:border-zinc-500 w-full"
+          class="text-xs px-3 py-2.5 rounded-lg border outline-none w-full transition-colors"
+          style={{
+            "background-color": "var(--bg-main)",
+            "color": "var(--text-color)",
+            "border-color": "var(--border-color)",
+          }}
           autofocus
         />
         <div class="flex gap-2 pt-1">
@@ -167,7 +191,12 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
         <input
           type="text" placeholder="请输入新的文件夹名称..." value={editFolderNameInput()}
           onInput={(e) => setEditFolderNameInput(e.currentTarget.value)}
-          class="bg-zinc-800 text-zinc-100 text-xs px-3 py-2.5 rounded-lg border border-zinc-700 outline-none focus:border-zinc-500 w-full"
+          class="text-xs px-3 py-2.5 rounded-lg border outline-none w-full transition-colors"
+          style={{
+            "background-color": "var(--bg-main)",
+            "color": "var(--text-color)",
+            "border-color": "var(--border-color)",
+          }}
           autofocus
         />
         <div class="flex gap-2 pt-1">
@@ -178,8 +207,8 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
 
       {/* 删除确认弹窗 */}
       <Modal open={!!confirmDelFolder()} onClose={() => setConfirmDelFolder(null)} title="确认删除">
-        <p class="text-xs text-zinc-300 px-1">
-          确定要删除文件夹 <span class="text-white font-semibold">“{confirmDelFolder()}”</span> 吗？
+        <p class="text-xs opacity-90 px-1" style={{ color: "inherit" }}>
+          确定要删除文件夹 <span class="font-semibold" style={{ color: "var(--text-color)" }}>“{confirmDelFolder()}”</span> 吗？
         </p>
         <div class="flex gap-2 pt-2">
           <ModalBtn label="取消" onClick={() => setConfirmDelFolder(null)} />
@@ -192,16 +221,16 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
 
 function Btn(p: { icon: any; label: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={p.onClick} class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-200 hover:text-white cursor-pointer bg-transparent border-none outline-none">
-      {p.icon} <span class="text-xs font-medium">{p.label}</span>
+    <button type="button" onClick={p.onClick} class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:opacity-100 opacity-80 transition-opacity cursor-pointer bg-transparent border-none outline-none" style={{ color: "inherit" }}>
+      {p.icon} <span class="text-xs font-medium" style={{ color: "inherit" }}>{p.label}</span>
     </button>
   );
 }
 
 function MenuBtn(p: { icon: any; label: string; onClick: () => void; danger?: boolean }) {
   return (
-    <button type="button" onClick={p.onClick} class={`flex items-center gap-2 w-full px-2.5 py-1.5 text-xs rounded transition-colors text-left cursor-pointer border-none bg-transparent outline-none ${p.danger ? 'text-red-400 hover:bg-red-950/40' : 'text-zinc-200 hover:bg-zinc-800'}`}>
-      {p.icon} <span>{p.label}</span>
+    <button type="button" onClick={p.onClick} class={`flex items-center gap-2 w-full px-2.5 py-1.5 text-xs rounded transition-colors text-left cursor-pointer border-none bg-transparent outline-none ${p.danger ? 'text-red-400 hover:bg-red-500/10' : 'opacity-80 hover:opacity-100 hover:bg-black/5'}`} style={{ color: p.danger ? undefined : "inherit" }}>
+      {p.icon} <span style={{ color: "inherit" }}>{p.label}</span>
     </button>
   );
 }
@@ -210,11 +239,19 @@ function Modal(p: { open: boolean; onClose: () => void; title: string; children:
   return (
     <Dialog open={p.open} onOpenChange={(v) => !v && p.onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay class="fixed inset-0 bg-black/50 backdrop-blur-2xs z-50" />
-        <Dialog.Content class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[300px] bg-zinc-900 text-zinc-100 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3 z-50 outline-none shadow-2xl">
+        {/* 💡 对话框遮罩也同步优化，保持视觉一致 */}
+        <Dialog.Overlay class="fixed inset-0 bg-black/40 z-50" style={{ "backdrop-filter": "blur(4px)", "-webkit-backdrop-filter": "blur(4px)" }} />
+        <Dialog.Content 
+          class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[300px] rounded-xl p-4 flex flex-col gap-3 z-50 outline-none shadow-2xl border"
+          style={{
+            "background-color": "var(--bg-header)",
+            "color": "var(--text-color)",
+            "border-color": "var(--border-color)",
+          }}
+        >
           <div class="flex justify-between items-center px-1">
-            <span class="font-semibold text-sm">{p.title}</span>
-            <Dialog.Close class="bg-transparent border-none cursor-pointer text-zinc-400 hover:text-white p-1"><IconX size={18} /></Dialog.Close>
+            <span class="font-semibold text-sm" style={{ color: "inherit" }}>{p.title}</span>
+            <Dialog.Close class="bg-transparent border-none cursor-pointer opacity-70 hover:opacity-100 p-1 outline-none" style={{ color: "inherit" }}><IconX size={18} /></Dialog.Close>
           </div>
           {p.children}
         </Dialog.Content>
@@ -224,9 +261,14 @@ function Modal(p: { open: boolean; onClose: () => void; title: string; children:
 }
 
 function ModalBtn(p: { label: string; onClick: () => void; primary?: boolean; danger?: boolean }) {
-  const cls = p.danger ? "bg-red-600 hover:bg-red-500 text-white" : p.primary ? "bg-zinc-100 hover:bg-white text-zinc-900" : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700";
+  const getStyle = () => {
+    if (p.danger) return { "background-color": "#ef4444", "color": "#ffffff", "border": "none" };
+    if (p.primary) return { "background-color": "var(--text-color)", "color": "var(--bg-main)", "border": "none" };
+    return { "background-color": "var(--bg-main)", "color": "inherit", "border": "1px solid var(--border-color)" };
+  };
+
   return (
-    <button type="button" onClick={p.onClick} class={`flex-1 py-2 px-3 rounded-lg text-xs font-medium cursor-pointer transition-colors border-none outline-none ${cls}`}>
+    <button type="button" onClick={p.onClick} class="flex-1 py-2 px-3 rounded-lg text-xs font-medium cursor-pointer transition-opacity hover:opacity-90 outline-none" style={getStyle()}>
       {p.label}
     </button>
   );

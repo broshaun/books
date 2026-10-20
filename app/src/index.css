@@ -1,5 +1,27 @@
 @import 'tailwindcss';
 
+/* ================= 1. 系统跟随主题架构（纯正的系统深浅色适配） ================= */
+
+/* 默认：系统浅色模式（Light） */
+:root, html {
+  --bg-main: #ffffff;
+  --bg-header: rgba(255, 255, 255, 0.9);
+  --text-color: #18181b;
+  --border-color: #e4e4e7;
+}
+
+/* 自动跟随：当操作系统开启深色模式时生效（Dark） */
+@media (prefers-color-scheme: dark) {
+  :root, html {
+    --bg-main: #09090b;
+    --bg-header: rgba(24, 24, 27, 0.9);
+    --text-color: #f4f4f5;
+    --border-color: #27272a;
+  }
+}
+
+
+/* ================= 2. 全局基础样式 ================= */
 html,
 body,
 #root {
@@ -8,7 +30,8 @@ body,
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #000;
+  background-color: var(--bg-main);
+  color: var(--text-color);
 }
 
 .epub-view {

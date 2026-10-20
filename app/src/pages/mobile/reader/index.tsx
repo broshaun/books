@@ -141,42 +141,30 @@ export function Reader(props: ReaderProps) {
   });
 
   onMount(() => {
-    // viewerRef.addEventListener("pointerdown", handlePointerDown);
-    // viewerRef.addEventListener("pointerup", handlePointerUp);
-
     let lastWidth = 0;
     let lastHeight = 0;
 
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
-
       const inst = instance();
       if (!inst) return;
-
       const { width, height } = entry.contentRect;
       const roundedWidth = Math.round(width);
       const roundedHeight = Math.round(height);
-
       if (roundedWidth <= 0 || roundedHeight <= 0) return;
-
       // 只有当尺寸真正发生变化时才调用 resize，防止死循环卡死
       if (roundedWidth !== lastWidth || roundedHeight !== lastHeight) {
         lastWidth = roundedWidth;
         lastHeight = roundedHeight;
-
         // 稍微延后或者直接安全调用
         requestAnimationFrame(() => {
           inst.resize(roundedWidth, roundedHeight);
         });
       }
     });
-
     observer.observe(viewerRef);
-
     onCleanup(() => {
-      // viewerRef.removeEventListener("pointerdown", handlePointerDown);
-      // viewerRef.removeEventListener("pointerup", handlePointerUp);
       observer.disconnect();
     });
   });
@@ -358,7 +346,7 @@ export function Reader(props: ReaderProps) {
         <FloatingButton
           show={floatingShow()}
           initialX={16}
-          initialY={16 + safely().top}
+          initialY={16}
           icon={<IconDoorExit size={16} />}
           iconPosition="left"
           label="退出"
@@ -391,7 +379,7 @@ export function Reader(props: ReaderProps) {
 
       <EpubDrawer
         initialX={-16}
-        initialY={16 + safely().top}
+        initialY={16}
         width={"35%"}
         open={notesOpened()}
         onOpenChange={(opend) => { setNotesOpened(opend) }}

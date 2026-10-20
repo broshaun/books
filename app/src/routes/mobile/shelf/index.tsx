@@ -36,7 +36,7 @@ function RouteComponent() {
           title={appBarStore.title}
           left={appBarStore.left}
           right={appBarStore.right}
-          theme="zinc"
+          // theme="zinc"
         />
       </AppShell.Header>
       <AppShell.Main >

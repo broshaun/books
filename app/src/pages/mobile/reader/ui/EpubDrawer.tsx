@@ -23,7 +23,6 @@ export interface EpubDrawerProps {
   initialPinned?: boolean;
   onPinChange?: (pinned: boolean) => void;
   
-  // 💡 新增：支持像 FloatingButton 一样的容器内坐标控制
   initialX?: number | string;
   initialY?: number | string;
 
@@ -88,7 +87,6 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
     setPinned(!isPinned());
   };
 
-  // 💡 智能解析按钮位置（完全复用 FloatingButton 的逻辑）
   const parsePositionStyle = (x?: number | string, y?: number | string) => {
     const style: Record<string, string> = {};
 
@@ -120,7 +118,8 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
   const isTailwindBg = () => background().startsWith("bg-");
 
   return (
-    <>
+    /* 💡 核心修改：使用 Tailwind 的 portrait:hidden，当检测到设备/窗口处于竖屏时，整个组件直接隐藏不渲染 */
+    <div class="hidden landscape:block">
       {/* 展开图书按钮：支持通过 initialX / initialY 自由定位在容器内部 */}
       <Show when={!isOpen()}>
         <button
@@ -135,7 +134,7 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
         </button>
       </Show>
 
-      {/* 非固定模式遮罩：绝对定位，严格限制在父容器（如 AppMain）内部 */}
+      {/* 非固定模式遮罩：绝对定位，严格限制在父容器内部 */}
       <Show when={isOpen() && !isPinned()}>
         <div
           class="absolute inset-0 z-40 bg-black/20 backdrop-blur-[1px]"
@@ -215,7 +214,7 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
           {local.children}
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
