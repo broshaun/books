@@ -40,17 +40,24 @@ export function useSafeArea() {
     const right = parseFloat(computed.paddingRight) || 0;
 
     document.body.removeChild(div);
+
     setSafeArea({ top, bottom, left, right });
+  };
+
+  // 💡 包装一层带延迟的测量，防止横竖屏切换瞬间拿旧数据
+  const handleResizeOrRotate = () => {
+    setTimeout(measureSafeArea, 100);
   };
 
   onMount(() => {
     measureSafeArea();
-    window.addEventListener("resize", measureSafeArea);
-    window.addEventListener("orientationchange", measureSafeArea);
+    
+    window.addEventListener("resize", handleResizeOrRotate);
+    window.addEventListener("orientationchange", handleResizeOrRotate);
 
     onCleanup(() => {
-      window.removeEventListener("resize", measureSafeArea);
-      window.removeEventListener("orientationchange", measureSafeArea);
+      window.removeEventListener("resize", handleResizeOrRotate);
+      window.removeEventListener("orientationchange", handleResizeOrRotate);
     });
   });
 
