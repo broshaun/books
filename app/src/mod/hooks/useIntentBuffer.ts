@@ -1,29 +1,27 @@
 import { createSignal, batch, onCleanup } from "solid-js";
 
-/** 
- * 意图条目结构：包含时间戳，并支持通过联合类型将 payload 的属性扁平展开到根节点
- * P 为额外信息的对象类型
- */
 export type IntentEntry<P = Record<string, any>> = {
   time: number;
+  last?: IntentEntry<P>;
 } & P;
 
+type BaseEntry<P> = { time: number } & P;
+
 interface UseIntentBufferOptions<K = string, P = Record<string, any>, V = any> {
-  /** 解析回调：接收包含 time 和扁平化扩展属性的 Map */
   resolve: (keyMap: Map<K, IntentEntry<P>>) => V | null | undefined;
-  /** 延迟收集时间窗口 (ms)，默认为 0（即时触发） */
   waitMs?: number;
+  /** 记录 last 的最大层数，默认为 1。设为 0 表示不记录 last */
+  historyDepth?: number;
 }
 
 export function useIntentBuffer<K = string, P = Record<string, any>, V = any>(
   options: UseIntentBufferOptions<K, P, V>
 ) {
-  const { resolve, waitMs = 0 } = options;
-
+  const { resolve, waitMs = 0, historyDepth = 1 } = options;
   const [current, setCurrent] = createSignal<V | null>(null, { equals: false });
 
-  // 内部 Map 存储 key 对应的扁平化 IntentEntry
   let keyMap = new Map<K, IntentEntry<P>>();
+  let historyMap = new Map<K, Array<BaseEntry<P>>>();
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   const clearTimer = () => {
@@ -33,29 +31,46 @@ export function useIntentBuffer<K = string, P = Record<string, any>, V = any>(
     }
   };
 
+  const resetAll = () => {
+    clearTimer();
+    keyMap.clear();
+    historyMap.clear();
+  };
+
   const evaluate = () => {
     clearTimer();
     const result = resolve(new Map(keyMap));
 
-    if (result !== null && result !== undefined) {
-      keyMap.clear();
-      batch(() => {
-        (setCurrent as (v: V) => void)(result);
-      });
+    if (result != null) {
+      resetAll();
+      batch(() => setCurrent(result as any));
     }
   };
 
-  /** 
-   * push 支持传入第二个参数 payload（对象）
-   * 默认给空对象 {}，并通过 ...payload 扁平展开到对象根节点
-   */
   const push = (key: K, payload: P = {} as P) => {
-    keyMap.set(key, {
-      time: Date.now(),
-      ...payload,
-    });
-    clearTimer();
+    const nowItem: BaseEntry<P> = { time: Date.now(), ...payload } as any;
+    const hist = historyMap.get(key) || [];
 
+    // 组装指定深度的 last 链条，保证最内层绝对纯净
+    let lastEntry: IntentEntry<P> | undefined;
+    if (historyDepth > 0 && hist.length > 0) {
+      const items = hist.slice(0, historyDepth);
+      for (let i = items.length - 1; i >= 0; i--) {
+        lastEntry = { ...items[i], ...(lastEntry ? { last: lastEntry } : {}) } as any;
+      }
+    }
+
+    const entry: IntentEntry<P> = {
+      ...nowItem,
+      ...(lastEntry ? { last: lastEntry } : {}),
+    };
+
+    if (historyDepth > 0) {
+      historyMap.set(key, [nowItem, ...hist].slice(0, historyDepth));
+    }
+    keyMap.set(key, entry);
+
+    clearTimer();
     if (waitMs <= 0) {
       evaluate();
     } else {
@@ -64,11 +79,8 @@ export function useIntentBuffer<K = string, P = Record<string, any>, V = any>(
   };
 
   const clear = () => {
-    clearTimer();
-    keyMap.clear();
-    batch(() => {
-      (setCurrent as (v: V | null) => void)(null);
-    });
+    resetAll();
+    batch(() => setCurrent(null));
   };
 
   onCleanup(clear);

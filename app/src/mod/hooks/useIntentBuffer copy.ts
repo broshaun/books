@@ -1,51 +1,29 @@
 import { createSignal, batch, onCleanup } from "solid-js";
 
-export interface IntentResult<V = any> {
-  value: V;
-  after?: () => void;
-}
+/** 
+ * 意图条目结构：包含时间戳，并支持通过联合类型将 payload 的属性扁平展开到根节点
+ * P 为额外信息的对象类型
+ */
+export type IntentEntry<P = Record<string, any>> = {
+  time: number;
+} & P;
 
-interface UseIntentBufferOptions<K = string, V = any> {
-  /** 解析回调：返回业务值或带后置副作用的对象 */
-  resolve: (keyMap: Map<K, number>) => V | IntentResult<V> | null | undefined;
+interface UseIntentBufferOptions<K = string, P = Record<string, any>, V = any> {
+  /** 解析回调：接收包含 time 和扁平化扩展属性的 Map */
+  resolve: (keyMap: Map<K, IntentEntry<P>>) => V | null | undefined;
   /** 延迟收集时间窗口 (ms)，默认为 0（即时触发） */
   waitMs?: number;
 }
 
-/** 使用示例
-  const { current, push } = useIntentBuffer({
-    waitMs: 200, // 开启 200ms 缓冲窗口，完美聚合同步触发的触控事件
-    resolve: (document) => {
-      console.log("document实时内容:", document);
-      // 单独包含 "Mark"
-      if (document.has("Mark")) {
-        return "EDIT_NOTE";
-      }
-      // 快速点击
-      if (document.has("PointerDown") && document.has("PointerUp")) {
-        const downTime = document.get("PointerDown")!;
-        const upTime = document.get("PointerUp")!;
-        const duration = upTime - downTime;
-        if (duration < 300) {
-          return "TIMELINE";
-        }
-      }
-      // 同时包含 "Select" 和 "PointerUp"
-      if (document.has("Select")) {
-        if (document.has("PointerUp")) {
-          return "CREATE_NOTE";
-        }
-        return
-      }
-    }
-  });
- */
-export function useIntentBuffer<K = string, V = any>(options: UseIntentBufferOptions<K, V>) {
+export function useIntentBuffer<K = string, P = Record<string, any>, V = any>(
+  options: UseIntentBufferOptions<K, P, V>
+) {
   const { resolve, waitMs = 0 } = options;
 
   const [current, setCurrent] = createSignal<V | null>(null, { equals: false });
 
-  let keyMap = new Map<K, number>();
+  // 内部 Map 存储 key 对应的扁平化 IntentEntry
+  let keyMap = new Map<K, IntentEntry<P>>();
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   const clearTimer = () => {
@@ -61,25 +39,21 @@ export function useIntentBuffer<K = string, V = any>(options: UseIntentBufferOpt
 
     if (result !== null && result !== undefined) {
       keyMap.clear();
-
-      const value = typeof result === "object" && result !== null && "value" in result
-        ? (result as IntentResult<V>).value
-        : (result as V);
-
-      const after = typeof result === "object" && result !== null && "after" in result
-        ? (result as IntentResult<V>).after
-        : undefined;
-
       batch(() => {
-        (setCurrent as (v: V) => void)(value);
+        (setCurrent as (v: V) => void)(result);
       });
-
-      after?.();
     }
   };
 
-  const push = (key: K) => {
-    keyMap.set(key, Date.now());
+  /** 
+   * push 支持传入第二个参数 payload（对象）
+   * 默认给空对象 {}，并通过 ...payload 扁平展开到对象根节点
+   */
+  const push = (key: K, payload: P = {} as P) => {
+    keyMap.set(key, {
+      time: Date.now(),
+      ...payload,
+    });
     clearTimer();
 
     if (waitMs <= 0) {

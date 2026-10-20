@@ -1,4 +1,3 @@
-
 import type { JSX } from "solid-js";
 
 interface SectionProps {
@@ -31,9 +30,7 @@ function Header(props: SectionProps) {
         "padding-top": "var(--header-padding)",
       }}
     >
-      <div class="w-full min-w-0">
-        {props.children}
-      </div>
+      <div class="w-full min-w-0">{props.children}</div>
     </header>
   );
 }
@@ -97,9 +94,7 @@ function Footer(props: SectionProps) {
         "padding-bottom": "var(--footer-padding)",
       }}
     >
-      <div class="w-full min-w-0">
-        {props.children}
-      </div>
+      <div class="w-full min-w-0">{props.children}</div>
     </footer>
   );
 }
@@ -119,37 +114,15 @@ export function AppShell(props: AppShellProps) {
         "--aside-padding": `${props.aside?.padding ?? 0}px`,
         "--footer-padding": `${props.footer?.padding ?? 0}px`,
 
-        "--header-size": `${
-          (props.header?.height ?? 0) +
-          (props.header?.padding ?? 0)
-        }px`,
+        "--header-size": `${(props.header?.height ?? 0) + (props.header?.padding ?? 0)}px`,
+        "--navbar-size": `${(props.navbar?.width ?? 0) + (props.navbar?.padding ?? 0)}px`,
+        "--aside-size": `${(props.aside?.width ?? 0) + (props.aside?.padding ?? 0)}px`,
+        "--footer-size": `${(props.footer?.height ?? 0) + (props.footer?.padding ?? 0)}px`,
 
-        "--navbar-size": `${
-          (props.navbar?.width ?? 0) +
-          (props.navbar?.padding ?? 0)
-        }px`,
-
-        "--aside-size": `${
-          (props.aside?.width ?? 0) +
-          (props.aside?.padding ?? 0)
-        }px`,
-
-        "--footer-size": `${
-          (props.footer?.height ?? 0) +
-          (props.footer?.padding ?? 0)
-        }px`,
-
-        "--header-total":
-          "calc(var(--header-size) + var(--header-margin))",
-
-        "--navbar-total":
-          "calc(var(--navbar-size) + var(--navbar-margin))",
-
-        "--aside-total":
-          "calc(var(--aside-size) + var(--aside-margin))",
-
-        "--footer-total":
-          "calc(var(--footer-size) + var(--footer-margin))",
+        "--header-total": "calc(var(--header-size) + var(--header-margin))",
+        "--navbar-total": "calc(var(--navbar-size) + var(--navbar-margin))",
+        "--aside-total": "calc(var(--aside-size) + var(--aside-margin))",
+        "--footer-total": "calc(var(--footer-size) + var(--footer-margin))",
 
         "padding-top": "var(--header-total)",
         "padding-bottom": "var(--footer-total)",

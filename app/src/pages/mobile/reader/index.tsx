@@ -1,4 +1,4 @@
-import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus, IconDoorExit, IconChevronLeft,IconChevronRight } from "@tabler/icons-solidjs";
+import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus, IconDoorExit, IconChevronLeft, IconChevronRight } from "@tabler/icons-solidjs";
 import { createSignal, onCleanup, createEffect, on, Show, Switch, Match, createMemo } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { useNavigate } from "@tanstack/solid-router";
@@ -23,7 +23,7 @@ import { EpubNotesTimeline } from "./ui/EpubNotesTimeline";
 import { type Rendition } from "epubjs";
 import { FloatingButton } from "@/components/FloatingButton";
 import { onMount } from "solid-js";
-
+import { ScrollContainer } from "@/components/ScrollContainer";
 
 const savePositionDebounced = debounce((cfi: string) => {
   localStorage.setItem("READ_POSITION_KEY", cfi);
@@ -108,12 +108,15 @@ export function Reader(props: ReaderProps) {
       }
 
       // 选择文字，同时包含 "Select" 和 "PointerUp"
-      if (document.has("Select")) {
+      if (document.has("PointerDown") && document.has("Select")) {
         if (document.has("PointerUp")) {
-          setNotesOpened(true);
-          return "CREATE_NOTE";
+          const upTime = document.get("PointerUp")!.time;
+          const seTime = document.get("Select")!.time;
+          if (upTime > seTime) {
+            setNotesOpened(true);
+            return "CREATE_NOTE";
+          }
         }
-        return
       }
 
     }
@@ -341,8 +344,7 @@ export function Reader(props: ReaderProps) {
 
 
   return (
-    <div class="relative h-dvh w-full min-h-0 min-w-0 overflow-hidden">
-
+    <ScrollContainer>
       <EpubView
         loading={isLoading()}
         ref={viewerRef}
@@ -394,7 +396,7 @@ export function Reader(props: ReaderProps) {
         onPinChange={setIsPinned}
         onTitleClick={() => { push('Notes') }}
       >
-        <Switch fallback={<BookInfoPanel meta={bookMata()} /> }>
+        <Switch fallback={<BookInfoPanel meta={bookMata()} />}>
 
           <Match when={current() == "CREATE_NOTE"}>
             <EpubNotesCreate
@@ -408,7 +410,7 @@ export function Reader(props: ReaderProps) {
             <EpubNotesEdit
               notes={get(markCfiRange())}
               onNoteChange={(v) => { put(v); }}
-              // onDelete={(cfiRange) => { del(cfiRange); push("Notes"); }}
+            // onDelete={(cfiRange) => { del(cfiRange); push("Notes"); }}
             />
           </Match>
 
@@ -475,7 +477,7 @@ export function Reader(props: ReaderProps) {
           {hideNotes() ? <IconEye size={20} /> : <IconEyeOff size={20} />}
         </button>
       </QuickActionMenu>
-    </div>
+    </ScrollContainer>
   );
 }
 

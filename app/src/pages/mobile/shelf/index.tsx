@@ -6,7 +6,7 @@ import BookShelf from "./ui/BookShelf";
 import { useLocalBooks } from "./hooks/useLocalBooks";
 import BookDirectoryDrawer from "./ui/BookDirectoryDrawer";
 import { IconMenu2 } from "@tabler/icons-solidjs";
-
+import { ScrollContainer } from "@/components/ScrollContainer";
 
 export function Shelf() {
     const navigate = useNavigate();
@@ -14,7 +14,7 @@ export function Shelf() {
     // const { tags, books, selectTag, addTag, delTag, addEpub, updateTag, delEpub, updEpub } = useLocalBooks();
 
 
-    const { folders, books,  selectFolder, addFolder, updFolder, delFolder, addEpub, delEpub, updEpub } = useLocalBooks();
+    const { folders, books, selectFolder, addFolder, updFolder, delFolder, addEpub, delEpub, updEpub } = useLocalBooks();
 
 
     const [left, setLeft] = createSignal(false);
@@ -45,8 +45,7 @@ export function Shelf() {
 
 
     return (
-        <>
-
+        <ScrollContainer>
             <BookDirectoryDrawer
                 opened={left()}
                 onClose={() => setLeft(false)}
@@ -81,7 +80,7 @@ export function Shelf() {
 
 
             <BookShelf
-                height={height()}
+                height="100%"
                 books={books()}
                 onSelectBook={(book) => {
                     console.log("book", book);
@@ -97,7 +96,7 @@ export function Shelf() {
 
                 }}
             />
-        </>
+        </ScrollContainer>
     );
 }
 
