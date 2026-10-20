@@ -17,7 +17,6 @@ export function UsrInfoUI(props: UserProfileCardProps) {
   const email = () => props.data?.email || props.email || "77254@qq.com";
   const id = () => props.data?.id || props.id || "6ab10d9de2faf96af165a351";
   
-  // 高度自适应：如果传了具体高度则用传入的，否则自动撑满容器并支持最小高度
   const heightStyle = () => ({ 
     height: typeof props.height === "number" ? `${props.height}px` : props.height || "100%" 
   });
@@ -34,22 +33,37 @@ export function UsrInfoUI(props: UserProfileCardProps) {
   };
 
   return (
-    <div class="w-full h-full min-h-fit bg-stone-100 flex items-center justify-center p-6 box-border" style={heightStyle()}>
-      <div class="w-full max-w-sm text-stone-800 p-2 flex flex-col gap-5">
+    <div 
+      class="w-full h-full min-h-fit flex items-center justify-center p-6 box-border select-none"
+      style={{
+        ...heightStyle(),
+        "background-color": "var(--bg-main)",
+        "color": "var(--text-color)",
+      }}
+    >
+      <div class="w-full max-w-sm p-2 flex flex-col gap-5">
         
         {/* 账号信息 */}
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-stone-200/70 flex items-center justify-center shrink-0 text-stone-700">
+          <div 
+            class="w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 opacity-90 shadow-2xs"
+            style={{
+              "background-color": "var(--bg-header)",
+              "border-color": "var(--border-color)",
+              "color": "var(--text-color)",
+            }}
+          >
             <IconUser size={22} />
           </div>
           <div class="flex flex-col overflow-hidden">
-            <span class="text-[11px] font-bold uppercase text-stone-400">当前账号</span>
-            <span class="text-sm font-semibold text-stone-900 truncate mt-0.5" title={email()}>{email()}</span>
-            <span class="text-[11px] text-stone-400 truncate font-mono mt-0.5">ID: {id()}</span>
+            <span class="text-[11px] font-bold uppercase opacity-50 tracking-wider">当前账号</span>
+            <span class="text-sm font-semibold truncate mt-0.5" style={{ color: "inherit" }} title={email()}>{email()}</span>
+            <span class="text-[11px] opacity-50 truncate font-mono mt-0.5">ID: {id()}</span>
           </div>
         </div>
 
-        <div class="w-full h-[1px] bg-stone-200/80" />
+        {/* 分割线 */}
+        <div class="w-full h-[1px]" style={{ "background-color": "var(--border-color)" }} />
 
         {/* 按钮区 */}
         <div class="flex flex-col gap-2.5">
@@ -58,10 +72,10 @@ export function UsrInfoUI(props: UserProfileCardProps) {
               type="button"
               disabled={props.isSyncing || downloaded()}
               onClick={handleDownload}
-              class={`flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-semibold border disabled:cursor-not-allowed ${
+              class={`flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-semibold border transition-all cursor-pointer disabled:cursor-not-allowed ${
                 downloaded()
-                  ? "bg-emerald-50 text-emerald-600 border-emerald-100/60"
-                  : "bg-sky-50 text-sky-600 border-sky-100/60 disabled:opacity-60"
+                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                  : "bg-sky-500/10 text-sky-500 border-sky-500/30 hover:bg-sky-500/20 disabled:opacity-50"
               }`}
             >
               <Show when={props.isSyncing} fallback={
@@ -81,7 +95,7 @@ export function UsrInfoUI(props: UserProfileCardProps) {
               type="button"
               disabled={props.isSyncing}
               onClick={() => props.onLogout?.()}
-              class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-rose-50 text-rose-600 border border-rose-100/60 text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/30 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all hover:bg-rose-500/20"
             >
               <IconLogout size={16} />
               <span>退出账号</span>

@@ -22,7 +22,7 @@ export interface EpubDrawerProps {
   pinned?: boolean;
   initialPinned?: boolean;
   onPinChange?: (pinned: boolean) => void;
-  
+
   initialX?: number | string;
   initialY?: number | string;
 
@@ -150,15 +150,13 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
             ? { background: background() }
             : {}),
         }}
-        class={`absolute inset-y-0 right-0 z-50 flex h-full max-w-[95vw] flex-col shadow-2xl transition-transform duration-300 ease-out ${
-          isOpen()
-            ? "translate-x-0 pointer-events-auto"
-            : "translate-x-full pointer-events-none"
-        } ${
-          isTailwindBg()
+        class={`absolute inset-y-0 right-0 z-50 flex h-full max-w-[95vw] flex-col shadow-2xl transition-transform duration-300 ease-out ${isOpen()
+          ? "translate-x-0 pointer-events-auto"
+          : "translate-x-full pointer-events-none"
+          } ${isTailwindBg()
             ? background()
             : "bg-white dark:bg-zinc-900"
-        }`}
+          }`}
       >
         {/* 顶部操作栏 */}
         <div class="flex shrink-0 items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-zinc-800">
@@ -169,11 +167,10 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
               title={isPinned() ? "取消固定" : "固定面板"}
               aria-label={isPinned() ? "取消固定" : "固定面板"}
               aria-pressed={isPinned()}
-              class={`rounded-lg p-2 cursor-pointer transition-all border shadow-sm ${
-                isPinned()
-                  ? "bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950/40 dark:border-amber-700/60 dark:text-amber-400"
-                  : "bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:bg-zinc-800/80 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-              }`}
+              class={`rounded-lg p-2 cursor-pointer transition-all border shadow-sm ${isPinned()
+                ? "bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950/40 dark:border-amber-700/60 dark:text-amber-400"
+                : "bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:bg-zinc-800/80 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                }`}
             >
               <Show
                 when={isPinned()}
@@ -192,8 +189,8 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
               onClick={() => local.onTitleClick?.()}
               class="group flex items-center cursor-pointer select-none border-none bg-transparent p-0 text-xs font-semibold text-stone-600 transition-colors hover:text-stone-900 dark:text-zinc-300 dark:hover:text-zinc-100"
             >
-              <span class="underline underline-offset-4 decoration-stone-300 transition-colors group-hover:decoration-stone-600 dark:decoration-zinc-600 dark:group-hover:decoration-zinc-300">
-                📖 笔记面板
+              <span class="underline underline-offset-4 decoration-stone-300 transition-colors group-hover:decoration-black dark:decoration-zinc-600 dark:group-hover:decoration-white text-black dark:text-black">
+                📖 笔记列表
               </span>
             </button>
           </div>

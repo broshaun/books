@@ -15,14 +15,25 @@ interface TextFieldProps {
 function TextField(props: TextFieldProps) {
   return (
     <div
-      class={`w-full rounded-md border border-stone-300 bg-white overflow-hidden flex items-center transition-opacity ${
+      class={`w-full rounded-md border overflow-hidden flex items-center transition-opacity shadow-xs ${
         props.disabled ? "opacity-60 cursor-not-allowed" : "opacity-100"
       }`}
-      style={{ "max-width": `${props.maxWidth ?? 250}px` }}
+      style={{
+        "max-width": `${props.maxWidth ?? 250}px`,
+        "background-color": "var(--bg-main)",
+        "border-color": "var(--border-color)",
+      }}
     >
       <Show when={props.label}>
-        <div class="px-3 h-10 min-w-[66px] bg-stone-50 border-r border-stone-200 flex items-center justify-center shrink-0">
-          <span class="text-xs font-semibold text-stone-500">{props.label}</span>
+        <div 
+          class="px-3 h-10 min-w-[66px] border-r flex items-center justify-center shrink-0 select-none"
+          style={{
+            "background-color": "var(--bg-header)",
+            "border-color": "var(--border-color)",
+            "color": "var(--text-color)",
+          }}
+        >
+          <span class="text-xs font-semibold opacity-80" style={{ color: "inherit" }}>{props.label}</span>
         </div>
       </Show>
 
@@ -34,7 +45,10 @@ function TextField(props: TextFieldProps) {
         onInput={(e) => props.onChanged?.(e.currentTarget.value)}
         onKeyDown={(e) => props.onKeyDown?.(e)}
         autocomplete={props.autocomplete}
-        class="flex-1 px-3 h-10 text-sm bg-transparent border-none outline-none disabled:cursor-not-allowed text-stone-900 placeholder:text-stone-400"
+        class="flex-1 px-3 h-10 text-sm bg-transparent border-none outline-none disabled:cursor-not-allowed"
+        style={{
+          "color": "var(--text-color)",
+        }}
       />
     </div>
   );
@@ -68,11 +82,22 @@ export function RegisterUI(props: RegisterUIProps) {
   };
 
   return (
-    <div class="flex flex-col items-center justify-center gap-4 w-full h-full min-h-fit bg-stone-100 p-6 text-stone-900 box-border">
-      <h3 class="text-lg font-bold text-stone-900">注册账号</h3>
+    <div 
+      class="flex flex-col items-center justify-center gap-4 w-full h-full min-h-fit p-6 box-border select-none"
+      style={{
+        "background-color": "var(--bg-main)",
+        "color": "var(--text-color)",
+      }}
+    >
+      <h3 class="text-lg font-bold tracking-tight" style={{ color: "inherit" }}>注册账号</h3>
 
-      {/* 分割线 */}
-      <div class="w-full max-w-[250px] h-[1px] bg-gradient-to-r from-transparent via-stone-300 to-transparent my-1" />
+      {/* 渐变分割线 */}
+      <div 
+        class="w-full max-w-[250px] h-[1px] my-1" 
+        style={{ 
+          "background": "linear-gradient(to right, transparent, var(--border-color), transparent)" 
+        }} 
+      />
 
       {/* 账号输入框 */}
       <TextField
@@ -97,26 +122,38 @@ export function RegisterUI(props: RegisterUIProps) {
         autocomplete="new-password"
       />
 
-      {/* 蓝色注册按钮 */}
+      {/* 注册按钮（与登录按钮保持一致的极简主题反色设计） */}
       <button
         type="button"
         disabled={props.loading}
         onClick={handleSubmit}
-        class="w-full max-w-[250px] h-[42px] rounded-lg bg-sky-500 border border-sky-600 text-white font-medium text-sm flex items-center justify-center transition-colors hover:bg-sky-600 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+        class="w-full max-w-[250px] h-[42px] rounded-lg font-medium text-sm flex items-center justify-center transition-all hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-xs border"
+        style={{
+          "background-color": "var(--text-color)",
+          "color": "var(--bg-main)",
+          "border-color": "var(--border-color)",
+        }}
       >
         <Show when={props.loading} fallback="注册">
-          <span class="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+          <span 
+            class="inline-block animate-spin w-4 h-4 border-2 border-t-transparent rounded-full"
+            style={{
+              "border-color": "var(--bg-main)",
+              "border-top-color": "transparent",
+            }}
+          />
         </Show>
       </button>
 
       {/* 只有存在 toLogin 回调时才显示 */}
       <Show when={props.toLogin}>
-        <div class="text-sm text-stone-600 mt-1">
+        <div class="text-xs opacity-80 mt-1" style={{ color: "inherit" }}>
           已有账号？{" "}
           <button
             type="button"
             onClick={() => props.toLogin?.()}
-            class="text-sky-600 hover:text-sky-700 underline cursor-pointer font-medium"
+            class="underline cursor-pointer font-medium bg-transparent border-none p-0"
+            style={{ color: "inherit" }}
           >
             登录
           </button>
