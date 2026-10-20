@@ -26,9 +26,9 @@ function RouteComponent() {
   return (
     <AppShell
       header={{ height: 50, padding: safely().top }}
-      footer={{ height: 0 }}
-      navbar={{ padding: 0 }}
-      aside={{ padding: 0 }}
+      footer={{ height: 0, padding: safely().bottom }}
+      navbar={{ padding: safely().left }}
+      aside={{ padding: safely().right }}
 
     >
       <AppShell.Header>

@@ -4,6 +4,7 @@ import { winSize } from "@/lib/winSize";
 import { AppShell } from "@/components/AppShell";
 import { createEffect } from "solid-js";
 import { useStore2 } from "@/hooks/useStore2";
+import { useSafeArea } from '@/hooks/useSafeArea';
 
 
 export const Route = createFileRoute('/mobile/reader/$path')({
@@ -13,6 +14,7 @@ export const Route = createFileRoute('/mobile/reader/$path')({
 function RouteComponent() {
   const params = Route.useParams();
   const { height, width } = winSize();
+  const safely = useSafeArea();
 
   createEffect(() => {
     useStore2.setHeight(height);
@@ -21,8 +23,10 @@ function RouteComponent() {
 
   return (
     <AppShell
-      header={{ padding: 0 }}
-      footer={{ height: 0 }}
+      header={{ padding: safely().top }}
+      footer={{ padding: safely().bottom }}
+      navbar={{ padding: safely().left }}
+      aside={{ padding: safely().right }}
     >
       <AppShell.Header />
       <AppShell.Main  >
