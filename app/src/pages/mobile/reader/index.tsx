@@ -388,6 +388,8 @@ export function Reader(props: ReaderProps) {
 
 
       <EpubDrawer
+        initialX={-16}
+        initialY={16}
         width={"35%"}
         open={notesOpened()}
         onOpenChange={(opend) => { setNotesOpened(opend) }}

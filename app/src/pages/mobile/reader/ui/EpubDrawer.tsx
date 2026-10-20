@@ -17,16 +17,15 @@ export interface EpubDrawerProps {
   open?: boolean;
   initialOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
-  
-  /** 点击图书按钮时的专属回调 */
   onToggleOpen?: (open: boolean) => void;
-
-  /** 点击“笔记面板”标题时的回调 */
   onTitleClick?: () => void;
-
   pinned?: boolean;
   initialPinned?: boolean;
   onPinChange?: (pinned: boolean) => void;
+  
+  // 💡 新增：支持像 FloatingButton 一样的容器内坐标控制
+  initialX?: number | string;
+  initialY?: number | string;
 
   bg?: string;
   width?: number | string;
@@ -43,16 +42,16 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
     "pinned",
     "initialPinned",
     "onPinChange",
+    "initialX",
+    "initialY",
     "bg",
     "width",
     "children",
   ]);
 
-  // 支持受控和非受控状态
   const [internalOpen, setInternalOpen] = createSignal(
     local.initialOpen ?? false
   );
-
   const [internalPinned, setInternalPinned] = createSignal(
     local.initialPinned ?? false
   );
@@ -74,13 +73,11 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
     local.onPinChange?.(value);
   };
 
-  // 点击图书按钮展开
   const handleOpenDrawer = () => {
     setOpen(true);
     local.onToggleOpen?.(true);
   };
 
-  // 关闭时自动取消固定
   const closeDrawer = () => {
     if (isPinned()) setPinned(false);
     setOpen(false);
@@ -91,43 +88,62 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
     setPinned(!isPinned());
   };
 
-  // 宽度支持 px / % / vw 等
+  // 💡 智能解析按钮位置（完全复用 FloatingButton 的逻辑）
+  const parsePositionStyle = (x?: number | string, y?: number | string) => {
+    const style: Record<string, string> = {};
+
+    if (typeof x === "number" && x < 0) {
+      style.right = `${Math.abs(x)}px`;
+    } else if (typeof x === "string" && x.startsWith("-")) {
+      style.right = `${parseFloat(x)}px`;
+    } else {
+      style.left = x === undefined ? "16px" : typeof x === "number" ? `${x}px` : x;
+    }
+
+    if (typeof y === "number" && y < 0) {
+      style.bottom = `${Math.abs(y)}px`;
+    } else if (typeof y === "string" && y.startsWith("-")) {
+      style.bottom = `${parseFloat(y)}px`;
+    } else {
+      style.top = y === undefined ? "16px" : typeof y === "number" ? `${y}px` : y;
+    }
+
+    return style;
+  };
+
   const drawerWidth = () => {
-    const width = local.width ?? "80%";
-    return typeof width === "number"
-      ? `${width}px`
-      : width;
+    const width = local.width ?? "320px";
+    return typeof width === "number" ? `${width}px` : width;
   };
 
   const background = () => local.bg ?? "";
-
-  const isTailwindBg = () =>
-    background().startsWith("bg-");
+  const isTailwindBg = () => background().startsWith("bg-");
 
   return (
     <>
-      {/* 展开图书按钮 */}
+      {/* 展开图书按钮：支持通过 initialX / initialY 自由定位在容器内部 */}
       <Show when={!isOpen()}>
         <button
           type="button"
           title="展开笔记"
           aria-label="展开笔记"
           onClick={handleOpenDrawer}
-          class="absolute right-4 top-4 z-30 flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white/95 p-2.5 text-stone-800 shadow-lg backdrop-blur-md cursor-pointer select-none transition-all duration-300 hover:bg-stone-50 hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800/95 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          style={parsePositionStyle(local.initialX, local.initialY)}
+          class="absolute z-30 flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white/95 p-2.5 text-stone-800 shadow-lg backdrop-blur-md cursor-pointer select-none transition-all duration-300 hover:bg-stone-50 hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800/95 dark:text-zinc-100 dark:hover:bg-zinc-800"
         >
           <IconNotebook size={19} class="text-amber-600 dark:text-amber-500" />
         </button>
       </Show>
 
-      {/* 非固定模式遮罩 */}
+      {/* 非固定模式遮罩：绝对定位，严格限制在父容器（如 AppMain）内部 */}
       <Show when={isOpen() && !isPinned()}>
         <div
-          class="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px]"
+          class="absolute inset-0 z-40 bg-black/20 backdrop-blur-[1px]"
           onClick={closeDrawer}
         />
       </Show>
 
-      {/* Drawer 主体 */}
+      {/* Drawer 主体：absolute 定位，紧贴父容器右侧 */}
       <div
         style={{
           width: drawerWidth(),
@@ -135,7 +151,7 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
             ? { background: background() }
             : {}),
         }}
-        class={`fixed inset-y-0 right-0 z-50 flex h-full max-w-[95vw] flex-col shadow-2xl transition-transform duration-300 ease-out ${
+        class={`absolute inset-y-0 right-0 z-50 flex h-full max-w-[95vw] flex-col shadow-2xl transition-transform duration-300 ease-out ${
           isOpen()
             ? "translate-x-0 pointer-events-auto"
             : "translate-x-full pointer-events-none"
@@ -148,7 +164,6 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
         {/* 顶部操作栏 */}
         <div class="flex shrink-0 items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-zinc-800">
           <div class="flex items-center gap-2">
-            {/* 固定按钮 */}
             <button
               type="button"
               onClick={togglePin}
@@ -173,7 +188,6 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
               </Show>
             </button>
 
-            {/* 带下划线与回调的笔记面板标题 */}
             <button
               type="button"
               onClick={() => local.onTitleClick?.()}
@@ -185,7 +199,6 @@ export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
             </button>
           </div>
 
-          {/* 关闭按钮 */}
           <button
             type="button"
             onClick={closeDrawer}

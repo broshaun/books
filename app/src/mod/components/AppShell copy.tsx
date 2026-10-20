@@ -1,8 +1,11 @@
-
 import type { JSX } from "solid-js";
 
 interface SectionProps {
   children?: JSX.Element;
+}
+
+interface AppShellMainProps extends SectionProps {
+  ref?: (el: HTMLElement) => void;
 }
 
 interface LayoutConfig {
@@ -27,9 +30,7 @@ function Header(props: SectionProps) {
         "padding-top": "var(--header-padding)",
       }}
     >
-      <div class="w-full min-w-0">
-        {props.children}
-      </div>
+      <div class="w-full min-w-0">{props.children}</div>
     </header>
   );
 }
@@ -68,9 +69,10 @@ function Aside(props: SectionProps) {
   );
 }
 
-function Main(props: SectionProps) {
+function Main(props: AppShellMainProps) {
   return (
     <main
+      ref={props.ref}
       class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden"
       style={{
         "margin-left": "var(--navbar-total)",
@@ -92,9 +94,7 @@ function Footer(props: SectionProps) {
         "padding-bottom": "var(--footer-padding)",
       }}
     >
-      <div class="w-full min-w-0">
-        {props.children}
-      </div>
+      <div class="w-full min-w-0">{props.children}</div>
     </footer>
   );
 }
@@ -114,40 +114,20 @@ export function AppShell(props: AppShellProps) {
         "--aside-padding": `${props.aside?.padding ?? 0}px`,
         "--footer-padding": `${props.footer?.padding ?? 0}px`,
 
-        "--header-size": `${
-          (props.header?.height ?? 0) +
-          (props.header?.padding ?? 0)
-        }px`,
+        "--header-size": `${(props.header?.height ?? 0) + (props.header?.padding ?? 0)}px`,
+        "--navbar-size": `${(props.navbar?.width ?? 0) + (props.navbar?.padding ?? 0)}px`,
+        "--aside-size": `${(props.aside?.width ?? 0) + (props.aside?.padding ?? 0)}px`,
+        "--footer-size": `${(props.footer?.height ?? 0) + (props.footer?.padding ?? 0)}px`,
 
-        "--navbar-size": `${
-          (props.navbar?.width ?? 0) +
-          (props.navbar?.padding ?? 0)
-        }px`,
+        "--header-total": "calc(var(--header-size) + var(--header-margin))",
+        "--navbar-total": "calc(var(--navbar-size) + var(--navbar-margin))",
+        "--aside-total": "calc(var(--aside-size) + var(--aside-margin))",
+        "--footer-total": "calc(var(--footer-size) + var(--footer-margin))",
 
-        "--aside-size": `${
-          (props.aside?.width ?? 0) +
-          (props.aside?.padding ?? 0)
-        }px`,
-
-        "--footer-size": `${
-          (props.footer?.height ?? 0) +
-          (props.footer?.padding ?? 0)
-        }px`,
-
-        "--header-total":
-          "calc(var(--header-size) + var(--header-margin))",
-
-        "--navbar-total":
-          "calc(var(--navbar-size) + var(--navbar-margin))",
-
-        "--aside-total":
-          "calc(var(--aside-size) + var(--aside-margin))",
-
-        "--footer-total":
-          "calc(var(--footer-size) + var(--footer-margin))",
-
-        "padding-top": "var(--header-total)",
+        // "padding-top": "var(--header-total)",
+        "padding-top": "calc(var(--header-total) + env(safe-area-inset-top, 0px))", // 自动避开顶部状态栏
         "padding-bottom": "var(--footer-total)",
+        
       } as JSX.CSSProperties}
     >
       {props.children}

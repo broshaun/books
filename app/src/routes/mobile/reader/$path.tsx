@@ -13,7 +13,6 @@ export const Route = createFileRoute('/mobile/reader/$path')({
 
 function RouteComponent() {
   const params = Route.useParams();
-  const safety = useSafety();
   const { height, width } = winSize();
 
   createEffect(() => {
@@ -24,21 +23,11 @@ function RouteComponent() {
   return (
     <AppShell
       header={{ padding: 0 }}
-      // navbar={{ padding: safety.top() }}
-      // aside={{ padding: safety.bottom() }}
       footer={{ height: 0 }}
     >
       <AppShell.Header />
 
-      <AppShell.Main
-        ref={(el) => {
-          // requestAnimationFrame(() => {
-          //   useStore2.setHeight(el.clientHeight);
-          //   useStore2.setWidth(el.clientWidth);
-
-          // });
-        }}
-      >
+      <AppShell.Main  >
         <Reader path={params().path} />
       </AppShell.Main>
       {/* <AppShell.Footer /> */}
