@@ -39,6 +39,7 @@ function RouteComponent() {
   })
 
 
+
   return (
     <div class="h-screen grid place-items-center">
       <div class="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />

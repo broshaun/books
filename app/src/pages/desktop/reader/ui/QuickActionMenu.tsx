@@ -1,30 +1,27 @@
 import { createSignal, children, Show, onMount, onCleanup, type JSX } from 'solid-js';
-import { IconPlus, IconX } from '@tabler/icons-solidjs';
+import { IconPlus } from '@tabler/icons-solidjs';
 
 export interface QuickActionMenuProps {
   children?: JSX.Element;
   position?: { bottom?: number; right?: number };
-  /** 👈 新增：菜单展开方向 (top: 向上, bottom: 向下, left: 向左, right: 向右) */
-  direction?: 'top' | 'bottom' | 'left' | 'right';
+  show?: boolean;
 }
 
 export function QuickActionMenu(props: QuickActionMenuProps) {
   const [opened, setOpened] = createSignal(false);
   const [isDragging, setIsDragging] = createSignal(false);
-  const [pos, setPos] = createSignal({
-    bottom: props.position?.bottom ?? 40,
-    right: props.position?.right ?? 24,
-  });
 
-  let menuRef: HTMLDivElement | undefined;
+  let containerRef!: HTMLDivElement;
+  let menuPanelRef!: HTMLDivElement;
+
+  let bottom = props.position?.bottom ?? 40;
+  let right = props.position?.right ?? 24;
+
   let hasMoved = false;
-  let startX = 0;
-  let startY = 0;
-  let startBottom = 0;
-  let startRight = 0;
+  let startX = 0, startY = 0, startBottom = 0, startRight = 0;
 
   const handleOutsideClick = (e: PointerEvent) => {
-    if (opened() && menuRef && !menuRef.contains(e.target as Node)) {
+    if (opened() && containerRef && !containerRef.contains(e.target as Node)) {
       setOpened(false);
     }
   };
@@ -38,12 +35,13 @@ export function QuickActionMenu(props: QuickActionMenuProps) {
     hasMoved = false;
     startX = e.clientX;
     startY = e.clientY;
-    startBottom = pos().bottom;
-    startRight = pos().right;
+    startBottom = bottom;
+    startRight = right;
+    document.body.style.userSelect = 'none';
 
-    const handlePointerMove = (moveEvent: PointerEvent) => {
-      const dx = moveEvent.clientX - startX;
-      const dy = moveEvent.clientY - startY;
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
 
       if (!hasMoved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
         hasMoved = true;
@@ -52,94 +50,90 @@ export function QuickActionMenu(props: QuickActionMenuProps) {
       }
 
       if (hasMoved) {
-        setPos({
-          bottom: Math.max(16, Math.min(startBottom - dy, window.innerHeight - 80)),
-          right: Math.max(16, Math.min(startRight - dx, window.innerWidth - 80)),
-        });
+        bottom = Math.max(0, Math.min(startBottom - dy, window.innerHeight - 44));
+        right = Math.max(0, Math.min(startRight - dx, window.innerWidth - 44));
+
+        containerRef.style.bottom = `${bottom}px`;
+        containerRef.style.right = `${right}px`;
+
+        if (menuPanelRef) {
+          const isLeft = right > window.innerWidth / 2;
+          menuPanelRef.className = getPanelClass(isLeft, opened());
+        }
       }
     };
 
-    const handlePointerUp = (upEvent: PointerEvent) => {
+    const onUp = (ev: PointerEvent) => {
       setIsDragging(false);
-      try { (e.currentTarget as HTMLElement).releasePointerCapture(upEvent.pointerId); } catch {}
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
+      try { (e.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId); } catch {}
+      document.body.style.userSelect = '';
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
     };
 
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
   };
 
-  // 根据 direction 计算弹出菜单的绝对定位偏移与动画原点
-  const getDirectionStyles = () => {
-    const dir = props.direction || 'top';
-    switch (dir) {
-      case 'bottom':
-        return {
-          container: 'absolute top-full mt-3 flex-col',
-          origin: 'origin-top',
-        };
-      case 'left':
-        return {
-          container: 'absolute right-full mr-3 flex-row',
-          origin: 'origin-right',
-        };
-      case 'right':
-        return {
-          container: 'absolute left-full ml-3 flex-row',
-          origin: 'origin-left',
-        };
-      case 'top':
-      default:
-        return {
-          container: 'absolute bottom-full mb-3 flex-col',
-          origin: 'origin-bottom',
-        };
-    }
+  // 💡 利用你的 CSS 主题变量动态构建面板样式（自动适配默认、Dark、Sepia、Eye-green、Gray）
+  const getPanelClass = (isLeft: boolean, isOpen: boolean) => {
+    const dir = isLeft ? 'left-full ml-3.5 origin-left' : 'right-full mr-3.5 origin-right';
+    const state = isOpen
+      ? 'opacity-100 scale-100 pointer-events-auto'
+      : 'opacity-0 scale-90 pointer-events-none';
+    return `absolute flex items-center gap-1.5 p-2 rounded-2xl backdrop-blur-2xl transition-all duration-200 ${dir} ${state}`;
   };
 
   const resolvedChildren = children(() => props.children);
 
   return (
-    <>
+    <Show when={props.show ?? true}>
       <Show when={isDragging()}>
-        <div class="fixed inset-0 z-35 bg-transparent touch-none" />
+        <div class="fixed inset-0 z-35 bg-transparent touch-none select-none" />
       </Show>
 
       <div
-        ref={menuRef}
-        class="fixed z-30 flex flex-col items-center select-none touch-none"
-        style={{ bottom: `${pos().bottom}px`, right: `${pos().right}px` }}
+        ref={containerRef}
+        class="fixed z-30 flex items-center select-none touch-none"
+        style={{ bottom: `${bottom}px`, right: `${right}px` }}
       >
-        {/* 弹出菜单项：根据 direction 动态调整位置和展开方向 */}
+        {/* 💡 绑定 CSS 变量：背景、边框、文字、阴影完全由当前主题控制 */}
         <div
-          class={`absolute flex items-center gap-2 p-2 rounded-3xl bg-white/90 backdrop-blur-md border border-stone-200 shadow-xl transition-all duration-200 ${
-            getDirectionStyles().container
-          } ${getDirectionStyles().origin} ${
-            opened()
-              ? 'opacity-100 scale-100 translate-x-0 translate-y-0 pointer-events-auto'
-              : 'opacity-0 scale-95 translate-x-0 translate-y-0 pointer-events-none'
-          }`}
+          ref={menuPanelRef}
+          class={getPanelClass(right > window.innerWidth / 2, opened())}
+          style={{
+            "background-color": "var(--bg-surface)",
+            color: "var(--text-main)",
+            border: "1px solid var(--border-color)",
+            "box-shadow": "var(--shadow-lg)",
+            opacity: opened() ? "1" : "0",
+            transform: opened() ? "scale(1)" : "scale(0.9)",
+            "pointer-events": opened() ? "auto" : "none",
+          }}
           onClick={() => setOpened(false)}
         >
           {resolvedChildren()}
         </div>
 
-        {/* 移动端主控制按钮 */}
+        {/* 💡 主悬浮按钮：完美契合当前主题的 3D 立体质感与变量颜色 */}
         <button
           type="button"
           aria-label="功能菜单"
           onPointerDown={handlePointerDown}
           onClick={() => !hasMoved && setOpened((o) => !o)}
-          class="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-lg active:scale-95 transition-transform duration-200 cursor-pointer"
-          style={{ transform: opened() ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          class="w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-2xl active:scale-92 active:translate-y-0.5 transition-all duration-200 cursor-pointer select-none"
+          style={{
+            "background-color": "var(--bg-surface)",
+            color: "var(--text-title)",
+            border: "1px solid var(--border-color)",
+            "box-shadow": "var(--shadow-lg), inset 0 1px 1px rgba(255,255,255,0.4)",
+            transform: opened() ? 'rotate(45deg)' : 'rotate(0deg)',
+          }}
         >
-          <Show when={opened()} fallback={<IconPlus size={24} />}>
-            <IconX size={24} />
-          </Show>
+          <IconPlus size={22} stroke="2.5" />
         </button>
       </div>
-    </>
+    </Show>
   );
 }
 

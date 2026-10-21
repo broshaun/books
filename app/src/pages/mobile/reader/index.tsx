@@ -390,6 +390,7 @@ export function Reader(props: ReaderProps) {
             <EpubNotesEdit
               notes={get(markCfiRange())}
               onNoteChange={(v) => { put(v); }}
+              onDelete={(v) => { del(v.cfiRange); push('Notes'); }}
             />
           </Match>
 
@@ -432,7 +433,7 @@ export function Reader(props: ReaderProps) {
 
       <QuickActionMenu
         position={{ bottom: 30, right: 30 }}
-        direction='left'
+        // direction='left'
         show={floatingShow()}
       >
         <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">

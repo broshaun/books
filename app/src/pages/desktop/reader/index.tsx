@@ -394,6 +394,7 @@ export function Reader(props: ReaderProps) {
             <EpubNotesEdit
               notes={get(markCfiRange())}
               onNoteChange={(v) => { put(v); }}
+              onDelete={(v) => { del(v.cfiRange); push('Notes'); }}
             />
           </Match>
 
@@ -434,7 +435,7 @@ export function Reader(props: ReaderProps) {
         onThemeChange={(theme) => { useStore2.setTheme(theme.id as ThemeMode); }}
       />
 
-      <QuickActionMenu position={{ bottom: 30, right: 30 }} direction='left'>
+      <QuickActionMenu position={{ bottom: 30, right: 30 }} >
         <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconList size={20} />
         </button>
