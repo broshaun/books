@@ -4,10 +4,6 @@ import { apiConfig } from '@/config';
 import { onMount } from 'solid-js';
 import VConsole from 'vconsole';
 
-// 仅在开发环境或按需开启
-if (import.meta.env.DEV) {
-  new VConsole();
-}
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
@@ -16,7 +12,7 @@ export const Route = createFileRoute('/')({
 
 function RouteComponent() {
   const navigate = useNavigate()
-  
+
   const isIPad = /iPad/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isIPhone = /iPhone|iPod/i.test(navigator.userAgent);
   const isAndroid = /Android/i.test(navigator.userAgent);
@@ -30,7 +26,13 @@ function RouteComponent() {
 
   onMount(() => {
     if (isMobile) {
+
+      // 仅在开发环境或按需开启
+      if (import.meta.env.DEV) {
+        new VConsole();
+      }
       return navigate({ to: "/mobile/shelf" });
+
     } else {
       return navigate({ to: "/desktop/shelf" });
     }

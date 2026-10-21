@@ -1,34 +1,37 @@
-import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus } from "@tabler/icons-solidjs";
-import { createSignal, onMount, on, onCleanup, createEffect, createResource, Switch, Match } from "solid-js";
+import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus, IconDoorExit, IconChevronLeft, IconChevronRight } from "@tabler/icons-solidjs";
+import { createSignal, onCleanup, createEffect, on, Show, Switch, Match, createMemo } from "solid-js";
+import { debounce } from "@solid-primitives/scheduled";
 import { useNavigate } from "@tanstack/solid-router";
-import { useStore2 } from "@/hooks/useStore2";
+import { useStore2, type ThemeMode } from "@/hooks/useStore2";
 import { useEpubViews } from "./hook/useEpubViews";
 import { useEpubNotes } from "./hook/useEpubNotes";
-import { useCaptured } from "./hook/useCaptured";
-
+import { useIntentBuffer } from "@/hooks/useIntentBuffer";
+import { useBookMeta } from "./hook/useBookMeta";
 import { EpubSearchDrawer } from "./ui/EpubSearchDrawer";
 import { EpubTocDrawer } from "./ui/EpubTocDrawer";
 import { EpubStyleDrawer } from "./ui/EpubStyleDrawer";
 import { QuickActionMenu } from "./ui/QuickActionMenu";
-import { EpubNotesEdit } from "./ui/EpubNotesEdit";
-import { EpubNotesCreate } from "./ui/EpubNotesCreate";
-import EpubNotesTimeline from "./ui/EpubNotesTimeline";
-import EpubPaper from "./ui/EpubPaper";
-import Box from "@/components/Box";
-import SplitLayout from "./ui/SplitLayout";
-import BookInfoPanel from "./ui/BookInfoPanel";
 import { useBookmarks } from "./hook/useBookmarks";
 import { useEpubNotesSync } from "./hook/useEpubNotesSync";
 import { notesCache } from "@/api/cache/notesCache";
-import { debounce } from "@solid-primitives/scheduled";
-import { type Rendition } from "epubjs"
-import { useBookMeta } from "./hook/useBookMeta";
+import { EpubView } from "./ui/EpubView";
+import { BookInfoPanel } from "./ui/BookInfoPanel";
+import { EpubDrawer } from "./ui/EpubDrawer";
+import { EpubNotesCreate } from "./ui/EpubNotesCreate";
+import { EpubNotesEdit } from "./ui/EpubNotesEdit";
+import { EpubNotesTimeline } from "./ui/EpubNotesTimeline";
+import { type Rendition } from "epubjs";
+import { FloatingButton } from "@/components/FloatingButton";
+import { onMount } from "solid-js";
+import { ScrollContainer } from "@/components/ScrollContainer";
+import { useSafeArea } from '@/hooks/useSafeArea';
+
+
 
 
 const savePositionDebounced = debounce((cfi: string) => {
   localStorage.setItem("READ_POSITION_KEY", cfi);
 }, 3000);
-
 
 const removeHighlightDebounced = debounce((inst: Rendition, cfi: string) => {
   inst.annotations.remove(cfi, "highlight");
@@ -38,7 +41,7 @@ interface ReaderProps {
   path: string;
 }
 
-export interface NewNote {
+interface NewNote {
   book: string;
   index: number;
   cfiRange: string;
@@ -47,87 +50,204 @@ export interface NewNote {
 }
 
 export function Reader(props: ReaderProps) {
-  const navigate = useNavigate();
-  const height = () => useStore2.height;
-  const backgroundColor = () => useStore2.backgroundColor;
-  const setBackgroundColor = useStore2.setBackgroundColor;
-
-  const [currentCfi, setCfi] = createSignal<string>(); // 当前位置
-
-  // const { openBook } = useEpubLoader();
-
-  const { bookmarks, toggleBookmark, isBookmarked, removeBookmark } = useBookmarks(() => currentBook());
-
-  function handleToggleBookmark() {
-    const cfi = currentCfi();
-    if (cfi) {
-      toggleBookmark(cfi);
-    }
-  };
-
   let viewerRef!: HTMLDivElement;
+
+  const navigate = useNavigate();
+
+  const [currentCfi, setCfi] = createSignal<string>();
+  const [activeNote, setActiveNote] = createSignal<NewNote>();
+  const [notesOpened, setNotesOpened] = createSignal(false);
+  const [isPinned, setIsPinned] = createSignal(false);
+  const [tag, setTag] = createSignal<string | null>(null);
   const [instance, setInstance] = createSignal<any>(null);
+  const [markCfiRange, setMarkCfiRange] = createSignal<string | null>(null);
+  const [index, setIndex] = createSignal<number>(0);
+  const [tocOpened, setTocOpened] = createSignal(false);
+  const [searchOpened, setSearchOpened] = createSignal(false);
+  const [styleOpened, setStyleOpened] = createSignal(false);
+  const [isLoading, setIsLoading] = createSignal(true);
+  const [floatingShow, setFloatingShow] = createSignal(true);
+
+
+  const safely = useSafeArea()
+  const { book: currentBook, meta: bookMata } = useBookMeta(() => props.path);
+  const { put, del, filter, get, getTags } = useEpubNotes(() => instance());
+  const { bookmarks, toggleBookmark, isBookmarked, removeBookmark } = useBookmarks(() => currentBook());
+  const { hideNotes, toggleNotes } = useEpubViews(instance);
+
+
+  const { current, push } = useIntentBuffer({
+    waitMs: 200, // 开启 200ms 缓冲窗口，完美聚合同步触发的触控事件
+    resolve: (document) => {
+      console.log("document实时内容:", document);
+
+      // 返回笔记列表
+      if (document.has("Notes")) {
+        return "TIMELINE";
+      }
+
+      // 点击高亮笔记
+      if (document.has("Mark")) {
+        setNotesOpened(true);
+        return "EDIT_NOTE";
+      }
+
+      // 快速点击
+      if (document.has("PointerDown") && document.has("PointerUp")) {
+        const downTime = document.get("PointerDown")!.time;
+        const upTime = document.get("PointerUp")!.time;
+        const duration = upTime - downTime;
+        if (duration <= 300) {
+          const PointerDownX = document.get("PointerDown")!.x
+          const PointerDownY = document.get("PointerDown")!.y
+          const PointerUpX = document.get("PointerUp")!.x
+          const PointerUpY = document.get("PointerUp")!.y
+          if (PointerDownX === PointerUpX && PointerDownY === PointerUpY) {
+            setFloatingShow(p => !p)
+            return "TIMELINE";
+          }
+        }
+      }
+
+      // 选择文字，同时包含 "Select" 和 "PointerUp"
+      if (document.has("PointerDown") && document.has("Select")) {
+        if (document.has("PointerUp")) {
+          const upTime = document.get("PointerUp")!.time;
+          const seTime = document.get("Select")!.time;
+          if (upTime > seTime) {
+            setNotesOpened(true);
+            return "CREATE_NOTE";
+          }
+        }
+      }
+    }
+  });
+
+  const viewerWidth = createMemo(() => { return isPinned() ? "65%" : "100%" });
+
+  useEpubNotesSync({
+    interval: 3000,
+    onSyncSet: async (localNotes) => {
+      await notesCache.set(localNotes);
+    },
+  });
+
+  onMount(() => {
+    
+    let lastWidth = 0;
+    let lastHeight = 0;
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const inst = instance();
+      if (!inst) return;
+      const { width, height } = entry.contentRect;
+      const roundedWidth = Math.round(width);
+      const roundedHeight = Math.round(height);
+      if (roundedWidth <= 0 || roundedHeight <= 0) return;
+      // 只有当尺寸真正发生变化时才调用 resize，防止死循环卡死
+      if (roundedWidth !== lastWidth || roundedHeight !== lastHeight) {
+        lastWidth = roundedWidth;
+        lastHeight = roundedHeight;
+        // 稍微延后或者直接安全调用
+        requestAnimationFrame(() => {
+          inst.resize(roundedWidth, roundedHeight);
+        });
+      }
+    });
+    observer.observe(viewerRef);
+    onCleanup(() => {
+      observer.disconnect();
+    });
+  });
+
+
   createEffect(() => {
     const bookInstance = currentBook();
-    console.log('bookInstance', bookInstance)
     if (!viewerRef || !bookInstance) return;
-    const renderInstance = bookInstance.renderTo(viewerRef, {
+    // 1. 创建渲染实例
+    const ints = bookInstance.renderTo(viewerRef, {
       flow: "scrolled",
       width: "100%",
       height: "100%",
       allowScriptedContent: true,
     });
-    setInstance(renderInstance);
-  });
+    setInstance(ints);
+    // 3. 立即绑定所有事件和钩子
+    ints.on("markClicked", handleMarkClicked);
+    ints.on("selected", handleSelected);
+    ints.on("relocated", handleRelocated);
+    ints.on("click", handleClick);
 
-  // 获取图书元数据、底部 book 实例以及自动计算好的 bookId
-  const { book: currentBook,meta:bookMeta } = useBookMeta(() => props.path);
-  const { put, del, filter, get, getTags } = useEpubNotes(() => instance());
+    // 仅注入防止 iOS 文本大小自动调整的样式，保持原汁原味
+    ints.hooks.content.register((contents: any) => {
+      const doc = contents.document;
+      if (doc) {
+        doc.addEventListener("pointerdown", handlePointerDown);
+        doc.addEventListener("pointerup", handlePointerUp);
+        const styleEl = doc.createElement("style");
+        styleEl.innerHTML = `* {
+            -webkit-text-size-adjust: 100% !important;
+            text-size-adjust: 100% !important;
+          }`;
+        doc.head.appendChild(styleEl);
+      }
+    });
 
-  const [tag, setTag] = createSignal<string | null>(null)
-
-  
-  const [tocOpened, setTocOpened] = createSignal(false);
-  const [searchOpened, setSearchOpened] = createSignal(false);
-  const [styleOpened, setStyleOpened] = createSignal(false);
-  const { hideNotes, toggleNotes } = useEpubViews(instance);
-  const [activeNote, setActiveNote] = createSignal<NewNote>();
-  const { capturedSet, capture } = useCaptured<string>([]);
-
-
-
-  useEpubNotesSync({
-    interval: 3000,
-    onSyncSet: async (localNotes) => {
-      console.log('同步数据localNotes', localNotes);
-      await notesCache.set(localNotes);
-    },
-  });
-
-  function handleJump(cfiOrHref: string) {
-    instance()?.display(cfiOrHref);
-  };
-
-  function handleMouseUp() {
-    const hasSelection = capturedSet().has("select");
-    if (!hasSelection) {
-      capture("click");
+    // 4. 设置初始样式与恢复阅读进度
+    const savedFontSize = useStore2.fontSize;
+    if (savedFontSize) {
+      ints.themes.fontSize(`${savedFontSize}px`);
     }
-  };
+
+    const savedCfi = localStorage.getItem("READ_POSITION_KEY");
+    (async () => {
+      try {
+        setIsLoading(true);
+        await ints.display(savedCfi || undefined);
+      } catch (error) {
+        console.warn("恢复进度失败，打开首页", error);
+        await ints.display();
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+
+    // 5. 统一管理销毁清理
+    onCleanup(() => {
+      ints.destroy();
+    });
+  });
 
 
-  const [markCfiRange, setMarkCfiRange] = createSignal<string | null>(null);
+  // 处理正文点击事件
+  function handleClick(e: any) {
+    // console.log("点击事件：", e);
+  }
+
+  // 全局鼠标/触控按下处理
+  function handlePointerDown(e: PointerEvent) {
+    push('PointerDown', { 'x': e.offsetX, "y": e.offsetX })
+  }
+
+  // 全局鼠标/触控抬起处理
+  function handlePointerUp(e: PointerEvent) {
+    push('PointerUp', { 'x': e.offsetX, "y": e.offsetX })
+  }
+
+  // 选择高亮笔记
   function handleMarkClicked(cfiRange: string) {
-    capture("mark");
-    console.log('选中文字', cfiRange);
-    setMarkCfiRange(cfiRange)
+    push("Mark");
+    setMarkCfiRange(cfiRange);
   };
 
+  // 选择文字并触发新建笔记弹窗
   function handleSelected(cfiRange: string, contents: any) {
     const index = contents?.sectionIndex;
     const text = instance()?.getRange(cfiRange)?.toString() || "";
     if (!text.trim()) return;
-    capture("select");
+    push("Select");
     const newNoteItem: NewNote = {
       book: props.path,
       index: index,
@@ -138,6 +258,41 @@ export function Reader(props: ReaderProps) {
     setActiveNote(newNoteItem);
   };
 
+  // 实时同步读书位置与防抖存储进度
+  function handleRelocated(location: any) {
+    const cfi = location?.start?.cfi;
+    if (!cfi) return;
+    setCfi(cfi);
+    savePositionDebounced(cfi);
+    const newIndex = location?.start?.index;
+    if (newIndex !== 0) {
+      setIndex(newIndex);
+    }
+  };
+
+  // 切换当前阅读位置的书签状态
+  function handleToggleBookmark() {
+    const cfi = currentCfi();
+    if (cfi) {
+      toggleBookmark(cfi);
+    }
+  };
+
+  // 跳转到指定的章节链接或 CFI 位置
+  async function handleJump(cfiOrHref: string) {
+    const inst = instance();
+    if (!inst) return;
+    try {
+      setIsLoading(true);
+      await inst.display(cfiOrHref);
+    } catch (error) {
+      console.error("跳转失败:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 修改阅读器正文字体大小（回归旧版，只保留 themes.fontSize）
   function handleFontSizeChange(size: number) {
     const inst = instance();
     if (!inst) return;
@@ -150,34 +305,16 @@ export function Reader(props: ReaderProps) {
     }
   };
 
-
-
-
-  const [index, setIndex] = createSignal<number>(0);
-  function handleRelocated(location: any) {
-    const cfi = location?.start?.cfi;
-    if (!cfi) return;
-    setCfi(cfi);
-    savePositionDebounced(cfi);
-
-    const newIndex = location?.start?.index;
-    if (newIndex !== 0) {
-      setIndex(newIndex);
-    }
-
-  };
-
-
-  async function handleJumpCfiRange(cfiRange: string) {
+  // 跳转到指定的 CFI 范围
+  function handleJumpCfiRange(cfiRange: string) {
     const inst = instance();
     if (!inst) return;
-    return await inst.display(cfiRange);
+    inst.display(cfiRange);
   };
 
-
+  // 处理搜索结果选中并高亮显示
   function handleSearchResult(cfi: string, keyword: string) {
     handleJump(cfi);
-    console.log("keyword:", keyword);
     const inst = instance();
     if (!inst || !cfi) return;
     try {
@@ -189,95 +326,92 @@ export function Reader(props: ReaderProps) {
   }
 
 
-
-
-  createEffect(
-    on(
-      () => instance(),
-      async (inst) => {
-        console.log('inst', inst)
-        // 1. 如果没有实例，直接返回
-        if (!inst) return;
-        // 2. 定义事件处理函数
-        const contentHandler = (contents: any) => {
-          const doc = contents.document;
-          doc.addEventListener("mouseup", handleMouseUp);
-        };
-
-        // 3. 注册钩子和事件监听
-        inst.hooks.content.register(contentHandler);
-        inst.on("markClicked", handleMarkClicked);
-        inst.on("selected", handleSelected);
-        inst.on("relocated", handleRelocated);
-
-
-        // 4. 应用初始配置
-        const savedFontSize = useStore2.fontSize;
-        if (savedFontSize) {
-          inst.themes.fontSize(`${savedFontSize}px`);
-        }
-
-        const savedCfi = localStorage.getItem("READ_POSITION_KEY");
-
-        try {
-          await inst.display(savedCfi || undefined);
-        } catch (error) {
-          console.warn("恢复进度失败，打开首页", error);
-          await inst.display();
-        }
-        onCleanup(() => {
-          inst.destroy();
-        });
-      },
-
-    )
-  );
-
-
-
-
-createEffect(() => {
-  console.log("capturedSet() 实时内容:", Array.from(capturedSet()));
-})
-
   return (
-    <Box height={height()}>
-      <SplitLayout
-        bg={backgroundColor()}
-        height={height()}
-        onExit={() => { navigate({ to: "/desktop/shelf/" }); console.log('退出') }}
-        onPrevPage={() => { instance()?.prev(); console.log('上一页') }}
-        onNextPage={() => { instance()?.next(); console.log('下一页') }}
-        epub={<EpubPaper ref={viewerRef} />}
-        notesTitle={'笔记'}
-        notes={
-          <Switch fallback={<BookInfoPanel meta={bookMeta()} />}>
+    <ScrollContainer>
+      <EpubView
+        loading={isLoading()}
+        ref={viewerRef}
+        height="100%"
+        width={viewerWidth()}
+      >
 
-            <Match when={capturedSet().has("select")}>
-              <EpubNotesCreate newNote={activeNote()} onSave={(v) => { put(v); capture("mark") }} onCancel={() => { capture("click"); }} />
-            </Match>
+        <FloatingButton
+          show={floatingShow()}
+          initialX={16}
+          initialY={16}
+          icon={<IconDoorExit size={16} />}
+          iconPosition="left"
+          label="退出"
+          onClick={() => navigate({ to: "/desktop/shelf/" })}
+        />
 
-            <Match when={capturedSet().has("mark")}>
-              <EpubNotesEdit notes={get(markCfiRange())} onBack={()=>{capture("click")}} onNoteChange={(v) => { put(v); }} onDelete={(cfiRange) => { del(cfiRange); }} />
-            </Match>
+        <FloatingButton
+          show={floatingShow()}
+          initialX={16}
+          initialY={- 16}
+          icon={<IconChevronLeft size={16} />}
+          iconPosition="left"
+          label="上一页"
+          onClick={() => instance().prev()}
+        />
 
-            <Match when={capturedSet().has("click")}>
-              <EpubNotesTimeline
-                isSyncing={false}
-                tags={getTags({ index: index() })}
-                notes={filter({ index: index(), tags: tag() })}
-                onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }}
-                onDelete={(cfiRange) => { del(cfiRange); }}
-                onSelectTag={(tag) => { setTag(tag) }}
-                onContentClick={(cfiRange) => { handleMarkClicked(cfiRange); }}
-              />
-            </Match>
+        <FloatingButton
+          show={floatingShow()}
+          initialX={- 16}
+          initialY={- 16}
+          icon={<IconChevronRight size={16} />}
+          iconPosition="right"
+          label="下一页"
+          onClick={() => instance().next()}
+        />
 
-          </Switch>
-        }
-      />
+      </EpubView>
 
-      < EpubTocDrawer
+
+
+      <EpubDrawer
+        initialX={-16}
+        initialY={16}
+        width={"35%"}
+        open={notesOpened()}
+        onOpenChange={(opend) => { setNotesOpened(opend) }}
+        // bg={backgroundColor()}
+        pinned={isPinned()}
+        onPinChange={setIsPinned}
+        onTitleClick={() => { push('Notes') }}
+      >
+        <Switch fallback={<BookInfoPanel meta={bookMata()} />}>
+
+          <Match when={current() == "CREATE_NOTE"}>
+            <EpubNotesCreate
+              newNote={activeNote()}
+              onSave={(v) => { put(v); push("Mark"); }}
+              onCancel={() => { push("Notes"); }}
+            />
+          </Match>
+
+          <Match when={current() == "EDIT_NOTE"}>
+            <EpubNotesEdit
+              notes={get(markCfiRange())}
+              onNoteChange={(v) => { put(v); }}
+            />
+          </Match>
+
+          <Match when={current() == "TIMELINE"}>
+            <EpubNotesTimeline
+              tags={getTags({ index: index() })}
+              notes={filter({ index: index(), tags: tag() })}
+              onSelectNote={(cfiRange) => { handleJumpCfiRange(cfiRange); }}
+              onDelete={(cfiRange) => { del(cfiRange); }}
+              onSelectTag={(tag) => { setTag(tag); }}
+              onContentClick={(cfiRange) => { handleMarkClicked(cfiRange); }}
+            />
+          </Match>
+        </Switch>
+      </EpubDrawer>
+
+
+      <EpubTocDrawer
         opened={tocOpened()}
         onClose={() => setTocOpened(false)}
         book={currentBook()}
@@ -297,10 +431,10 @@ createEffect(() => {
         opened={styleOpened()}
         onClose={() => setStyleOpened(false)}
         onFontSizeChange={handleFontSizeChange}
-        onBackgroundColorChange={setBackgroundColor}
+        onThemeChange={(theme) => { useStore2.setTheme(theme.id as ThemeMode); }}
       />
 
-      <QuickActionMenu>
+      <QuickActionMenu position={{ bottom: 30, right: 30 }} direction='left'>
         <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconList size={20} />
         </button>
@@ -326,7 +460,7 @@ createEffect(() => {
           {hideNotes() ? <IconEye size={20} /> : <IconEyeOff size={20} />}
         </button>
       </QuickActionMenu>
-    </Box >
+    </ScrollContainer>
   );
 }
 

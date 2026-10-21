@@ -4,8 +4,10 @@ import { IconPlus, IconX } from '@tabler/icons-solidjs';
 export interface QuickActionMenuProps {
   children?: JSX.Element;
   position?: { bottom?: number; right?: number };
-  /** 👈 新增：菜单展开方向 (top: 向上, bottom: 向下, left: 向左, right: 向右) */
+  /** 菜单展开方向 (top: 向上, bottom: 向下, left: 向左, right: 向右) */
   direction?: 'top' | 'bottom' | 'left' | 'right';
+  /** 👈 新增：控制整个菜单组件的显示与隐藏 */
+  show?: boolean;
 }
 
 export function QuickActionMenu(props: QuickActionMenuProps) {
@@ -101,45 +103,48 @@ export function QuickActionMenu(props: QuickActionMenuProps) {
   const resolvedChildren = children(() => props.children);
 
   return (
-    <>
-      <Show when={isDragging()}>
-        <div class="fixed inset-0 z-35 bg-transparent touch-none" />
-      </Show>
+    /* 💡 通过 Show 包裹并绑定 props.show（默认值为 true），控制整体显隐 */
+    <Show when={props.show ?? true}>
+      <>
+        <Show when={isDragging()}>
+          <div class="fixed inset-0 z-35 bg-transparent touch-none" />
+        </Show>
 
-      <div
-        ref={menuRef}
-        class="fixed z-30 flex flex-col items-center select-none touch-none"
-        style={{ bottom: `${pos().bottom}px`, right: `${pos().right}px` }}
-      >
-        {/* 弹出菜单项：根据 direction 动态调整位置和展开方向 */}
         <div
-          class={`absolute flex items-center gap-2 p-2 rounded-3xl bg-white/90 backdrop-blur-md border border-stone-200 shadow-xl transition-all duration-200 ${
-            getDirectionStyles().container
-          } ${getDirectionStyles().origin} ${
-            opened()
-              ? 'opacity-100 scale-100 translate-x-0 translate-y-0 pointer-events-auto'
-              : 'opacity-0 scale-95 translate-x-0 translate-y-0 pointer-events-none'
-          }`}
-          onClick={() => setOpened(false)}
+          ref={menuRef}
+          class="fixed z-30 flex flex-col items-center select-none touch-none"
+          style={{ bottom: `${pos().bottom}px`, right: `${pos().right}px` }}
         >
-          {resolvedChildren()}
-        </div>
+          {/* 弹出菜单项：根据 direction 动态调整位置和展开方向 */}
+          <div
+            class={`absolute flex items-center gap-2 p-2 rounded-3xl bg-white/90 backdrop-blur-md border border-stone-200 shadow-xl transition-all duration-200 ${
+              getDirectionStyles().container
+            } ${getDirectionStyles().origin} ${
+              opened()
+                ? 'opacity-100 scale-100 translate-x-0 translate-y-0 pointer-events-auto'
+                : 'opacity-0 scale-95 translate-x-0 translate-y-0 pointer-events-none'
+            }`}
+            onClick={() => setOpened(false)}
+          >
+            {resolvedChildren()}
+          </div>
 
-        {/* 移动端主控制按钮 */}
-        <button
-          type="button"
-          aria-label="功能菜单"
-          onPointerDown={handlePointerDown}
-          onClick={() => !hasMoved && setOpened((o) => !o)}
-          class="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-lg active:scale-95 transition-transform duration-200 cursor-pointer"
-          style={{ transform: opened() ? 'rotate(90deg)' : 'rotate(0deg)' }}
-        >
-          <Show when={opened()} fallback={<IconPlus size={24} />}>
-            <IconX size={24} />
-          </Show>
-        </button>
-      </div>
-    </>
+          {/* 移动端主控制按钮 */}
+          <button
+            type="button"
+            aria-label="功能菜单"
+            onPointerDown={handlePointerDown}
+            onClick={() => !hasMoved && setOpened((o) => !o)}
+            class="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-lg active:scale-95 transition-transform duration-200 cursor-pointer"
+            style={{ transform: opened() ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          >
+            <Show when={opened()} fallback={<IconPlus size={24} />}>
+              <IconX size={24} />
+            </Show>
+          </button>
+        </div>
+      </>
+    </Show>
   );
 }
 

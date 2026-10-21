@@ -24,23 +24,24 @@
    ========================================================================== */
 
 :root, html {
-  --bg-main: #ffffff;
-  --bg-surface: #f4f4f5;
+  /* 💡 默认主背景设为柔和干净的浅灰色，告别刺眼的纯白 */
+  --bg-main: #f3f4f6;
+  --bg-surface: #ffffff;
   --bg-input: #ffffff;
-  --bg-button-hover: #e4e4e7;
-  --bg-active: #e2e8f0;
-  --scrollbar-color: #d4d4d8;
+  --bg-button-hover: #e5e7eb;
+  --bg-active: #d1d5db;
+  --scrollbar-color: #cbd5e1;
   
-  --text-title: #09090b;
-  --text-main: #27272a;
-  --text-secondary: #71717a;
+  --text-title: #111827;
+  --text-main: #374151;
+  --text-secondary: #6b7280;
   --text-link-color: #2563eb;
   
-  --border-color: #e4e4e7;
+  --border-color: #e5e7eb;
   
-  --shadow-sm: 0 1px 2px 0 rgba(0,0,0,.05);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.05), 0 2px 4px -1px rgba(0,0,0,.03);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -2px rgba(0,0,0,.04);
+  --shadow-sm: 0 1px 2px 0 rgba(0,0,0,.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.04), 0 2px 4px -1px rgba(0,0,0,.02);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.06), 0 4px 6px -2px rgba(0,0,0,.03);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -157,4 +158,10 @@ html, body, #root {
 
 ::-webkit-scrollbar-thumb:hover {
   opacity: 0.8;
+}
+
+
+.epub-view {
+  width: 100% !important;
+  max-width: 100% !important;
 }

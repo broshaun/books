@@ -23,7 +23,7 @@ const LAST_SYNC_TIME_KEY = "epub_last_synced_at"; // 用于记录上一次同步
 export interface UseEpubNotesSyncOptions {
     interval?: number;                             
     onSyncGet?: () => Promise<NewNote[] | null>;   
-    onSyncSet?: (updatedNotes: NewNote[]) => Promise<void>; 
+    onSyncSet?: (updatedNotes: NewNote[]) => Promise<void>; // 此时传入的是最新时间戳更新的数据
 }
 
 export function useEpubNotesSync(options: UseEpubNotesSyncOptions = {}) {
@@ -49,8 +49,6 @@ export function useEpubNotesSync(options: UseEpubNotesSyncOptions = {}) {
             const normalized: NewNote = {
                 ...incoming,
                 bookId,
-                // 🌟 数据合并时也做好 bookName 兜底，防止远端数据缺少它
-                bookName: incoming.bookName || "未知书名",
                 color: incoming.color || "#fffa65",
                 tags: Array.isArray(incoming.tags) ? incoming.tags : [],
                 isUnderline: incoming.isUnderline ?? false,
@@ -94,14 +92,10 @@ export function useEpubNotesSync(options: UseEpubNotesSyncOptions = {}) {
                 }
             }
 
-            // 3. 筛选出变动数据，并强力清洗/兜底 bookName，防止后端报错
-            const changedNotes = currentNotes
-                .filter((note) => (note.updatedAt || 0) > lastSyncedAt)
-                .map((note) => ({
-                    ...note,
-                    // 🌟 核心修复：防止任何一条笔记因缺失 bookName 导致后端 Field required 报错
-                    bookName: note.bookName || "未知书名",
-                }));
+            // 3. 筛选出“最新时间戳更新的数据”（updatedAt 大于上次同步时间）
+            const changedNotes = currentNotes.filter(
+                (note) => (note.updatedAt || 0) > lastSyncedAt
+            );
 
             // 4. 只有当有真正变动的数据时，才调用 onSyncSet 推送给远端
             if (onSyncSet && changedNotes.length > 0) {

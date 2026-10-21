@@ -6,15 +6,18 @@ import { useLocalBooks } from "./hooks/useLocalBooks";
 import { BookDirectoryDrawer } from "./ui/BookDirectoryDrawer";
 import { IconMenu2 } from "@tabler/icons-solidjs";
 import { ScrollContainer } from "@/components/ScrollContainer";
+import { useWindowTitle } from "@/hooks/useWindowTitle";
 
 
 export function Shelf() {
     const navigate = useNavigate();
     const { folders, books, selectFolder, addFolder, delFolder } = useLocalBooks();
     const [left, setLeft] = createSignal(false);
+    const { setTitle } = useWindowTitle();
 
     const handleOpen = async (name: string) => {
         try {
+            setTitle(name)
             navigate({ to: "/desktop/reader/$bookId", params: { bookId: name } });
         } catch (error) {
             console.error("打开 EPUB 失败:", error);
@@ -22,6 +25,7 @@ export function Shelf() {
     };
 
     onMount(() => {
+        setTitle('');
         appBarStore.set({
             left: (
                 <button type="button" onClick={() => { setLeft(true) }}>

@@ -3,127 +3,228 @@ import {
   type JSX,
   splitProps,
   createSignal,
-  onMount,
-  onCleanup,
-} from 'solid-js';
-import Drawer from 'corvu/drawer';
-import { IconPin, IconPinned } from '@tabler/icons-solidjs';
+  Show,
+} from "solid-js";
+
+import {
+  IconPin,
+  IconPinned,
+  IconNotebook,
+  IconX,
+} from "@tabler/icons-solidjs";
 
 export interface EpubDrawerProps {
   open?: boolean;
   initialOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onToggleOpen?: (open: boolean) => void;
+  onTitleClick?: () => void;
   pinned?: boolean;
   initialPinned?: boolean;
   onPinChange?: (pinned: boolean) => void;
+
+  initialX?: number | string;
+  initialY?: number | string;
+
   bg?: string;
+  width?: number | string;
   children: JSX.Element;
 }
 
 export const EpubDrawer: Component<EpubDrawerProps> = (props) => {
-  const [local, others] = splitProps(props, [
-    'open',
-    'initialOpen',
-    'onOpenChange',
-    'pinned',
-    'initialPinned',
-    'onPinChange',
-    'bg',
-    'children',
+  const [local] = splitProps(props, [
+    "open",
+    "initialOpen",
+    "onOpenChange",
+    "onToggleOpen",
+    "onTitleClick",
+    "pinned",
+    "initialPinned",
+    "onPinChange",
+    "initialX",
+    "initialY",
+    "bg",
+    "width",
+    "children",
   ]);
 
-  // 支持内部状态（开箱即用）
-  const [internalPinned, setInternalPinned] = createSignal(local.initialPinned ?? false);
-  const isPinned = () => local.pinned ?? internalPinned();
-
-  const togglePin = () => {
-    const next = !isPinned();
-    if (local.pinned === undefined) setInternalPinned(next);
-    local.onPinChange?.(next);
-  };
-
-  const [isLandscape, setIsLandscape] = createSignal(
-    typeof window !== 'undefined' && window.innerWidth > window.innerHeight
+  const [internalOpen, setInternalOpen] = createSignal(
+    local.initialOpen ?? false
+  );
+  const [internalPinned, setInternalPinned] = createSignal(
+    local.initialPinned ?? false
   );
 
-  onMount(() => {
-    const handleResize = () => setIsLandscape(window.innerWidth > window.innerHeight);
-    window.addEventListener('resize', handleResize);
-    onCleanup(() => window.removeEventListener('resize', handleResize));
-  });
+  const isOpen = () => local.open ?? internalOpen();
+  const isPinned = () => local.pinned ?? internalPinned();
 
-  const side = () => (isLandscape() ? 'right' : 'top');
-  const isTop = () => side() === 'top';
+  const setOpen = (value: boolean) => {
+    if (local.open === undefined) {
+      setInternalOpen(value);
+    }
+    local.onOpenChange?.(value);
+  };
+
+  const setPinned = (value: boolean) => {
+    if (local.pinned === undefined) {
+      setInternalPinned(value);
+    }
+    local.onPinChange?.(value);
+  };
+
+  const handleOpenDrawer = () => {
+    setOpen(true);
+    local.onToggleOpen?.(true);
+  };
+
+  const closeDrawer = () => {
+    if (isPinned()) setPinned(false);
+    setOpen(false);
+    local.onToggleOpen?.(false);
+  };
+
+  const togglePin = () => {
+    setPinned(!isPinned());
+  };
+
+  const parsePositionStyle = (x?: number | string, y?: number | string) => {
+    const style: Record<string, string> = {};
+
+    if (typeof x === "number" && x < 0) {
+      style.right = `${Math.abs(x)}px`;
+    } else if (typeof x === "string" && x.startsWith("-")) {
+      style.right = `${parseFloat(x)}px`;
+    } else {
+      style.left = x === undefined ? "16px" : typeof x === "number" ? `${x}px` : x;
+    }
+
+    if (typeof y === "number" && y < 0) {
+      style.bottom = `${Math.abs(y)}px`;
+    } else if (typeof y === "string" && y.startsWith("-")) {
+      style.bottom = `${parseFloat(y)}px`;
+    } else {
+      style.top = y === undefined ? "16px" : typeof y === "number" ? `${y}px` : y;
+    }
+
+    return style;
+  };
+
+  const drawerWidth = () => {
+    const width = local.width ?? "320px";
+    return typeof width === "number" ? `${width}px` : width;
+  };
+
+  // 💡 核心改动：默认背景使用全局的 `--bg-surface` 变量，完美匹配抽屉和面板的卡片风格
+  const background = () => local.bg ?? "var(--bg-surface)";
+  const isTailwindBg = () => background().startsWith("bg-");
 
   return (
-    <Drawer
-      {...others}
-      open={local.open}
-      initialOpen={local.initialOpen}
-      onOpenChange={local.onOpenChange}
-      side={side()}
-      // 🌟 核心：固定时禁止点击外部关闭
-      closeOnOutsidePointer={!isPinned()}
-    >
-      <Drawer.Portal>
-        {/* 🌟 核心：固定时隐藏遮罩或让遮罩不拦截点击 */}
-        <Drawer.Overlay
-          class={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 data-open:opacity-100 data-closed:opacity-0 ${
-            isPinned() ? 'pointer-events-none opacity-0' : ''
-          }`}
-        />
-
-        <Drawer.Content
-          data-corvu-no-drag
+    <div class="hidden landscape:block">
+      {/* 展开图书按钮：使用 CSS 变量自适应当前主题 */}
+      <Show when={!isOpen()}>
+        <button
+          type="button"
+          title="展开笔记"
+          aria-label="展开笔记"
+          onClick={handleOpenDrawer}
           style={{
-            [isTop() ? 'height' : 'width']: isLandscape() ? '35%' : '75%',
-            ...(local.bg && !local.bg.startsWith('bg-') ? { background: local.bg } : {}),
+            ...parsePositionStyle(local.initialX, local.initialY),
+            "background-color": "var(--bg-surface)",
+            "color": "var(--text-main)",
+            "border-color": "var(--border-color)",
+            "box-shadow": "var(--shadow-lg)",
           }}
-          class={`fixed z-50 flex flex-col shadow-2xl outline-none overscroll-none transition-transform duration-300 ease-out ${
-            local.bg?.startsWith('bg-') ? local.bg : 'bg-white'
-          } ${
-            isTop()
-              ? 'inset-x-0 top-0 max-h-[90vh] rounded-b-2xl data-closed:-translate-y-full data-open:translate-y-0'
-              : 'inset-y-0 right-0 h-full max-w-[90vw] data-closed:translate-x-full data-open:translate-x-0'
-          }`}
+          class="absolute z-30 flex items-center gap-1.5 rounded-xl border p-2.5 cursor-pointer select-none transition-all duration-300 hover:scale-105 active:scale-95 hover:bg-[var(--bg-hover)]"
         >
-          {/* 顶部操作栏（仅保留固定的图钉按钮） */}
-          <div
-            data-corvu-no-drag
-            class="flex shrink-0 items-center justify-between border-b border-stone-100 px-4 py-3"
-          >
-            <span class="text-xs font-medium text-stone-400">
-              {isLandscape() ? '📖 右侧面板 (35%)' : '📖 顶部面板 (75%)'}
-            </span>
+          <IconNotebook size={19} style={{ color: "var(--accent-color)" }} />
+        </button>
+      </Show>
 
+      {/* 非固定模式遮罩 */}
+      <Show when={isOpen() && !isPinned()}>
+        <div
+          class="absolute inset-0 z-40 bg-black/20 backdrop-blur-[1px]"
+          onClick={closeDrawer}
+        />
+      </Show>
+
+      {/* Drawer 主体：完美应用全局背景与边框变量 */}
+      <div
+        style={{
+          width: drawerWidth(),
+          background: isTailwindBg() ? undefined : background(),
+          color: "var(--text-main)",
+          "border-color": "var(--border-color)",
+          "box-shadow": "var(--shadow-lg)",
+          ...(!isTailwindBg() && local.bg ? { background: local.bg } : {}),
+        }}
+        class={`absolute inset-y-0 right-0 z-50 flex h-full max-w-[95vw] flex-col border-l transition-transform duration-300 ease-out ${
+          isOpen()
+            ? "translate-x-0 pointer-events-auto"
+            : "translate-x-full pointer-events-none"
+        } ${isTailwindBg() ? background() : ""}`}
+      >
+        {/* 顶部操作栏 */}
+        <div 
+          class="flex shrink-0 items-center justify-between border-b px-4 py-3"
+          style={{ "border-color": "var(--border-color)" }}
+        >
+          <div class="flex items-center gap-2">
             <button
               type="button"
               onClick={togglePin}
-              class={`rounded-lg p-1.5 transition-colors cursor-pointer ${
-                isPinned()
-                  ? 'bg-stone-100 text-stone-900'
-                  : 'text-stone-400 hover:bg-stone-100 hover:text-stone-700'
-              }`}
-              title={isPinned() ? '取消固定' : '固定面板'}
+              title={isPinned() ? "取消固定" : "固定面板"}
+              aria-label={isPinned() ? "取消固定" : "固定面板"}
+              aria-pressed={isPinned()}
+              style={{
+                "background-color": isPinned() ? "var(--bg-hover)" : "var(--bg-surface)",
+                "border-color": "var(--border-color)",
+                color: isPinned() ? "var(--accent-color)" : "var(--text-secondary)",
+              }}
+              class="rounded-lg p-2 cursor-pointer transition-all border shadow-sm hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]"
             >
-              {isPinned() ? (
-                <IconPinned size={15} class="text-amber-600" />
-              ) : (
-                <IconPin size={15} />
-              )}
+              <Show
+                when={isPinned()}
+                fallback={<IconPin size={17} stroke="2.2" />}
+              >
+                <IconPinned
+                  size={17}
+                  stroke="2.4"
+                  style={{ color: "var(--accent-color)" }}
+                />
+              </Show>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => local.onTitleClick?.()}
+              style={{ color: "var(--text-main)" }}
+              class="group flex items-center cursor-pointer select-none border-none bg-transparent p-0 text-xs font-semibold transition-colors hover:opacity-80"
+            >
+              <span class="underline underline-offset-4 decoration-[var(--border-color)] transition-colors group-hover:decoration-[var(--text-main)]">
+                📖 笔记列表
+              </span>
             </button>
           </div>
 
-          {/* 内容区域 */}
-          <div
-            data-corvu-no-drag
-            class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4"
+          <button
+            type="button"
+            onClick={closeDrawer}
+            title="关闭面板"
+            aria-label="关闭面板"
+            style={{ color: "var(--text-secondary)" }}
+            class="rounded-lg p-1.5 border border-transparent cursor-pointer hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)] transition-colors"
           >
-            {local.children}
-          </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer>
+            <IconX size={17} stroke="2.2" />
+          </button>
+        </div>
+
+        {/* 内容区 */}
+        <div class="min-h-0 flex-1 overflow-y-auto p-4">
+          {local.children}
+        </div>
+      </div>
+    </div>
   );
 };
 

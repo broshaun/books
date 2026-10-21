@@ -372,7 +372,6 @@ export function Reader(props: ReaderProps) {
         width={"35%"}
         open={notesOpened()}
         onOpenChange={(opend) => { setNotesOpened(opend) }}
-        // bg={backgroundColor()}
         pinned={isPinned()}
         onPinChange={setIsPinned}
         onTitleClick={() => { push('Notes') }}
@@ -431,7 +430,11 @@ export function Reader(props: ReaderProps) {
         onThemeChange={(theme) => { useStore2.setTheme(theme.id as ThemeMode); }}
       />
 
-      <QuickActionMenu position={{ bottom: 30, right: 30 }} direction='left'>
+      <QuickActionMenu
+        position={{ bottom: 30, right: 30 }}
+        direction='left'
+        show={floatingShow()}
+      >
         <button type="button" onClick={() => setTocOpened(true)} class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 cursor-pointer">
           <IconList size={20} />
         </button>
