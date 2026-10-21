@@ -1,4 +1,4 @@
 
 ## github action
-- git tag linux-v1.0.24
-- git push origin linux-v1.0.24
+- git tag linux-v0.27.1
+- git push origin linux-v0.27.1
