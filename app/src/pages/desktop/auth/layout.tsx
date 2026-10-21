@@ -1,35 +1,34 @@
+
 // import { createEffect } from "solid-js";
 import { Outlet, useNavigate } from "@tanstack/solid-router";
-import { useStore2 } from "@/hooks/useStore2";
+// import { useStore2 } from "@/hooks/useStore2";
 // import { winSize } from "@/lib/winSize";
 import { AppShell } from "@/components/AppShell";
 import { IconChevronLeft } from "@tabler/icons-solidjs";
-import Burger from "./ui/Burger";
 import GlobalModal from "@/components/GlobalModal";
+import { FloatingButton } from "@/components/FloatingButton";
+import { getSafeAreaTop } from '@/lib/getSafeAreaTop';
+
+
+const safeTopHeight = getSafeAreaTop();
 
 
 export function Layout() {
     const navigate = useNavigate()
-    // const { height } = winSize();
+    // const { height, width } = winSize();
+
     // createEffect(() => {
-    //     useStore2.setHeight(height - 50);
+    //     useStore2.setHeight(height);
+    //     useStore2.setWidth(width)
     // });
-
-
-
 
     return (
         <div>
             <GlobalModal />
-            <AppShell header={{ height: 50 }}>
-                <AppShell.Header>
-                    <Burger icon={<IconChevronLeft color="gray" size={25} />} p={20} onClick={() => { navigate({ to: "/desktop/shelf" }) }} />
-                </AppShell.Header>
-                <AppShell.Main
-                    ref={(el) => {
-                        requestAnimationFrame(() => { useStore2.setHeight(el.clientHeight) });
-                    }}
-                >
+            <AppShell header={{ padding: safeTopHeight }}>
+                <AppShell.Header />
+                <AppShell.Main >
+                    <FloatingButton icon={<IconChevronLeft color="gray" size={25} />} initialX={16} initialY={16} onClick={() => { navigate({ to: "/desktop/shelf" }) }} />
                     <Outlet />
                 </AppShell.Main>
 

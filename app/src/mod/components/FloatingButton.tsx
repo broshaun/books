@@ -23,8 +23,8 @@ export function FloatingButton(props: FloatingButtonProps) {
 
   /** 
    * 💡 智能解析坐标：
-   * - 如果传的是数字并且小于 0（例如 -16），自动转为基于 right/bottom 的定位 (16px)
-   * - 其它情况正常处理像素或字符串
+   * 如果传的是数字并且小于 0（例如 -16），自动转为基于 right/bottom 的定位 (16px)
+   * 其它情况正常处理像素或字符串
    */
   const parsePositionStyle = (x?: number | string, y?: number | string) => {
     const style: Record<string, string> = {};
@@ -33,7 +33,7 @@ export function FloatingButton(props: FloatingButtonProps) {
     if (typeof x === "number" && x < 0) {
       style.right = `${Math.abs(x)}px`;
     } else if (typeof x === "string" && x.startsWith("-")) {
-      style.right = `${parseFloat(x)}px`; // 兼容 "-16px" 格式
+      style.right = `${parseFloat(x)}px`;
     } else {
       style.left = x === undefined ? "16px" : typeof x === "number" ? `${x}px` : x;
     }
@@ -57,8 +57,15 @@ export function FloatingButton(props: FloatingButtonProps) {
       <button
         {...rest}
         type="button"
-        style={parsePositionStyle(local.initialX, local.initialY)}
-        class={`absolute z-50 flex items-center gap-1.5 rounded-lg border border-stone-200/80 bg-white/90 px-3 py-1.5 text-xs text-stone-700 shadow-md backdrop-blur-md cursor-pointer select-none transition-all duration-300 hover:bg-white active:scale-95 dark:border-zinc-700/80 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:bg-zinc-800 ${
+        style={{
+          ...parsePositionStyle(local.initialX, local.initialY),
+          /* 💡 完美映射全局主题变量：卡片表面背景、主文本、边框与复合阴影 */
+          "background-color": "var(--bg-surface)",
+          "color": "var(--text-main)",
+          "border-color": "var(--border-color)",
+          "box-shadow": "var(--shadow-md)",
+        }}
+        class={`absolute z-50 flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs backdrop-blur-md cursor-pointer select-none transition-all duration-300 active:scale-95 ${
           isIconRight() ? "flex-row-reverse" : "flex-row"
         }`}
         on:click={(e) => {
@@ -66,10 +73,15 @@ export function FloatingButton(props: FloatingButtonProps) {
           e.preventDefault();
           local.onClick?.(e);
         }}
+        /* 💡 悬停时采用明确的 --bg-button-hover 变量，确保各个换肤模式下过渡自然 */
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-button-hover)")}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-surface)")}
       >
         {local.icon}
-        {local.label && <span class="font-medium">{local.label}</span>}
+        {local.label && <span class="font-medium" style={{ color: "inherit" }}>{local.label}</span>}
       </button>
     </Show>
   );
 }
+
+export default FloatingButton;

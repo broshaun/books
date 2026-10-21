@@ -16,7 +16,10 @@ export function UsrInfoUI(props: UserProfileCardProps) {
 
   const email = () => props.data?.email || props.email || "77254@qq.com";
   const id = () => props.data?.id || props.id || "6ab10d9de2faf96af165a351";
-  const heightStyle = () => ({ height: typeof props.height === "number" ? `${props.height}px` : props.height || "100vh" });
+  
+  const heightStyle = () => ({ 
+    height: typeof props.height === "number" ? `${props.height}px` : props.height || "100%" 
+  });
 
   const handleDownload = async () => {
     if (props.onDownloadNotes && !props.isSyncing && !downloaded()) {
@@ -30,22 +33,54 @@ export function UsrInfoUI(props: UserProfileCardProps) {
   };
 
   return (
-    <div class="w-full bg-slate-50 flex items-start justify-center pt-20 p-6" style={heightStyle()}>
-      <div class="w-full max-w-sm text-slate-800 p-2 flex flex-col gap-5">
+    <div 
+      class="w-full h-full min-h-fit flex items-center justify-center p-6 box-border select-none transition-colors"
+      style={{
+        ...heightStyle(),
+        "background-color": "var(--bg-main)",
+        "color": "var(--text-main)",
+      }}
+    >
+      <div class="w-full max-w-sm p-2 flex flex-col gap-5">
         
         {/* 账号信息 */}
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-slate-200/70 flex items-center justify-center shrink-0 text-slate-700">
+          <div 
+            class="w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 shadow-xs"
+            style={{
+              /* 💡 替换原先未定义的 --bg-header 和 --text-color */
+              "background-color": "var(--bg-surface)",
+              "border-color": "var(--border-color)",
+              "color": "var(--text-title)",
+            }}
+          >
             <IconUser size={22} />
           </div>
           <div class="flex flex-col overflow-hidden">
-            <span class="text-[11px] font-bold uppercase text-slate-400">当前账号</span>
-            <span class="text-sm font-semibold text-slate-900 truncate mt-0.5" title={email()}>{email()}</span>
-            <span class="text-[11px] text-slate-400 truncate font-mono mt-0.5">ID: {id()}</span>
+            <span 
+              class="text-[11px] font-bold uppercase tracking-wider" 
+              style={{ color: "var(--text-secondary)" }}
+            >
+              当前账号
+            </span>
+            <span 
+              class="text-sm font-semibold truncate mt-0.5" 
+              style={{ color: "var(--text-title)" }} 
+              title={email()}
+            >
+              {email()}
+            </span>
+            <span 
+              class="text-[11px] truncate font-mono mt-0.5" 
+              style={{ color: "var(--text-secondary)" }}
+            >
+              ID: {id()}
+            </span>
           </div>
         </div>
 
-        <div class="w-full h-[1px] bg-slate-200/80" />
+        {/* 分割线 */}
+        <div class="w-full h-[1px]" style={{ "background-color": "var(--border-color)" }} />
 
         {/* 按钮区 */}
         <div class="flex flex-col gap-2.5">
@@ -54,10 +89,10 @@ export function UsrInfoUI(props: UserProfileCardProps) {
               type="button"
               disabled={props.isSyncing || downloaded()}
               onClick={handleDownload}
-              class={`flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-semibold border disabled:cursor-not-allowed ${
+              class={`flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-semibold border transition-all cursor-pointer disabled:cursor-not-allowed ${
                 downloaded()
-                  ? "bg-emerald-50 text-emerald-600 border-emerald-100/60"
-                  : "bg-blue-50 text-blue-600 border-blue-100/60 disabled:opacity-60"
+                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                  : "bg-sky-500/10 text-sky-500 border-sky-500/30 hover:bg-sky-500/20 disabled:opacity-50"
               }`}
             >
               <Show when={props.isSyncing} fallback={
@@ -77,7 +112,7 @@ export function UsrInfoUI(props: UserProfileCardProps) {
               type="button"
               disabled={props.isSyncing}
               onClick={() => props.onLogout?.()}
-              class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-rose-50 text-rose-600 border border-rose-100/60 text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+              class="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/30 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all hover:bg-rose-500/20"
             >
               <IconLogout size={16} />
               <span>退出账号</span>

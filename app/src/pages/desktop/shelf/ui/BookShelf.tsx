@@ -22,10 +22,12 @@ export function BookShelf(props: BookShelfProps) {
 
   return (
     <div
-      class="flex flex-col w-full bg-zinc-900 text-zinc-100 p-2 box-border"
+      class="flex flex-col w-full p-2 box-border transition-colors"
       style={{
         height: heightStyle(),
         "overflow-y": props.height ? "auto" : undefined,
+        "background-color": "var(--bg-main)",
+        "color": "var(--text-main)",
       }}
     >
       {/* 紧凑的列表容器 */}
@@ -33,7 +35,10 @@ export function BookShelf(props: BookShelfProps) {
         <For
           each={props.books || []}
           fallback={
-            <div class="text-xs text-zinc-400 text-center py-8 px-4 select-none">
+            <div 
+              class="text-xs text-center py-8 px-4 select-none"
+              style={{ color: "var(--text-secondary)" }}
+            >
               书架空空如也，请先选择或添加文件夹
             </div>
           }
@@ -42,13 +47,27 @@ export function BookShelf(props: BookShelfProps) {
             <button
               type="button"
               onClick={() => props.onSelectBook?.(book)}
-              class="flex items-center gap-2.5 w-full px-3 py-2 bg-zinc-800 rounded-lg border border-zinc-700 text-left cursor-pointer shadow-2xs"
+              class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg border text-left cursor-pointer transition-all shadow-xs"
+              style={{
+                "background-color": "var(--bg-surface)",
+                "border-color": "var(--border-color)",
+                "color": "var(--text-main)",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-button-hover)")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-surface)")}
             >
               {/* 紧凑的封面占位或图片 */}
               <Show
                 when={book.cover}
                 fallback={
-                  <div class="w-8 h-11 bg-zinc-700 rounded flex items-center justify-center text-zinc-200 shrink-0 border border-zinc-600">
+                  <div 
+                    class="w-8 h-11 rounded flex items-center justify-center shrink-0 border shadow-xs"
+                    style={{
+                      "background-color": "var(--bg-input)",
+                      "border-color": "var(--border-color)",
+                      "color": "var(--text-secondary)",
+                    }}
+                  >
                     <IconBook size={16} stroke="1.5" />
                   </div>
                 }
@@ -56,12 +75,16 @@ export function BookShelf(props: BookShelfProps) {
                 <img
                   src={book.cover}
                   alt={book.name}
-                  class="w-8 h-11 object-cover rounded shrink-0 border border-zinc-600 shadow-2xs"
+                  class="w-8 h-11 object-cover rounded shrink-0 border shadow-xs"
+                  style={{ "border-color": "var(--border-color)" }}
                 />
               </Show>
 
               {/* 书名 */}
-              <span class="text-xs font-medium truncate flex-1 text-zinc-100">
+              <span 
+                class="text-xs font-semibold truncate flex-1"
+                style={{ color: "var(--text-title)" }}
+              >
                 {book.name}
               </span>
             </button>

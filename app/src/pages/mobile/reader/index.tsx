@@ -2,7 +2,7 @@ import { IconList, IconSearch, IconEyeOff, IconEye, IconLetterCase, IconTagPlus,
 import { createSignal, onCleanup, createEffect, on, Show, Switch, Match, createMemo } from "solid-js";
 import { debounce } from "@solid-primitives/scheduled";
 import { useNavigate } from "@tanstack/solid-router";
-import { useStore2 } from "@/hooks/useStore2";
+import { useStore2, type ThemeMode } from "@/hooks/useStore2";
 import { useEpubViews } from "./hook/useEpubViews";
 import { useEpubNotes } from "./hook/useEpubNotes";
 import { useIntentBuffer } from "@/hooks/useIntentBuffer";
@@ -50,10 +50,7 @@ interface NewNote {
 export function Reader(props: ReaderProps) {
   let viewerRef!: HTMLDivElement;
 
-
   const navigate = useNavigate();
-  const backgroundColor = () => useStore2.backgroundColor;
-  const setBackgroundColor = useStore2.setBackgroundColor;
 
   const [currentCfi, setCfi] = createSignal<string>();
   const [activeNote, setActiveNote] = createSignal<NewNote>();
@@ -120,18 +117,10 @@ export function Reader(props: ReaderProps) {
           }
         }
       }
-
     }
   });
 
-
   const viewerWidth = createMemo(() => { return isPinned() ? "65%" : "100%" });
-
-
-  createEffect(() => {
-    console.log('current', current())
-  })
-
 
   useEpubNotesSync({
     interval: 3000,
@@ -338,7 +327,7 @@ export function Reader(props: ReaderProps) {
       <EpubView
         loading={isLoading()}
         ref={viewerRef}
-        bg={backgroundColor()}
+        // bg={backgroundColor()}
         height="100%"
         width={viewerWidth()}
       >
@@ -383,7 +372,7 @@ export function Reader(props: ReaderProps) {
         width={"35%"}
         open={notesOpened()}
         onOpenChange={(opend) => { setNotesOpened(opend) }}
-        bg={backgroundColor()}
+        // bg={backgroundColor()}
         pinned={isPinned()}
         onPinChange={setIsPinned}
         onTitleClick={() => { push('Notes') }}
@@ -402,7 +391,6 @@ export function Reader(props: ReaderProps) {
             <EpubNotesEdit
               notes={get(markCfiRange())}
               onNoteChange={(v) => { put(v); }}
-            // onDelete={(cfiRange) => { del(cfiRange); push("Notes"); }}
             />
           </Match>
 
@@ -440,7 +428,7 @@ export function Reader(props: ReaderProps) {
         opened={styleOpened()}
         onClose={() => setStyleOpened(false)}
         onFontSizeChange={handleFontSizeChange}
-        onBackgroundColorChange={setBackgroundColor}
+        onThemeChange={(theme) => { useStore2.setTheme(theme.id as ThemeMode); }}
       />
 
       <QuickActionMenu position={{ bottom: 30, right: 30 }} direction='left'>

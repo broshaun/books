@@ -26,7 +26,7 @@ export interface BookDirectoryDrawerProps {
 }
 
 export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
-  // 🌟 修改：直接通过目录选择器选择子文件夹或任意文件夹
+  // 💡 直接通过目录选择器选择子文件夹或任意文件夹
   const handleOpenFolderDialog = async () => {
     try {
       const selected = await openDialog({
@@ -47,33 +47,55 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
 
   return (
     <>
-      {/* 1. 遮罩层 */}
+      {/* 1. 遮罩层：提供自然柔和的暗色毛玻璃遮罩 */}
       <div
-        class={`fixed inset-0 bg-black/50 backdrop-blur-2xs z-40 transition-opacity duration-300 ${
+        class={`fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 transition-opacity duration-300 ${
           props.opened ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => props.onClose?.()}
       />
 
-      {/* 2. 抽屉主体 */}
+      {/* 2. 抽屉主体：完美融合全局主题背景、文本颜色、边框与立体阴影 */}
       <div
-        class={`fixed inset-y-0 left-0 z-50 w-full max-w-[240px] bg-zinc-900 text-zinc-100 shadow-xl flex flex-col p-3 transform transition-transform duration-300 ${
+        class={`fixed inset-y-0 left-0 z-50 w-full max-w-[240px] border-r shadow-2xl flex flex-col p-3 transform transition-transform duration-300 ease-in-out backdrop-blur-xl ${
           props.opened ? "translate-x-0" : "-translate-x-full"
         }`}
+        style={{
+          "background-color": "var(--bg-surface)",
+          "color": "var(--text-main)",
+          "border-color": "var(--border-color)",
+          "box-shadow": "var(--shadow-lg)",
+        }}
       >
         {/* 标题 */}
-        <div class="px-1 pt-2 pb-1 font-semibold text-sm text-zinc-100 tracking-tight">我的书籍</div>
+        <div 
+          class="px-1 pt-2 pb-1 font-semibold text-sm tracking-tight select-none"
+          style={{ color: "var(--text-title)" }}
+        >
+          我的书籍
+        </div>
 
-        <hr class="border-zinc-800 my-2" />
+        <hr class="my-2 border-0 h-[1px]" style={{ "background-color": "var(--border-color)" }} />
 
         {/* 文件夹列表 */}
-        <div class="flex-1 overflow-auto space-y-0.5">
+        <div class="flex-1 overflow-y-auto space-y-0.5">
           <For
             each={props.folders || []}
-            fallback={<div class="text-xs text-zinc-400 text-center py-10 select-none">暂无文件夹</div>}
+            fallback={
+              <div 
+                class="text-xs text-center py-10 select-none"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                暂无文件夹
+              </div>
+            }
           >
             {(folder) => (
-              <div class="flex items-center group w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors">
+              <div 
+                class="flex items-center group w-full px-2.5 py-2 rounded-md transition-colors cursor-pointer"
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-button-hover)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              >
                 <button
                   type="button"
                   onClick={() => {
@@ -82,8 +104,11 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
                   }}
                   class="flex items-center gap-2.5 flex-1 text-left cursor-pointer bg-transparent border-none p-0 overflow-hidden"
                 >
-                  <IconFolder size={16} class="text-zinc-400 shrink-0" />
-                  <span class="text-xs font-medium truncate text-zinc-200 group-hover:text-white transition-colors">
+                  <IconFolder size={16} class="shrink-0 transition-colors" style={{ color: "var(--text-secondary)" }} />
+                  <span 
+                    class="text-xs font-medium truncate transition-colors"
+                    style={{ color: "var(--text-main)" }}
+                  >
                     {folder.name}
                   </span>
                 </button>
@@ -94,7 +119,8 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
                     e.stopPropagation();
                     props.onDelFolder?.(folder.path);
                   }}
-                  class="text-zinc-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-all cursor-pointer bg-transparent border-none shrink-0"
+                  class="p-1 opacity-0 group-hover:opacity-100 transition-all cursor-pointer bg-transparent border-none shrink-0 hover:text-red-500"
+                  style={{ color: "var(--text-secondary)" }}
                 >
                   <IconTrash size={14} />
                 </button>
@@ -103,12 +129,12 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
           </For>
         </div>
 
-        <hr class="border-zinc-800 my-2" />
+        <hr class="my-2 border-0 h-[1px]" style={{ "background-color": "var(--border-color)" }} />
 
         {/* 底部操作区 */}
-        <div class="space-y-1">
+        <div class="space-y-1 shrink-0">
           <ActionButton
-            icon={<IconFolderPlus size={16} class="text-zinc-400" />}
+            icon={<IconFolderPlus size={16} style={{ color: "var(--text-secondary)" }} />}
             label="添加子文件夹"
             onClick={handleOpenFolderDialog}
           />
@@ -116,11 +142,11 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
 
         {/* 底部附加菜单 */}
         <Show when={hasBottomActions()}>
-          <hr class="border-zinc-800 my-2" />
+          <hr class="my-2 border-0 h-[1px]" style={{ "background-color": "var(--border-color)" }} />
           <div class="space-y-0.5 shrink-0">
             <Show when={props.onOpenProfile}>
               <ActionButton
-                icon={<IconUserCircle size={16} class="text-zinc-400" />}
+                icon={<IconUserCircle size={16} style={{ color: "var(--text-secondary)" }} />}
                 label="个人"
                 onClick={() => {
                   props.onOpenProfile?.();
@@ -130,7 +156,7 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
             </Show>
             <Show when={props.onOpenAbout}>
               <ActionButton
-                icon={<IconInfoCircle size={16} class="text-zinc-400" />}
+                icon={<IconInfoCircle size={16} style={{ color: "var(--text-secondary)" }} />}
                 label="关于"
                 onClick={() => {
                   props.onOpenAbout?.();
@@ -145,13 +171,16 @@ export function BookDirectoryDrawer(props: BookDirectoryDrawerProps) {
   );
 }
 
-// 辅助菜单按钮组件
+// 辅助菜单按钮组件（适配通用 `--bg-button-hover` 与主题文字）
 function ActionButton(props: { icon: any; label: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={props.onClick}
-      class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md hover:bg-zinc-800 transition-colors text-zinc-200 hover:text-white cursor-pointer bg-transparent border-none"
+      class="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md transition-colors cursor-pointer bg-transparent border-none"
+      style={{ color: "var(--text-main)" }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-button-hover)")}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
     >
       {props.icon}
       <span class="text-xs font-medium">{props.label}</span>

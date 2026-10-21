@@ -1,11 +1,10 @@
 import { createFileRoute } from '@tanstack/solid-router'
 import Reader from '@/pages/mobile/reader';
-import { winSize } from "@/lib/winSize";
 import { AppShell } from "@/components/AppShell";
-import { createEffect } from "solid-js";
+import { onMount, onCleanup, createEffect } from "solid-js";
 import { useStore2 } from "@/hooks/useStore2";
 import { useSafeArea } from '@/hooks/useSafeArea';
-
+import { useTheme } from "@/hooks/useTheme";
 
 export const Route = createFileRoute('/mobile/reader/$path')({
   component: RouteComponent,
@@ -13,12 +12,17 @@ export const Route = createFileRoute('/mobile/reader/$path')({
 
 function RouteComponent() {
   const params = Route.useParams();
-  const { height, width } = winSize();
   const safely = useSafeArea();
+  const { setTheme } = useTheme();
 
   createEffect(() => {
-    useStore2.setHeight(height);
-    useStore2.setWidth(width)
+    setTheme(useStore2.theme);
+  });
+
+  onMount(() => {
+    onCleanup(() => {
+      setTheme('default');
+    });
   });
 
   return (
@@ -29,12 +33,9 @@ function RouteComponent() {
       aside={{ padding: safely().right }}
     >
       <AppShell.Header />
-      <AppShell.Main  >
+      <AppShell.Main>
         <Reader path={params().path} />
       </AppShell.Main>
-
     </AppShell>
   )
-
-
 }

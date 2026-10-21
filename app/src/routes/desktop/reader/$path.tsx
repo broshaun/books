@@ -11,25 +11,14 @@ export const Route = createFileRoute("/desktop/reader/$path")({
 });
 
 function Layout() {
-  // const { height } = winSize();
-  // createEffect(() => {
-  //   useStore2.setHeight(height);
-  // });
+
   const params = Route.useParams();
 
   return (
-    <AppShell header={{ padding: 0 }}>
-      <AppShell.Main
-        ref={(el) => {
-          requestAnimationFrame(() => {
-            useStore2.setHeight(el.clientHeight);
-            useStore2.setWidth(el.clientWidth);
-          });
-        }}
-      >
+    <AppShell>
+      <AppShell.Main>
         <Reader path={params().path} />
       </AppShell.Main>
-
     </AppShell>
   );
 }

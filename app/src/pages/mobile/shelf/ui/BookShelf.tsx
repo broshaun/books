@@ -43,19 +43,19 @@ export function BookShelf(props: BookShelfProps) {
 
   return (
     <div
-      class="flex flex-col w-full p-2 box-border select-none outline-none"
+      class="flex flex-col w-full p-2 box-border select-none outline-none transition-colors duration-300"
       style={{
         "height": heightStyle(),
         "overflow-y": props.height ? "auto" : undefined,
         "background-color": "var(--bg-main)",
-        "color": "var(--text-color)",
+        "color": "var(--text-main)",
       }}
     >
       <div class="flex flex-col gap-1.5 w-full pt-0.5">
         <For
           each={props.books || []}
           fallback={
-            <div class="text-xs opacity-60 text-center py-8 px-4 select-none">
+            <div class="text-xs opacity-60 text-center py-8 px-4 select-none" style={{ color: "var(--text-secondary)" }}>
               书架空空如也，请先添加或选择书籍
             </div>
           }
@@ -65,10 +65,11 @@ export function BookShelf(props: BookShelfProps) {
 
             return (
               <div 
-                class="relative flex items-center w-full rounded-lg border transition-colors group/book"
+                class="relative flex items-center w-full rounded-lg border transition-all duration-300 group/book"
                 style={{
-                  "background-color": "var(--bg-header)",
-                  "border-color": "var(--border-color)", // 💡 完美使用全局专属边框变量
+                  "background-color": "var(--bg-surface)",
+                  "border-color": "var(--border-color)",
+                  "box-shadow": "var(--shadow-sm)",
                 }}
               >
                 {/* 书籍点击打开 */}
@@ -85,13 +86,13 @@ export function BookShelf(props: BookShelfProps) {
                         class="w-8 h-11 rounded flex items-center justify-center shrink-0 border"
                         style={{ "background-color": "var(--bg-main)", "border-color": "var(--border-color)" }}
                       >
-                        <IconBook size={16} stroke="1.5" />
+                        <IconBook size={16} stroke="1.5" style={{ color: "var(--icon-color)" }} />
                       </div>
                     }
                   >
                     <img src={book.cover} alt={book.name} class="w-8 h-11 object-cover rounded shrink-0 border" style={{ "border-color": "var(--border-color)" }} />
                   </Show>
-                  <span class="text-xs font-medium truncate flex-1" style={{ color: "inherit" }}>
+                  <span class="text-xs font-medium truncate flex-1" style={{ color: "var(--text-main)" }}>
                     {book.name}
                   </span>
                 </button>
@@ -105,18 +106,19 @@ export function BookShelf(props: BookShelfProps) {
                       e.stopPropagation();
                       setActiveMenuBook(isMenuOpen() ? null : book.name);
                     }}
-                    class="p-2 bg-transparent border-none cursor-pointer shrink-0 outline-none opacity-60 hover:opacity-100 transition-opacity"
-                    style={{ color: "inherit" }}
+                    class="p-2 bg-transparent border-none cursor-pointer shrink-0 outline-none opacity-70 hover:opacity-100 transition-opacity rounded-md"
+                    style={{ color: "var(--icon-color)" }}
                   >
                     <IconDotsVertical size={16} />
                   </button>
 
                   <Show when={isMenuOpen()}>
                     <div 
-                      class="absolute right-0 top-full mt-1 w-32 rounded-lg shadow-2xl z-50 p-1 flex flex-col gap-0.5 select-none border"
+                      class="absolute right-0 top-full mt-1 w-32 rounded-lg z-50 p-1 flex flex-col gap-0.5 select-none border"
                       style={{
-                        "background-color": "var(--bg-header)",
+                        "background-color": "var(--bg-surface)",
                         "border-color": "var(--border-color)",
+                        "box-shadow": "var(--shadow-lg)",
                       }}
                     >
                       <button
@@ -125,10 +127,10 @@ export function BookShelf(props: BookShelfProps) {
                           setActiveMenuBook(null);
                           setChoosingBook(book);
                         }}
-                        class="flex items-center gap-2 w-full px-2.5 py-1.5 text-xs rounded transition-colors text-left cursor-pointer border-none bg-transparent outline-none hover:opacity-80"
-                        style={{ color: "inherit" }}
+                        class="flex items-center gap-2 w-full px-2.5 py-1.5 text-xs rounded transition-colors text-left cursor-pointer border-none bg-transparent outline-none hover:bg-[var(--bg-hover)]"
+                        style={{ color: "var(--text-main)" }}
                       >
-                        <IconFolder size={14} class="opacity-70" />
+                        <IconFolder size={14} style={{ color: "var(--icon-color)" }} />
                         <span>切换分组</span>
                       </button>
                       <button
@@ -154,18 +156,19 @@ export function BookShelf(props: BookShelfProps) {
       {/* 切换分组弹窗 */}
       <Dialog open={!!choosingBook()} onOpenChange={(open) => !open && setChoosingBook(null)}>
         <Dialog.Portal>
-          <Dialog.Overlay class="fixed inset-0 bg-black/50 backdrop-blur-2xs z-50" />
+          <Dialog.Overlay class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 transition-opacity" />
           <Dialog.Content 
-            class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[300px] rounded-xl p-4 flex flex-col gap-3 z-50 outline-none shadow-2xl border"
+            class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[300px] rounded-xl p-4 flex flex-col gap-3 z-50 outline-none border"
             style={{
-              "background-color": "var(--bg-header)",
-              "color": "var(--text-color)",
+              "background-color": "var(--bg-surface)",
+              "color": "var(--text-main)",
               "border-color": "var(--border-color)",
+              "box-shadow": "var(--shadow-lg)",
             }}
           >
             <div class="flex justify-between items-center px-1">
-              <span class="font-semibold text-sm">选择目标分组</span>
-              <Dialog.Close class="bg-transparent border-none cursor-pointer opacity-70 hover:opacity-100 p-1 outline-none" style={{ color: "inherit" }}>
+              <span class="font-semibold text-sm" style={{ color: "var(--text-main)" }}>选择目标分组</span>
+              <Dialog.Close class="bg-transparent border-none cursor-pointer opacity-70 hover:opacity-100 p-1 outline-none rounded" style={{ color: "var(--icon-color)" }}>
                 <IconX size={18} />
               </Dialog.Close>
             </div>
@@ -173,7 +176,7 @@ export function BookShelf(props: BookShelfProps) {
             <div class="max-h-[220px] overflow-auto space-y-1 my-1 pr-1">
               <For
                 each={props.tags || []}
-                fallback={<div class="text-xs opacity-50 text-center py-4">暂无可选分组</div>}
+                fallback={<div class="text-xs opacity-50 text-center py-4" style={{ color: "var(--text-secondary)" }}>暂无可选分组</div>}
               >
                 {(tag) => {
                   const isSelected = () => choosingBook()?.tagName === tag.name;
@@ -190,12 +193,12 @@ export function BookShelf(props: BookShelfProps) {
                       class={`w-full px-3 py-2 text-xs rounded-lg text-left cursor-pointer border outline-none truncate transition-colors ${
                         isSelected()
                           ? "font-medium"
-                          : "opacity-80 hover:opacity-100"
+                          : "opacity-80 hover:opacity-100 hover:bg-[var(--bg-hover)]"
                       }`}
                       style={{
-                        "background-color": isSelected() ? "var(--bg-main)" : "transparent",
-                        "border-color": "var(--border-color)",
-                        "color": "inherit",
+                        "background-color": isSelected() ? "var(--bg-hover)" : "transparent",
+                        "border-color": isSelected() ? "var(--accent-color)" : "var(--border-color)",
+                        "color": "var(--text-main)",
                       }}
                     >
                       {tag.name}
@@ -209,10 +212,10 @@ export function BookShelf(props: BookShelfProps) {
               <button
                 type="button"
                 onClick={() => setChoosingBook(null)}
-                class="w-full py-2 px-3 rounded-lg text-xs font-medium cursor-pointer border transition-colors outline-none hover:opacity-90"
+                class="w-full py-2 px-3 rounded-lg text-xs font-medium cursor-pointer border transition-colors outline-none hover:bg-[var(--bg-hover)]"
                 style={{
-                  "background-color": "var(--bg-main)",
-                  "color": "inherit",
+                  "background-color": "var(--bg-surface)",
+                  "color": "var(--text-main)",
                   "border-color": "var(--border-color)",
                 }}
               >

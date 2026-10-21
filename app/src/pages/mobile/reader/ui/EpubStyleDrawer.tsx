@@ -10,9 +10,7 @@ export interface ThemeOption {
 
 export const READER_THEMES: ThemeOption[] = [
   { id: 'default', name: '默认白', bg: '#ffffff' },
-  { id: 'sepia', name: '羊皮纸', bg: '#f4ebd9', 
-    style: 'background-color: #f6ecd9; background-image: radial-gradient(rgba(0,0,0,0.03) 1px, transparent 0); background-size: 4px 4px;'
-   },
+  { id: 'sepia', name: '羊皮纸', bg: '#f4ebd9' },
   { id: 'eye-green', name: '护眼绿', bg: '#c7edcc' },
   { id: 'gray', name: '优雅灰', bg: '#e9ecef' },
 ];
@@ -23,13 +21,13 @@ const STORAGE_KEYS = { FONT_SIZE: 'READ_FONT_SIZE_KEY', THEME: 'READ_THEME_KEY' 
 function ThemeOptionItem(props: {
   theme: ThemeOption;
   isSelected: boolean;
-  onSelect: (id: string, theme: ThemeOption) => void;
+  onSelect: (theme: ThemeOption) => void;
 }) {
   return (
     <div class="flex flex-col items-center gap-1">
       <button
         type="button"
-        onClick={() => props.onSelect(props.theme.id, props.theme)}
+        onClick={() => props.onSelect(props.theme)}
         aria-label={props.theme.name}
         class="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 cursor-pointer shadow-sm"
         style={{
@@ -48,7 +46,8 @@ export interface EpubStyleDrawerProps {
   opened: boolean;
   onClose: () => void;
   onFontSizeChange?: (size: number) => void;
-  onBackgroundColorChange?: (backgroundColor: string) => void;
+  // 💡 将原本的 onBackgroundColorChange 替换为回传完整 ThemeOption 的 onThemeChange
+  onThemeChange?: (theme: ThemeOption) => void;
 }
 
 export function EpubStyleDrawer(props: EpubStyleDrawerProps) {
@@ -69,11 +68,11 @@ export function EpubStyleDrawer(props: EpubStyleDrawerProps) {
     props.onFontSizeChange?.(nextSize);
   };
 
-  const handleThemeChange = (themeId: string) => {
-    const activeTheme = READER_THEMES.find((t) => t.id === themeId) || READER_THEMES[0];
-    setCurrentTheme(themeId);
-    localStorage.setItem(STORAGE_KEYS.THEME, themeId);
-    props.onBackgroundColorChange?.(activeTheme.bg);
+  // 💡 点击回调改直接接收完整的 ThemeOption 对象
+  const handleThemeChange = (selectedTheme: ThemeOption) => {
+    setCurrentTheme(selectedTheme.id);
+    localStorage.setItem(STORAGE_KEYS.THEME, selectedTheme.id);
+    props.onThemeChange?.(selectedTheme);
   };
 
   return (
@@ -81,14 +80,12 @@ export function EpubStyleDrawer(props: EpubStyleDrawerProps) {
       {/* 1. 遮罩层 */}
       <div
         class={`fixed inset-0 bg-black/30 backdrop-blur-[2px] z-45 transition-opacity duration-300 ease-in-out ${
-          props.opened
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
+          props.opened ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={props.onClose}
       />
 
-      {/* 2. 抽屉主体：完美恢复你原本使用的 bg-inherit/95 继承背景和毛玻璃效果 */}
+      {/* 2. 抽屉主体 */}
       <div
         class={`fixed inset-y-0 right-0 z-50 w-[320px] max-w-full shadow-2xl shadow-stone-900/20 border-l border-stone-200/80 dark:border-zinc-800/80 flex flex-col pt-12 px-4 pb-4 transform transition-transform duration-300 ease-in-out backdrop-blur-xl bg-inherit/95 ${
           props.opened ? 'translate-x-0' : 'translate-x-full'

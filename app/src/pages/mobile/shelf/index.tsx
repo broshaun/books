@@ -1,24 +1,18 @@
 import { createSignal, onMount } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
-import { useStore2 } from "@/hooks/useStore2";
 import { appBarStore } from "@/components/appBarStore";
-import BookShelf from "./ui/BookShelf";
+import { BookShelf } from "./ui/BookShelf";
 import { useLocalBooks } from "./hooks/useLocalBooks";
-import BookDirectoryDrawer from "./ui/BookDirectoryDrawer";
+import { BookDirectoryDrawer } from "./ui/BookDirectoryDrawer";
 import { IconMenu2 } from "@tabler/icons-solidjs";
 import { ScrollContainer } from "@/components/ScrollContainer";
 
 export function Shelf() {
     const navigate = useNavigate();
-    const height = () => useStore2.height;
-    // const { tags, books, selectTag, addTag, delTag, addEpub, updateTag, delEpub, updEpub } = useLocalBooks();
-
-
     const { folders, books, selectFolder, addFolder, updFolder, delFolder, addEpub, delEpub, updEpub } = useLocalBooks();
 
 
     const [left, setLeft] = createSignal(false);
-
     const handleOpen = async (name: string) => {
         try {
             navigate({ to: "/mobile/reader/$bookId", params: { bookId: name } });
@@ -40,10 +34,6 @@ export function Shelf() {
 
 
 
-    console.log('height', height())
-
-
-
     return (
         <ScrollContainer>
             <BookDirectoryDrawer
@@ -57,7 +47,6 @@ export function Shelf() {
                 onAddFolder={async (name) => {
                     console.log("选择标签组", name);
                     await addFolder(name);
-
                 }}
                 onDelFolder={async (name) => {
                     await delFolder(name);
@@ -71,12 +60,8 @@ export function Shelf() {
                     appBarStore.set({ title: name ?? undefined })
                     selectFolder(name ?? undefined);
                 }}
-
                 onOpenProfile={() => { navigate({ to: "/mobile/auth/" }) }}
             />
-
-
-
 
 
             <BookShelf
@@ -93,7 +78,6 @@ export function Shelf() {
                 onUpdEpub={async (bookName, tagName) => {
                     console.log('bookName,tagName', bookName, tagName)
                     await updEpub(bookName, tagName)
-
                 }}
             />
         </ScrollContainer>

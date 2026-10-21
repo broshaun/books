@@ -34,11 +34,11 @@ export function UsrInfoUI(props: UserProfileCardProps) {
 
   return (
     <div 
-      class="w-full h-full min-h-fit flex items-center justify-center p-6 box-border select-none"
+      class="w-full h-full min-h-fit flex items-center justify-center p-6 box-border select-none transition-colors"
       style={{
         ...heightStyle(),
         "background-color": "var(--bg-main)",
-        "color": "var(--text-color)",
+        "color": "var(--text-main)",
       }}
     >
       <div class="w-full max-w-sm p-2 flex flex-col gap-5">
@@ -46,19 +46,36 @@ export function UsrInfoUI(props: UserProfileCardProps) {
         {/* 账号信息 */}
         <div class="flex items-center gap-4">
           <div 
-            class="w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 opacity-90 shadow-2xs"
+            class="w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 shadow-xs"
             style={{
-              "background-color": "var(--bg-header)",
+              /* 💡 替换原先未定义的 --bg-header 和 --text-color */
+              "background-color": "var(--bg-surface)",
               "border-color": "var(--border-color)",
-              "color": "var(--text-color)",
+              "color": "var(--text-title)",
             }}
           >
             <IconUser size={22} />
           </div>
           <div class="flex flex-col overflow-hidden">
-            <span class="text-[11px] font-bold uppercase opacity-50 tracking-wider">当前账号</span>
-            <span class="text-sm font-semibold truncate mt-0.5" style={{ color: "inherit" }} title={email()}>{email()}</span>
-            <span class="text-[11px] opacity-50 truncate font-mono mt-0.5">ID: {id()}</span>
+            <span 
+              class="text-[11px] font-bold uppercase tracking-wider" 
+              style={{ color: "var(--text-secondary)" }}
+            >
+              当前账号
+            </span>
+            <span 
+              class="text-sm font-semibold truncate mt-0.5" 
+              style={{ color: "var(--text-title)" }} 
+              title={email()}
+            >
+              {email()}
+            </span>
+            <span 
+              class="text-[11px] truncate font-mono mt-0.5" 
+              style={{ color: "var(--text-secondary)" }}
+            >
+              ID: {id()}
+            </span>
           </div>
         </div>
 

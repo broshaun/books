@@ -1,47 +1,160 @@
 @import 'tailwindcss';
 
-/* ================= 1. 系统跟随主题架构（纯正的系统深浅色适配） ================= */
+/* ==========================================================================
+   Epub Reader 集中式全局主题系统与样式架构备注
+   ==========================================================================
+   变量说明：
+   1. 背景与容器系列：
+      - --bg-main        : 页面主背景（含渲染视图与安全区）
+      - --bg-surface     : 卡片、顶栏、侧边栏背景
+      - --bg-input       : 输入框/表单控件背景
+      - --bg-button-hover: 按钮或可点击控件的悬停背景
+      - --bg-active      : 列表项或菜单项的点击/激活/选中背景
+      - --scrollbar-color: 滚动条滑块颜色（随主题自动适配）
 
-/* 默认：系统浅色模式（Light） */
+   2. 文本与排版系列：
+      - --text-title     : 标题文本颜色（最高层级，如大标题、抽屉名）
+      - --text-main      : 主文本颜色（正文、常规内容）
+      - --text-secondary : 次级文本颜色（辅助说明、时间、提示）
+      - --text-link-color: 可点击的链接/高亮交互颜色
+
+   3. 边框与阴影系列：
+      - --border-color   : 通用分割线与边框颜色
+      - --shadow-sm/md/lg: 复合立体阴影系统（适配深浅色与复古纸张质感）
+   ========================================================================== */
+
 :root, html {
   --bg-main: #ffffff;
-  --bg-header: rgba(255, 255, 255, 0.9);
-  --text-color: #18181b;
+  --bg-surface: #f4f4f5;
+  --bg-input: #ffffff;
+  --bg-button-hover: #e4e4e7;
+  --bg-active: #e2e8f0;
+  --scrollbar-color: #d4d4d8;
+  
+  --text-title: #09090b;
+  --text-main: #27272a;
+  --text-secondary: #71717a;
+  --text-link-color: #2563eb;
+  
   --border-color: #e4e4e7;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0,0,0,.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.05), 0 2px 4px -1px rgba(0,0,0,.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -2px rgba(0,0,0,.04);
 }
 
-/* 自动跟随：当操作系统开启深色模式时生效（Dark） */
 @media (prefers-color-scheme: dark) {
   :root, html {
     --bg-main: #09090b;
-    --bg-header: rgba(24, 24, 27, 0.9);
-    --text-color: #f4f4f5;
+    --bg-surface: #18181b;
+    --bg-input: #18181b;
+    --bg-button-hover: #27272a;
+    --bg-active: #27272a;
+    --scrollbar-color: #3f3f46;
+    
+    --text-title: #fafafa;
+    --text-main: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --text-link-color: #3b82f6;
+    
     --border-color: #27272a;
+    
+    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,.4);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,.4), 0 2px 4px -1px rgba(0,0,0,.2);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.5), 0 4px 6px -2px rgba(0,0,0,.3);
   }
 }
 
+/* ================= 2. 羊皮纸主题 (Sepia) ================= */
+.theme-sepia {
+  --bg-main: #f4ebd9;
+  --bg-surface: #eadecc;
+  --bg-input: #ede2cf;
+  --bg-button-hover: #dfd0bb;
+  --bg-active: #dfd0bb;
+  --scrollbar-color: #d1c1a9;
+  
+  --text-title: #1a140b;
+  --text-main: #2c2416;
+  --text-secondary: #5c4f3a;
+  --text-link-color: #785328;
+  
+  --border-color: #e2d2bc;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(44,36,22,.05);
+  --shadow-md: 0 4px 6px -1px rgba(44,36,22,.08), 0 2px 4px -1px rgba(44,36,22,.04);
+  --shadow-lg: 0 10px 15px -3px rgba(44,36,22,.12), 0 4px 6px -2px rgba(44,36,22,.06);
+}
 
-/* ================= 2. 全局基础样式 ================= */
-html,
-body,
-#root {
+/* ================= 3. 护眼绿主题 (Eye Green) ================= */
+.theme-eye-green {
+  --bg-main: #c7edcc;
+  --bg-surface: #b2e4b8;
+  --bg-input: #bceebe;
+  --bg-button-hover: #9fdc99;
+  --bg-active: #9fdc99;
+  --scrollbar-color: #88cb8e;
+  
+  --text-title: #0a170b;
+  --text-main: #112613;
+  --text-secondary: #3b5c3e;
+  --text-link-color: #1b5e20;
+  
+  --border-color: #a3dba8;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(17,38,19,.05);
+  --shadow-md: 0 4px 6px -1px rgba(17,38,19,.08), 0 2px 4px -1px rgba(17,38,19,.04);
+  --shadow-lg: 0 10px 15px -3px rgba(17,38,19,.12), 0 4px 6px -2px rgba(17,38,19,.06);
+}
+
+/* ================= 4. 优雅灰主题 (Gray) ================= */
+.theme-gray {
+  --bg-main: #e9ecef;
+  --bg-surface: #dee2e6;
+  --bg-input: #f8f9fa;
+  --bg-button-hover: #ced4da;
+  --bg-active: #ced4da;
+  --scrollbar-color: #adb5bd;
+  
+  --text-title: #121416;
+  --text-main: #212529;
+  --text-secondary: #495057;
+  --text-link-color: #343a40;
+  
+  --border-color: #ced4da;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(33,37,41,.06);
+  --shadow-md: 0 4px 6px -1px rgba(33,37,41,.09), 0 2px 4px -1px rgba(33,37,41,.04);
+  --shadow-lg: 0 10px 15px -3px rgba(33,37,41,.13), 0 4px 6px -2px rgba(33,37,41,.06);
+}
+
+/* ================= 5. 全局基础重置与自定义滚动条 ================= */
+html, body, #root {
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: 0;
   overflow: hidden;
   background-color: var(--bg-main);
-  color: var(--text-color);
-}
-
-.epub-view {
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-body,
-html {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  touch-action: manipulation;
+  transition: background-color .3s, color .3s, border-color .3s, box-shadow .3s;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  opacity: 0.8;
 }

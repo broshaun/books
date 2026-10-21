@@ -1,16 +1,15 @@
 import { createSignal, onMount } from "solid-js";
 import { useNavigate } from "@tanstack/solid-router";
-import { useStore2 } from "@/hooks/useStore2";
 import { appBarStore } from "@/components/appBarStore";
-import BookShelf from "./ui/BookShelf";
+import { BookShelf } from "./ui/BookShelf";
 import { useLocalBooks } from "./hooks/useLocalBooks";
-import BookDirectoryDrawer from "./ui/BookDirectoryDrawer";
+import { BookDirectoryDrawer } from "./ui/BookDirectoryDrawer";
 import { IconMenu2 } from "@tabler/icons-solidjs";
+import { ScrollContainer } from "@/components/ScrollContainer";
 
 
 export function Shelf() {
     const navigate = useNavigate();
-    const height = () => useStore2.height;
     const { folders, books, selectFolder, addFolder, delFolder } = useLocalBooks();
     const [left, setLeft] = createSignal(false);
 
@@ -34,23 +33,14 @@ export function Shelf() {
     });
 
 
-
-    console.log('height', height())
-
-
-
     return (
-        <div>
-
-
+        <ScrollContainer>
             <BookDirectoryDrawer
                 opened={left()}
                 onClose={() => setLeft(false)}
                 folders={folders()}
                 onAddFolder={async (path) => {
-                    console.log("设置文件夹", path);
                     await addFolder(path);
-
                 }}
                 onDelFolder={async (path) => {
                     await delFolder(path);
@@ -63,23 +53,17 @@ export function Shelf() {
 
                     selectFolder(path);
                 }}
-
-                onOpenProfile={() => { navigate({ to: "/mobile/auth/" }) }}
+                onOpenProfile={() => { navigate({ to: "/desktop/auth/" }) }}
             />
 
-
-
-
-
             <BookShelf
-                height={height()}
+                height="100%"
                 books={books()}
                 onSelectBook={(book) => {
-                    console.log("book", book);
                     handleOpen(book.path);
                 }}
             />
-        </div>
+        </ScrollContainer>
     );
 }
 
