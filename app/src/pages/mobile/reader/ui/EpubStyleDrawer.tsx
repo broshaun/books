@@ -9,7 +9,7 @@ export interface ThemeOption {
 }
 
 export const READER_THEMES: ThemeOption[] = [
-  { id: 'default', name: '默认白', bg: '#ffffff' },
+  // { id: 'default', name: '默认白', bg: '#ffffff' },
   { id: 'sepia', name: '羊皮纸', bg: '#f4ebd9' },
   { id: 'eye-green', name: '护眼绿', bg: '#c7edcc' },
   { id: 'gray', name: '优雅灰', bg: '#e9ecef' },
