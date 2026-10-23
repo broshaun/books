@@ -2,13 +2,12 @@
 name = "app"
 version = "0.1.0"
 description = "A Tauri App"
-authors = ["you"]
+authors = ["Shaun"]
 license = ""
 repository = ""
 edition = "2021"
 rust-version = "1.77.2"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 name = "app_lib"
@@ -25,6 +24,7 @@ tauri = { version = "2.11.3", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-device-info = "1.1.0"
 tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
 
 reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "rustls-tls"] }
 tokio = { version = "1", features = ["full"] }
@@ -32,5 +32,5 @@ xtra = { version = "0.6", features = ["tokio", "macros"] } # actor 任务管理�
 dashmap = "6.2.1"
 rumqttc = "0.25" # mqtt通讯库
 regex = "1" # 正则库
-tauri-plugin-fs = "2"
+
 

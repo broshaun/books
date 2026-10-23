@@ -1,49 +1,89 @@
 # Books App开发
 
-## React项目创建
 
+## Solid1项目创建
 ```sh
+
+## 创建项目
     pnpm create rsbuild@latest
     cd xxx
     pnpm install
 
-  ## TanStack Router
-    pnpm add @tanstack/react-router @tanstack/router-plugin @tanstack/router-devtools
-    pnpm add localforage ahooks zustand
-    pnpm add @mantine/core @mantine/hooks @tabler/icons-react
+## TanStack Router
+    pnpm add @tanstack/solid-router @tanstack/solid-router-devtools @tanstack/router-plugin -D
+
+## 开发常用库
+    pnpm add localforage clsx tailwind-merge @tabler/icons-solidjs corvu @solid-primitives/scheduled vconsole
+
+## 业务库
     pnpm add epubjs
-
-  ## 自定义组件库
-    pnpm install
-    pnpm run dev 
-
-    pnpm add -D @tauri-apps/cli
-    pnpm tauri init
 ```
 
-`先进入Cargo.toml配置更高项目名称`
+
+## Tauri项目
 ```sh
+## 创建与初始化
+    pnpm add -D @tauri-apps/cli
+    pnpm tauri init
+
+## 工具库
     pnpm add @tauri-apps/api
     pnpm tauri add device-info
     pnpm tauri add dialog
     pnpm tauri add fs
 ```
 
+
 ### 添加tsconfig.json配置
 ```json
  "compilerOptions": {
+  ...
   "paths": {
     "@/*": [
       "./src/mod/*",
       "./src/*",
-      
     ],
   }
 }
 ```
 
 ### rsbuild.config.ts
+```js
+import { defineConfig } from '@rsbuild/core';
+import { pluginBabel } from '@rsbuild/plugin-babel';
+import { pluginSolid } from '@rsbuild/plugin-solid';
+import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss';
+import { TanStackRouterRspack } from '@tanstack/router-plugin/rspack';
 
+
+export default defineConfig({
+  plugins: [
+    pluginBabel({
+      include: /\.(?:jsx|tsx)$/,
+    }),
+    pluginSolid(),
+    pluginTailwindcss(),
+  ],
+  html: { template: './public/index.html' },
+
+  tools: {
+    rspack: {
+      plugins: [
+        TanStackRouterRspack({
+          target: 'solid',
+          autoCodeSplitting: true,
+        }),
+      ],
+    },
+  },
+
+  output: {
+    assetPrefix: "/",
+  },
+
+});
+
+```
 ### 在项目主目录下创建
 config
 - .env.development
@@ -60,17 +100,28 @@ config
   }
 ```
 
-### 创建routers文件夹
-routers 
+### 创建routes文件夹
+routes 
   - __root.tsx
 
-### 生成路由文件
-- pnpm run dev 
 
-```sh 
-  pnpm tauri dev
-  pnpm tauri build
-  pnpm tauri build --debug
+```sh
+    pnpm tauri dev
+    pnpm tauri build
+    pnpm tauri build --debug
 ```
 
 
+
+```ts 网络
+const isOnline = navigator.onLine;
+console.log("当前网络状态：", isOnline ? "在线" : "离线");
+
+// 监听网络连接/断开事件
+window.addEventListener('online', () => {
+  console.log("网络已连接");
+});
+window.addEventListener('offline', () => {
+  console.log("网络已断开");
+});
+```

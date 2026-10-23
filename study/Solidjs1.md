@@ -37,6 +37,7 @@
 ### 添加tsconfig.json配置
 ```json
  "compilerOptions": {
+  ...
   "paths": {
     "@/*": [
       "./src/mod/*",
@@ -48,6 +49,39 @@
 
 ### rsbuild.config.ts
 ```js
+import { defineConfig } from '@rsbuild/core';
+import { pluginBabel } from '@rsbuild/plugin-babel';
+import { pluginSolid } from '@rsbuild/plugin-solid';
+import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss';
+import { TanStackRouterRspack } from '@tanstack/router-plugin/rspack';
+
+
+export default defineConfig({
+  plugins: [
+    pluginBabel({
+      include: /\.(?:jsx|tsx)$/,
+    }),
+    pluginSolid(),
+    pluginTailwindcss(),
+  ],
+  html: { template: './public/index.html' },
+
+  tools: {
+    rspack: {
+      plugins: [
+        TanStackRouterRspack({
+          target: 'solid',
+          autoCodeSplitting: true,
+        }),
+      ],
+    },
+  },
+
+  output: {
+    assetPrefix: "/",
+  },
+
+});
 
 ```
 ### 在项目主目录下创建
@@ -66,6 +100,11 @@ config
   }
 ```
 
+### 创建routes文件夹
+routes 
+  - __root.tsx
+
+
 ```sh
     pnpm tauri dev
     pnpm tauri build
@@ -74,7 +113,7 @@ config
 
 
 
-```ts
+```ts 网络
 const isOnline = navigator.onLine;
 console.log("当前网络状态：", isOnline ? "在线" : "离线");
 
