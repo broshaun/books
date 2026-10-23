@@ -11,10 +11,10 @@
 
 ## TanStack Router
     pnpm add @tanstack/solid-router @tanstack/solid-router-devtools @tanstack/router-plugin -D
-    pnpm add corvu
-    pnpm add localforage @tabler/icons-solidjs clsx tailwind-merge
-    pnpm add @solid-primitives/scheduled
-    pnpm add vconsole
+
+## 开发常用库
+    pnpm add localforage clsx tailwind-merge @tabler/icons-solidjs corvu @solid-primitives/scheduled vconsole
+
 ## 业务库
     pnpm add epubjs
 ```
